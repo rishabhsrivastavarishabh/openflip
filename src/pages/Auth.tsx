@@ -4,12 +4,14 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, Mail, Lock, User, ArrowRight } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, ArrowRight, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import openflipLogo from '@/assets/openflip-logo.png';
 
 const signInSchema = z.object({
   email: z.string().email('Please enter a valid email'),
@@ -23,11 +25,16 @@ const signUpSchema = z.object({
   fullName: z.string().optional(),
 });
 
+const forgotPasswordSchema = z.object({
+  email: z.string().email('Please enter a valid email'),
+});
+
 type SignInForm = z.infer<typeof signInSchema>;
 type SignUpForm = z.infer<typeof signUpSchema>;
+type ForgotPasswordForm = z.infer<typeof forgotPasswordSchema>;
 
 export default function AuthPage() {
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { signIn, signUp } = useAuth();
@@ -40,6 +47,25 @@ export default function AuthPage() {
   const signUpForm = useForm<SignUpForm>({
     resolver: zodResolver(signUpSchema),
   });
+
+  const forgotPasswordForm = useForm<ForgotPasswordForm>({
+    resolver: zodResolver(forgotPasswordSchema),
+  });
+
+  const handleForgotPassword = async (data: ForgotPasswordForm) => {
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
+      redirectTo: `${window.location.origin}/auth`,
+    });
+    setLoading(false);
+
+    if (error) {
+      toast.error(error.message || 'Failed to send reset email');
+    } else {
+      toast.success('Password reset email sent! Check your inbox.');
+      setMode('signin');
+    }
+  };
 
   const handleSignIn = async (data: SignInForm) => {
     setLoading(true);
@@ -82,9 +108,7 @@ export default function AuthPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <div className="w-20 h-20 rounded-2xl bg-primary-foreground/20 backdrop-blur-sm flex items-center justify-center mx-auto mb-8">
-              <span className="text-primary-foreground font-bold text-4xl">O</span>
-            </div>
+            <img src={openflipLogo} alt="Openflip" className="h-16 mx-auto mb-8" />
             <h1 className="text-4xl font-display font-bold text-primary-foreground mb-4">
               Welcome to Openflip
             </h1>
@@ -105,25 +129,58 @@ export default function AuthPage() {
         >
           {/* Mobile Logo */}
           <div className="lg:hidden text-center mb-8">
-            <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center mx-auto mb-4">
-              <span className="text-primary-foreground font-bold text-3xl">O</span>
-            </div>
-            <h1 className="text-2xl font-display font-bold gradient-text">Openflip</h1>
+            <img src={openflipLogo} alt="Openflip" className="h-12 mx-auto" />
           </div>
 
           <div className="space-y-6">
             <div className="text-center lg:text-left">
               <h2 className="text-2xl font-display font-bold">
-                {isSignUp ? 'Create your account' : 'Welcome back'}
+                {mode === 'signup' ? 'Create your account' : mode === 'forgot' ? 'Reset password' : 'Welcome back'}
               </h2>
               <p className="text-muted-foreground mt-2">
-                {isSignUp
+                {mode === 'signup'
                   ? 'Join millions of creators and explorers'
+                  : mode === 'forgot'
+                  ? 'Enter your email to receive a reset link'
                   : 'Sign in to continue to Openflip'}
               </p>
             </div>
 
-            {isSignUp ? (
+            {mode === 'forgot' ? (
+              <form onSubmit={forgotPasswordForm.handleSubmit(handleForgotPassword)} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="you@example.com"
+                      className="pl-10"
+                      {...forgotPasswordForm.register('email')}
+                    />
+                  </div>
+                  {forgotPasswordForm.formState.errors.email && (
+                    <p className="text-sm text-destructive">{forgotPasswordForm.formState.errors.email.message}</p>
+                  )}
+                </div>
+
+                <Button type="submit" variant="gradient" size="lg" className="w-full" disabled={loading}>
+                  {loading ? 'Sending...' : 'Send reset link'}
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full"
+                  onClick={() => setMode('signin')}
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back to sign in
+                </Button>
+              </form>
+            ) : mode === 'signup' ? (
               <form onSubmit={signUpForm.handleSubmit(handleSignUp)} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="fullName">Full Name (optional)</Label>
@@ -220,7 +277,16 @@ export default function AuthPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password">Password</Label>
+                    <button
+                      type="button"
+                      onClick={() => setMode('forgot')}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input
@@ -250,18 +316,20 @@ export default function AuthPage() {
               </form>
             )}
 
-            <div className="text-center">
-              <button
-                onClick={() => setIsSignUp(!isSignUp)}
-                className="text-sm text-muted-foreground hover:text-primary transition-colors"
-              >
-                {isSignUp ? (
-                  <>Already have an account? <span className="font-semibold text-primary">Sign in</span></>
-                ) : (
-                  <>Don't have an account? <span className="font-semibold text-primary">Sign up</span></>
-                )}
-              </button>
-            </div>
+            {mode !== 'forgot' && (
+              <div className="text-center">
+                <button
+                  onClick={() => setMode(mode === 'signup' ? 'signin' : 'signup')}
+                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                >
+                  {mode === 'signup' ? (
+                    <>Already have an account? <span className="font-semibold text-primary">Sign in</span></>
+                  ) : (
+                    <>Don't have an account? <span className="font-semibold text-primary">Sign up</span></>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         </motion.div>
       </div>
