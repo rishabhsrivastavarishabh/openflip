@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import openflipLogo from '@/assets/openflip-logo.png';
 
 export function Sidebar() {
   const location = useLocation();
@@ -29,13 +30,8 @@ export function Sidebar() {
     <aside className="hidden md:flex fixed left-0 top-0 h-screen w-[72px] lg:w-[244px] flex-col border-r border-border bg-background z-50">
       {/* Logo */}
       <div className="flex items-center h-20 px-4 lg:px-6">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl gradient-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-lg">O</span>
-          </div>
-          <span className="hidden lg:block text-xl font-display font-bold gradient-text">
-            Openflip
-          </span>
+        <Link to="/" className="flex items-center">
+          <img src={openflipLogo} alt="Openflip" className="h-8 lg:h-10" />
         </Link>
       </div>
 
