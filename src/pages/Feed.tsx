@@ -4,7 +4,7 @@ import { PostCard } from '@/components/post/PostCard';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Camera } from 'lucide-react';
+import { Camera, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { StoriesBar } from '@/components/stories/StoriesBar';
@@ -41,7 +41,14 @@ export default function FeedPage() {
   const [viewingStory, setViewingStory] = useState<StoryGroup | null>(null);
   const [showCreateStory, setShowCreateStory] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [pullDistance, setPullDistance] = useState(0);
   const loadMoreRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const touchStartY = useRef(0);
+  const isPulling = useRef(false);
+
+  const PULL_THRESHOLD = 80;
 
   const fetchPosts = useCallback(async (pageNum: number) => {
     const limit = 10;
@@ -200,9 +207,73 @@ export default function FeedPage() {
     return () => observer.disconnect();
   }, [hasMore, loading, loadingMore, loadMore]);
 
+  // Pull-to-refresh handlers
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (containerRef.current && containerRef.current.scrollTop === 0) {
+      touchStartY.current = e.touches[0].clientY;
+      isPulling.current = true;
+    }
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!isPulling.current || refreshing) return;
+    
+    const currentY = e.touches[0].clientY;
+    const diff = currentY - touchStartY.current;
+    
+    if (diff > 0 && containerRef.current?.scrollTop === 0) {
+      e.preventDefault();
+      setPullDistance(Math.min(diff * 0.5, PULL_THRESHOLD * 1.5));
+    }
+  }, [refreshing]);
+
+  const handleTouchEnd = useCallback(async () => {
+    if (!isPulling.current) return;
+    isPulling.current = false;
+    
+    if (pullDistance >= PULL_THRESHOLD && !refreshing) {
+      setRefreshing(true);
+      setPullDistance(PULL_THRESHOLD);
+      
+      // Reset and refetch
+      setPage(0);
+      await fetchPosts(0);
+      
+      setRefreshing(false);
+    }
+    
+    setPullDistance(0);
+  }, [pullDistance, refreshing, fetchPosts]);
+
   return (
     <MainLayout>
-      <div className="max-w-lg mx-auto">
+      <div 
+        ref={containerRef}
+        className="max-w-lg mx-auto relative"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        {/* Pull-to-refresh indicator */}
+        <div 
+          className="absolute left-0 right-0 flex justify-center z-50 transition-transform duration-200"
+          style={{ 
+            transform: `translateY(${pullDistance - 40}px)`,
+            opacity: pullDistance / PULL_THRESHOLD
+          }}
+        >
+          <div className={`w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center ${refreshing ? 'animate-spin' : ''}`}>
+            <RefreshCw 
+              className="w-5 h-5 text-primary" 
+              style={{ 
+                transform: refreshing ? 'none' : `rotate(${pullDistance * 3}deg)` 
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Content wrapper with pull offset */}
+        <div style={{ transform: `translateY(${pullDistance}px)`, transition: pullDistance === 0 ? 'transform 0.2s' : 'none' }}>
         {/* Header */}
         <header className="sticky top-0 z-40 glass-strong border-b px-4 py-4 md:hidden">
           <div className="flex items-center justify-between">
@@ -289,6 +360,7 @@ export default function FeedPage() {
             </div>
           )}
         </div>
+        </div> {/* End content wrapper */}
       </div>
     </MainLayout>
   );
