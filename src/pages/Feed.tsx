@@ -7,7 +7,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-
+import { StoriesBar } from '@/components/stories/StoriesBar';
+import { StoryViewer } from '@/components/stories/StoryViewer';
+import { CreateStory } from '@/components/stories/CreateStory';
+import { StoryGroup } from '@/types/database';
 interface FeedPost {
   id: string;
   user_id: string;
@@ -35,6 +38,8 @@ export default function FeedPage() {
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
+  const [viewingStory, setViewingStory] = useState<StoryGroup | null>(null);
+  const [showCreateStory, setShowCreateStory] = useState(false);
 
   const fetchPosts = useCallback(async (pageNum: number) => {
     const limit = 10;
@@ -188,6 +193,29 @@ export default function FeedPage() {
             </div>
           </div>
         </header>
+
+        {/* Stories Bar */}
+        <StoriesBar
+          onViewStory={(storyGroup) => setViewingStory(storyGroup)}
+          onCreateStory={() => setShowCreateStory(true)}
+        />
+
+        {/* Story Viewer Modal */}
+        {viewingStory && (
+          <StoryViewer
+            storyGroups={[viewingStory]}
+            initialGroupIndex={0}
+            onClose={() => setViewingStory(null)}
+          />
+        )}
+
+        {/* Create Story Modal */}
+        {showCreateStory && (
+          <CreateStory 
+            onClose={() => setShowCreateStory(false)} 
+            onCreated={() => setShowCreateStory(false)}
+          />
+        )}
 
         {/* Feed */}
         <div className="divide-y divide-border">
