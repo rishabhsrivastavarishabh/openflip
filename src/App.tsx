@@ -11,7 +11,12 @@ import Create from "./pages/Create";
 import Profile from "./pages/Profile";
 import Notifications from "./pages/Notifications";
 import Messages from "./pages/Messages";
+import Conversation from "./pages/Conversation";
 import Settings from "./pages/Settings";
+import Reels from "./pages/Reels";
+import Followers from "./pages/Followers";
+import Following from "./pages/Following";
+import { CreateReel } from "./components/reels/CreateReel";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,9 +33,14 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/explore" element={<Explore />} />
             <Route path="/create" element={<Create />} />
+            <Route path="/create/reel" element={<CreateReel />} />
+            <Route path="/reels" element={<Reels />} />
             <Route path="/profile/:userId" element={<Profile />} />
+            <Route path="/profile/:userId/followers" element={<Followers />} />
+            <Route path="/profile/:userId/following" element={<Following />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/messages" element={<Messages />} />
+            <Route path="/messages/:conversationId" element={<Conversation />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

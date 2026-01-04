@@ -95,3 +95,76 @@ export interface Hashtag {
   name: string;
   created_at: string;
 }
+
+// Stories types
+export interface Story {
+  id: string;
+  user_id: string;
+  media_url: string;
+  media_type: 'image' | 'video';
+  duration: number;
+  created_at: string;
+  expires_at: string;
+  profiles?: Profile;
+}
+
+export interface StoryView {
+  id: string;
+  story_id: string;
+  viewer_id: string;
+  viewed_at: string;
+  profiles?: Profile;
+}
+
+export interface StoryGroup {
+  user_id: string;
+  username: string;
+  avatar_url: string | null;
+  is_verified: boolean;
+  stories: Story[];
+  hasUnviewed: boolean;
+}
+
+// Reels types
+export interface Reel {
+  id: string;
+  user_id: string;
+  video_url: string;
+  thumbnail_url: string | null;
+  caption: string | null;
+  audio_name: string | null;
+  audio_artist: string | null;
+  duration: number | null;
+  view_count: number;
+  created_at: string;
+  updated_at: string;
+  profiles?: Profile;
+  isLiked?: boolean;
+  likeCount?: number;
+  commentCount?: number;
+}
+
+export interface ReelLike {
+  id: string;
+  reel_id: string;
+  user_id: string;
+  created_at: string;
+}
+
+export interface ReelComment {
+  id: string;
+  reel_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  profiles?: Profile;
+}
+
+// Conversation participant with typing
+export interface ConversationParticipant {
+  conversation_id: string;
+  user_id: string;
+  joined_at: string;
+  typing_at: string | null;
+  last_read_at: string | null;
+}
