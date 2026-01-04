@@ -36,8 +36,23 @@ export default function ExplorePage() {
     fetchExplorePosts();
   }, []);
 
+  // Sanitize search query by escaping special SQL ILIKE characters
+  const sanitizeSearchQuery = (query: string): string => {
+    return query
+      .replace(/\\/g, '\\\\')  // Escape backslashes first
+      .replace(/%/g, '\\%')    // Escape percent signs
+      .replace(/_/g, '\\_');   // Escape underscores
+  };
+
+  // Validate search query - only allow safe characters
+  const isValidSearchQuery = (query: string): boolean => {
+    // Allow alphanumeric, spaces, and common name characters
+    // Max length 100 characters for safety
+    return query.length <= 100 && /^[a-zA-Z0-9\s._-]*$/.test(query);
+  };
+
   useEffect(() => {
-    if (searchQuery.length > 0) {
+    if (searchQuery.length > 0 && isValidSearchQuery(searchQuery)) {
       const timer = setTimeout(() => {
         searchUsers();
       }, 300);
@@ -96,11 +111,21 @@ export default function ExplorePage() {
   };
 
   const searchUsers = async () => {
+    if (!isValidSearchQuery(searchQuery)) {
+      setUsers([]);
+      return;
+    }
+
     setSearchLoading(true);
+    
+    // Sanitize the query to escape special ILIKE characters
+    const sanitizedQuery = sanitizeSearchQuery(searchQuery.trim());
+    const searchPattern = `%${sanitizedQuery}%`;
+    
     const { data, error } = await supabase
       .from('profiles')
       .select('id, username, full_name, avatar_url, is_verified')
-      .or(`username.ilike.%${searchQuery}%,full_name.ilike.%${searchQuery}%`)
+      .or(`username.ilike.${searchPattern},full_name.ilike.${searchPattern}`)
       .limit(20);
 
     if (!error && data) {
@@ -121,6 +146,7 @@ export default function ExplorePage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
+              maxLength={100}
             />
           </div>
         </div>
