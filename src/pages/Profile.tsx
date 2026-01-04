@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Grid3X3, Bookmark, Settings, UserPlus, UserMinus, MessageCircle, Plus } from 'lucide-react';
+import { Grid3X3, Bookmark, Settings, UserPlus, UserMinus, MessageCircle, Plus, Film } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -29,11 +29,20 @@ interface ProfilePost {
   comments_count: number;
 }
 
+interface ProfileReel {
+  id: string;
+  video_url: string;
+  thumbnail_url: string | null;
+  view_count: number;
+  likes_count: number;
+}
+
 export default function ProfilePage() {
   const { userId } = useParams<{ userId: string }>();
   const { user } = useAuth();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [posts, setPosts] = useState<ProfilePost[]>([]);
+  const [reels, setReels] = useState<ProfileReel[]>([]);
   const [savedPosts, setSavedPosts] = useState<ProfilePost[]>([]);
   const [loading, setLoading] = useState(true);
   const [followersCount, setFollowersCount] = useState(0);
@@ -48,6 +57,7 @@ export default function ProfilePage() {
     if (userId) {
       fetchProfile();
       fetchPosts();
+      fetchReels();
       fetchFollowCounts();
       if (user) {
         checkIsFollowing();
@@ -108,6 +118,33 @@ export default function ProfilePage() {
         likes_count: likesCounts[post.id] || 0,
         comments_count: commentsCounts[post.id] || 0,
       })) as ProfilePost[]);
+    }
+  };
+
+  const fetchReels = async () => {
+    const { data: reelsData } = await supabase
+      .from('reels')
+      .select('id, video_url, thumbnail_url, view_count')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (reelsData) {
+      const reelIds = reelsData.map(r => r.id);
+
+      const { data: likesData } = await supabase
+        .from('reel_likes')
+        .select('reel_id')
+        .in('reel_id', reelIds);
+
+      const likesCounts: Record<string, number> = {};
+      likesData?.forEach(like => {
+        likesCounts[like.reel_id] = (likesCounts[like.reel_id] || 0) + 1;
+      });
+
+      setReels(reelsData.map(reel => ({
+        ...reel,
+        likes_count: likesCounts[reel.id] || 0,
+      })) as ProfileReel[]);
     }
   };
 
@@ -367,6 +404,10 @@ export default function ProfilePage() {
               <Grid3X3 className="h-4 w-4" />
               <span className="hidden sm:inline">Posts</span>
             </TabsTrigger>
+            <TabsTrigger value="reels" className="flex items-center gap-2">
+              <Film className="h-4 w-4" />
+              <span className="hidden sm:inline">Reels</span>
+            </TabsTrigger>
             {isOwnProfile && (
               <TabsTrigger value="saved" className="flex items-center gap-2">
                 <Bookmark className="h-4 w-4" />
@@ -410,6 +451,48 @@ export default function ProfilePage() {
               <div className="text-center py-12">
                 <Grid3X3 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground">No posts yet</p>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="reels" className="mt-0">
+            {reels.length > 0 ? (
+              <div className="grid grid-cols-3 gap-0.5">
+                {reels.map(reel => (
+                  <Link
+                    key={reel.id}
+                    to={`/reels?id=${reel.id}`}
+                    className="aspect-[9/16] relative group overflow-hidden"
+                  >
+                    {reel.thumbnail_url ? (
+                      <img
+                        src={reel.thumbnail_url}
+                        alt=""
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <video
+                        src={reel.video_url}
+                        className="w-full h-full object-cover"
+                      />
+                    )}
+                    <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/30 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                      <div className="flex items-center gap-4 text-primary-foreground font-semibold text-sm">
+                        <span>▶️ {reel.view_count || 0}</span>
+                        <span>❤️ {reel.likes_count}</span>
+                      </div>
+                    </div>
+                    <div className="absolute bottom-2 left-2 flex items-center gap-1 text-white text-xs">
+                      <Film className="w-3 h-3" />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <Film className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">No reels yet</p>
               </div>
             )}
           </TabsContent>
