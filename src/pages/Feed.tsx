@@ -54,28 +54,27 @@ export default function FeedPage() {
     const limit = 10;
     const offset = pageNum * limit;
 
-    let query = supabase
-      .from('posts')
-      .select(`
-        *,
-        profiles!inner(id, username, avatar_url, is_verified)
-      `)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
-
-    // If user is logged in, show posts from followed users + own posts
+    // Get user's following list if logged in
+    let followingIds: string[] = [];
     if (user) {
       const { data: following } = await supabase
         .from('follows')
         .select('following_id')
         .eq('follower_id', user.id);
 
-      const followingIds = following?.map(f => f.following_id) || [];
+      followingIds = following?.map(f => f.following_id) || [];
       followingIds.push(user.id);
+    }
 
-      if (followingIds.length > 0) {
-        query = query.in('user_id', followingIds);
-      }
+    // Fetch posts - only from followed users + own posts
+    let query = supabase
+      .from('posts')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (user && followingIds.length > 0) {
+      query = query.in('user_id', followingIds);
     }
 
     const { data: postsData, error } = await query;
@@ -88,13 +87,10 @@ export default function FeedPage() {
 
     if (!postsData || postsData.length === 0) {
       if (pageNum === 0) {
-        // No posts at all, fetch explore posts instead
+        // No posts from following, fetch explore posts instead
         const { data: explorePosts } = await supabase
           .from('posts')
-          .select(`
-            *,
-            profiles!inner(id, username, avatar_url, is_verified)
-          `)
+          .select('*')
           .order('created_at', { ascending: false })
           .limit(20);
 
@@ -122,6 +118,18 @@ export default function FeedPage() {
 
   const enrichPosts = async (postsData: any[]): Promise<FeedPost[]> => {
     const postIds = postsData.map(p => p.id);
+    const userIds = [...new Set(postsData.map(p => p.user_id))];
+
+    // Get profiles for all post authors
+    const { data: profilesData } = await supabase
+      .from('profiles')
+      .select('id, username, avatar_url, is_verified')
+      .in('id', userIds);
+
+    const profilesMap: Record<string, any> = {};
+    profilesData?.forEach(p => {
+      profilesMap[p.id] = p;
+    });
 
     // Get likes counts
     const { data: likesData } = await supabase
@@ -169,6 +177,7 @@ export default function FeedPage() {
 
     return postsData.map(post => ({
       ...post,
+      profiles: profilesMap[post.user_id] || { id: post.user_id, username: 'Unknown', avatar_url: null, is_verified: false },
       likes_count: likesCounts[post.id] || 0,
       comments_count: commentsCounts[post.id] || 0,
       is_liked: userLikes.includes(post.id),

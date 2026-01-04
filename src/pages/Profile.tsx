@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { Grid3X3, Bookmark, Settings, UserPlus, UserMinus, MessageCircle, Plus, Film } from 'lucide-react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { Grid3X3, Bookmark, Settings, UserPlus, UserMinus, MessageCircle, Plus, Film, Lock, Clock } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -19,6 +19,7 @@ interface ProfileData {
   bio: string | null;
   website: string | null;
   is_verified: boolean;
+  is_private: boolean;
 }
 
 interface ProfilePost {
@@ -40,6 +41,7 @@ interface ProfileReel {
 export default function ProfilePage() {
   const { userId } = useParams<{ userId: string }>();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [posts, setPosts] = useState<ProfilePost[]>([]);
   const [reels, setReels] = useState<ProfileReel[]>([]);
@@ -48,25 +50,39 @@ export default function ProfilePage() {
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [isPending, setIsPending] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   const [showCreateStory, setShowCreateStory] = useState(false);
+  const [canViewContent, setCanViewContent] = useState(true);
 
   const isOwnProfile = user?.id === userId;
 
   useEffect(() => {
     if (userId) {
       fetchProfile();
-      fetchPosts();
-      fetchReels();
       fetchFollowCounts();
       if (user) {
         checkIsFollowing();
+        checkPendingRequest();
+      }
+    }
+  }, [userId, user]);
+
+  useEffect(() => {
+    if (profile && userId) {
+      // Check if user can view content
+      const canView = isOwnProfile || !profile.is_private || isFollowing;
+      setCanViewContent(canView);
+      
+      if (canView) {
+        fetchPosts();
+        fetchReels();
         if (isOwnProfile) {
           fetchSavedPosts();
         }
       }
     }
-  }, [userId, user]);
+  }, [profile, isFollowing, userId]);
 
   const fetchProfile = async () => {
     const { data, error } = await supabase
@@ -189,9 +205,23 @@ export default function ProfilePage() {
       .select('id')
       .eq('follower_id', user.id)
       .eq('following_id', userId)
-      .single();
+      .maybeSingle();
 
     setIsFollowing(!!data);
+  };
+
+  const checkPendingRequest = async () => {
+    if (!user) return;
+
+    const { data } = await supabase
+      .from('follow_requests')
+      .select('id')
+      .eq('requester_id', user.id)
+      .eq('target_id', userId)
+      .eq('status', 'pending')
+      .maybeSingle();
+
+    setIsPending(!!data);
   };
 
   const handleFollow = async () => {
@@ -203,6 +233,7 @@ export default function ProfilePage() {
     setFollowLoading(true);
 
     if (isFollowing) {
+      // Unfollow
       const { error } = await supabase
         .from('follows')
         .delete()
@@ -212,8 +243,41 @@ export default function ProfilePage() {
       if (!error) {
         setIsFollowing(false);
         setFollowersCount(prev => prev - 1);
+        setCanViewContent(isOwnProfile || !profile?.is_private);
+      }
+    } else if (isPending) {
+      // Cancel request
+      await supabase
+        .from('follow_requests')
+        .delete()
+        .eq('requester_id', user.id)
+        .eq('target_id', userId);
+      
+      setIsPending(false);
+      toast.success('Follow request cancelled');
+    } else if (profile?.is_private) {
+      // Send follow request for private profile
+      const { error } = await supabase
+        .from('follow_requests')
+        .insert({
+          requester_id: user.id,
+          target_id: userId,
+        });
+
+      if (!error) {
+        setIsPending(true);
+        
+        // Create notification
+        await supabase.from('notifications').insert({
+          user_id: userId,
+          actor_id: user.id,
+          type: 'follow_request',
+        });
+        
+        toast.success('Follow request sent');
       }
     } else {
+      // Direct follow for public profile
       const { error } = await supabase
         .from('follows')
         .insert({ follower_id: user.id, following_id: userId });
@@ -221,10 +285,93 @@ export default function ProfilePage() {
       if (!error) {
         setIsFollowing(true);
         setFollowersCount(prev => prev + 1);
+        
+        // Create notification
+        await supabase.from('notifications').insert({
+          user_id: userId,
+          actor_id: user.id,
+          type: 'follow',
+        });
       }
     }
 
     setFollowLoading(false);
+  };
+
+  const handleMessage = async () => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+
+    try {
+      // Check for existing conversation
+      const { data: myConversations } = await supabase
+        .from('conversation_participants')
+        .select('conversation_id')
+        .eq('user_id', user.id);
+
+      const myConvoIds = myConversations?.map(c => c.conversation_id) || [];
+
+      if (myConvoIds.length > 0) {
+        const { data: existingConvo } = await supabase
+          .from('conversation_participants')
+          .select('conversation_id')
+          .eq('user_id', userId)
+          .in('conversation_id', myConvoIds)
+          .maybeSingle();
+
+        if (existingConvo) {
+          navigate(`/messages/${existingConvo.conversation_id}`);
+          return;
+        }
+      }
+
+      // Create new conversation
+      const { data: newConvo, error: convoError } = await supabase
+        .from('conversations')
+        .insert({})
+        .select()
+        .single();
+
+      if (convoError) throw convoError;
+
+      // Add participants
+      await supabase.from('conversation_participants').insert([
+        { conversation_id: newConvo.id, user_id: user.id },
+        { conversation_id: newConvo.id, user_id: userId },
+      ]);
+
+      navigate(`/messages/${newConvo.id}`);
+    } catch (error) {
+      console.error('Error starting conversation:', error);
+      toast.error('Failed to start conversation');
+    }
+  };
+
+  const getFollowButtonContent = () => {
+    if (isFollowing) {
+      return (
+        <>
+          <UserMinus className="h-4 w-4 mr-1" />
+          Following
+        </>
+      );
+    }
+    if (isPending) {
+      return (
+        <>
+          <Clock className="h-4 w-4 mr-1" />
+          Requested
+        </>
+      );
+    }
+    return (
+      <>
+        <UserPlus className="h-4 w-4 mr-1" />
+        Follow
+      </>
+    );
   };
 
   if (loading) {
@@ -306,27 +453,19 @@ export default function ProfilePage() {
                   ) : (
                     <>
                       <Button
-                        variant={isFollowing ? 'secondary' : 'gradient'}
+                        variant={isFollowing ? 'secondary' : isPending ? 'outline' : 'gradient'}
                         size="sm"
                         onClick={handleFollow}
                         disabled={followLoading}
                       >
-                        {isFollowing ? (
-                          <>
-                            <UserMinus className="h-4 w-4 mr-1" />
-                            Following
-                          </>
-                        ) : (
-                          <>
-                            <UserPlus className="h-4 w-4 mr-1" />
-                            Follow
-                          </>
-                        )}
+                        {getFollowButtonContent()}
                       </Button>
-                      <Button variant="secondary" size="sm">
-                        <MessageCircle className="h-4 w-4 mr-1" />
-                        Message
-                      </Button>
+                      {(isFollowing || user) && (
+                        <Button variant="secondary" size="sm" onClick={handleMessage}>
+                          <MessageCircle className="h-4 w-4 mr-1" />
+                          Message
+                        </Button>
+                      )}
                     </>
                   )}
                 </div>
@@ -397,63 +536,64 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Posts Grid */}
-        <Tabs defaultValue="posts" className="w-full">
-          <TabsList className="w-full justify-center border-t border-border rounded-none bg-transparent h-12">
-            <TabsTrigger value="posts" className="flex items-center gap-2">
-              <Grid3X3 className="h-4 w-4" />
-              <span className="hidden sm:inline">Posts</span>
-            </TabsTrigger>
-            <TabsTrigger value="reels" className="flex items-center gap-2">
-              <Film className="h-4 w-4" />
-              <span className="hidden sm:inline">Reels</span>
-            </TabsTrigger>
-            {isOwnProfile && (
-              <TabsTrigger value="saved" className="flex items-center gap-2">
-                <Bookmark className="h-4 w-4" />
-                <span className="hidden sm:inline">Saved</span>
+        {/* Posts Grid - only show if can view content */}
+        {canViewContent ? (
+          <Tabs defaultValue="posts" className="w-full">
+            <TabsList className="w-full justify-center border-t border-border rounded-none bg-transparent h-12">
+              <TabsTrigger value="posts" className="flex items-center gap-2">
+                <Grid3X3 className="h-4 w-4" />
+                <span className="hidden sm:inline">Posts</span>
               </TabsTrigger>
-            )}
-          </TabsList>
+              <TabsTrigger value="reels" className="flex items-center gap-2">
+                <Film className="h-4 w-4" />
+                <span className="hidden sm:inline">Reels</span>
+              </TabsTrigger>
+              {isOwnProfile && (
+                <TabsTrigger value="saved" className="flex items-center gap-2">
+                  <Bookmark className="h-4 w-4" />
+                  <span className="hidden sm:inline">Saved</span>
+                </TabsTrigger>
+              )}
+            </TabsList>
 
-          <TabsContent value="posts" className="mt-0">
-            {posts.length > 0 ? (
-              <div className="grid grid-cols-3 gap-0.5">
-                {posts.map(post => (
-                  <Link
-                    key={post.id}
-                    to={`/post/${post.id}`}
-                    className="aspect-square relative group overflow-hidden"
-                  >
-                    {post.media_type === 'video' ? (
-                      <video
-                        src={post.media_url}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <img
-                        src={post.media_url}
-                        alt=""
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
-                    )}
-                    <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/30 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                      <div className="flex items-center gap-4 text-primary-foreground font-semibold">
-                        <span>❤️ {post.likes_count}</span>
-                        <span>💬 {post.comments_count}</span>
+            <TabsContent value="posts" className="mt-0">
+              {posts.length > 0 ? (
+                <div className="grid grid-cols-3 gap-0.5">
+                  {posts.map(post => (
+                    <Link
+                      key={post.id}
+                      to={`/post/${post.id}`}
+                      className="aspect-square relative group overflow-hidden"
+                    >
+                      {post.media_type === 'video' ? (
+                        <video
+                          src={post.media_url}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <img
+                          src={post.media_url}
+                          alt=""
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      )}
+                      <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/30 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                        <div className="flex items-center gap-4 text-primary-foreground font-semibold">
+                          <span>❤️ {post.likes_count}</span>
+                          <span>💬 {post.comments_count}</span>
+                        </div>
                       </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <Grid3X3 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">No posts yet</p>
-              </div>
-            )}
-          </TabsContent>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <Grid3X3 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No posts yet</p>
+                </div>
+              )}
+            </TabsContent>
 
           <TabsContent value="reels" className="mt-0">
             {reels.length > 0 ? (
@@ -524,8 +664,21 @@ export default function ProfilePage() {
               )}
             </TabsContent>
           )}
-        </Tabs>
-
+          </Tabs>
+        ) : (
+          /* Private Profile Lock View */
+          <div className="border-t border-border">
+            <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+              <div className="w-20 h-20 rounded-full border-2 border-foreground flex items-center justify-center mb-4">
+                <Lock className="w-10 h-10" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">This Account is Private</h3>
+              <p className="text-muted-foreground max-w-xs">
+                Follow this account to see their photos and videos.
+              </p>
+            </div>
+          </div>
+        )}
         {/* Create Story Modal */}
         {showCreateStory && (
           <CreateStory

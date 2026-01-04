@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, User, Lock, Bell, HelpCircle, LogOut, Camera } from 'lucide-react';
+import { ArrowLeft, User, Lock, Bell, HelpCircle, LogOut, Camera, ChevronRight, Shield } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -16,12 +17,26 @@ export default function SettingsPage() {
   const { user, profile, signOut, updateProfile } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
+  const [isPrivate, setIsPrivate] = useState(profile?.is_private || false);
   const [formData, setFormData] = useState({
     username: profile?.username || '',
     full_name: profile?.full_name || '',
     bio: profile?.bio || '',
     website: profile?.website || '',
   });
+
+  useEffect(() => {
+    if (profile) {
+      setIsPrivate(profile.is_private || false);
+      setFormData({
+        username: profile.username || '',
+        full_name: profile.full_name || '',
+        bio: profile.bio || '',
+        website: profile.website || '',
+      });
+    }
+  }, [profile]);
 
   if (!user) {
     navigate('/auth');
@@ -81,10 +96,92 @@ export default function SettingsPage() {
     }
   };
 
+  const handlePrivacyToggle = async (checked: boolean) => {
+    setIsPrivate(checked);
+    setLoading(true);
+
+    const { error } = await updateProfile({ is_private: checked });
+
+    setLoading(false);
+
+    if (error) {
+      setIsPrivate(!checked);
+      toast.error('Failed to update privacy setting');
+    } else {
+      toast.success(checked ? 'Your account is now private' : 'Your account is now public');
+    }
+  };
+
   const handleSignOut = async () => {
     await signOut();
     navigate('/auth');
   };
+
+  if (showPrivacy) {
+    return (
+      <MainLayout>
+        <div className="max-w-lg mx-auto">
+          <header className="sticky top-0 z-40 glass-strong border-b px-4 py-3">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="icon" onClick={() => setShowPrivacy(false)}>
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <h1 className="font-semibold text-lg">Privacy</h1>
+            </div>
+          </header>
+
+          <div className="p-4 space-y-6">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Lock className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium">Private Account</p>
+                    <p className="text-sm text-muted-foreground">
+                      Only approved followers can see your posts
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  checked={isPrivate}
+                  onCheckedChange={handlePrivacyToggle}
+                  disabled={loading}
+                />
+              </div>
+
+              {isPrivate && (
+                <div className="p-4 rounded-xl bg-muted/50 space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Shield className="h-4 w-4 text-primary" />
+                    <span className="font-medium">What happens when your account is private:</span>
+                  </div>
+                  <ul className="text-sm text-muted-foreground space-y-1 ml-6 list-disc">
+                    <li>New followers must send a request</li>
+                    <li>You can approve or reject requests</li>
+                    <li>Only approved followers see your posts</li>
+                    <li>Your profile info is still visible to everyone</li>
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            <Separator />
+
+            <Button
+              variant="outline"
+              className="w-full justify-between"
+              onClick={() => navigate(`/profile/${user.id}/followers`)}
+            >
+              <span>Manage Followers</span>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -181,9 +278,20 @@ export default function SettingsPage() {
 
           {/* Other Settings */}
           <div className="space-y-2">
-            <button className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary transition-colors text-left">
-              <Lock className="h-5 w-5 text-muted-foreground" />
-              <span>Privacy</span>
+            <button
+              onClick={() => setShowPrivacy(true)}
+              className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-secondary transition-colors text-left"
+            >
+              <div className="flex items-center gap-3">
+                <Lock className="h-5 w-5 text-muted-foreground" />
+                <span>Privacy</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  {isPrivate ? 'Private' : 'Public'}
+                </span>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </div>
             </button>
             <button className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary transition-colors text-left">
               <Bell className="h-5 w-5 text-muted-foreground" />

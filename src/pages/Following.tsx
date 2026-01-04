@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -7,8 +7,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Search, UserCheck, Users } from 'lucide-react';
+import { ArrowLeft, Search, UserCheck, Users, MessageCircle } from 'lucide-react';
 import { Profile } from '@/types/database';
+import { toast } from 'sonner';
 
 interface FollowUser extends Profile {
   isFollowing?: boolean;
@@ -18,6 +19,7 @@ interface FollowUser extends Profile {
 export default function Following() {
   const { userId } = useParams<{ userId: string }>();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [following, setFollowing] = useState<FollowUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -117,6 +119,13 @@ export default function Following() {
           follower_id: user.id,
           following_id: targetUserId,
         });
+
+        // Create notification
+        await supabase.from('notifications').insert({
+          user_id: targetUserId,
+          actor_id: user.id,
+          type: 'follow',
+        });
       }
 
       setFollowing(prev =>
@@ -126,6 +135,57 @@ export default function Following() {
       );
     } catch (error) {
       console.error('Error toggling follow:', error);
+    }
+  };
+
+  const handleMessage = async (targetUserId: string) => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+
+    try {
+      // Check for existing conversation
+      const { data: myConversations } = await supabase
+        .from('conversation_participants')
+        .select('conversation_id')
+        .eq('user_id', user.id);
+
+      const myConvoIds = myConversations?.map(c => c.conversation_id) || [];
+
+      if (myConvoIds.length > 0) {
+        const { data: existingConvo } = await supabase
+          .from('conversation_participants')
+          .select('conversation_id')
+          .eq('user_id', targetUserId)
+          .in('conversation_id', myConvoIds)
+          .maybeSingle();
+
+        if (existingConvo) {
+          navigate(`/messages/${existingConvo.conversation_id}`);
+          return;
+        }
+      }
+
+      // Create new conversation
+      const { data: newConvo, error: convoError } = await supabase
+        .from('conversations')
+        .insert({})
+        .select()
+        .single();
+
+      if (convoError) throw convoError;
+
+      // Add participants
+      await supabase.from('conversation_participants').insert([
+        { conversation_id: newConvo.id, user_id: user.id },
+        { conversation_id: newConvo.id, user_id: targetUserId },
+      ]);
+
+      navigate(`/messages/${newConvo.id}`);
+    } catch (error) {
+      console.error('Error starting conversation:', error);
+      toast.error('Failed to start conversation');
     }
   };
 
@@ -198,13 +258,23 @@ export default function Following() {
                   )}
                 </div>
                 {user && user.id !== followedUser.id && (
-                  <Button
-                    variant={followedUser.isFollowing ? 'outline' : 'default'}
-                    size="sm"
-                    onClick={() => handleFollow(followedUser.id, followedUser.isFollowing || false)}
-                  >
-                    {followedUser.isFollowing ? 'Following' : 'Follow'}
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleMessage(followedUser.id)}
+                      className="h-9 w-9"
+                    >
+                      <MessageCircle className="h-5 w-5" />
+                    </Button>
+                    <Button
+                      variant={followedUser.isFollowing ? 'outline' : 'default'}
+                      size="sm"
+                      onClick={() => handleFollow(followedUser.id, followedUser.isFollowing || false)}
+                    >
+                      {followedUser.isFollowing ? 'Following' : 'Follow'}
+                    </Button>
+                  </div>
                 )}
               </div>
             ))
