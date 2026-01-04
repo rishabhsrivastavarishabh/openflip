@@ -289,14 +289,20 @@ export default function ProfilePage() {
                   <span className="font-semibold">{posts.length}</span>{' '}
                   <span className="text-muted-foreground">posts</span>
                 </div>
-                <div>
+                <Link 
+                  to={`/profile/${userId}/followers`}
+                  className="hover:opacity-70 transition-opacity"
+                >
                   <span className="font-semibold">{followersCount}</span>{' '}
                   <span className="text-muted-foreground">followers</span>
-                </div>
-                <div>
+                </Link>
+                <Link 
+                  to={`/profile/${userId}/following`}
+                  className="hover:opacity-70 transition-opacity"
+                >
                   <span className="font-semibold">{followingCount}</span>{' '}
                   <span className="text-muted-foreground">following</span>
-                </div>
+                </Link>
               </div>
 
               {/* Bio */}
