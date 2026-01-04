@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PostCard } from '@/components/post/PostCard';
 import { supabase } from '@/integrations/supabase/client';
@@ -40,6 +40,8 @@ export default function FeedPage() {
   const [page, setPage] = useState(0);
   const [viewingStory, setViewingStory] = useState<StoryGroup | null>(null);
   const [showCreateStory, setShowCreateStory] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   const fetchPosts = useCallback(async (pageNum: number) => {
     const limit = 10;
@@ -171,13 +173,32 @@ export default function FeedPage() {
     fetchPosts(0);
   }, [fetchPosts]);
 
-  const loadMore = () => {
-    if (!loading && hasMore) {
+  const loadMore = useCallback(() => {
+    if (!loading && !loadingMore && hasMore) {
+      setLoadingMore(true);
       const nextPage = page + 1;
       setPage(nextPage);
-      fetchPosts(nextPage);
+      fetchPosts(nextPage).finally(() => setLoadingMore(false));
     }
-  };
+  }, [loading, loadingMore, hasMore, page, fetchPosts]);
+
+  // Infinite scroll with IntersectionObserver
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading && !loadingMore) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [hasMore, loading, loadingMore, loadMore]);
 
   return (
     <MainLayout>
@@ -239,10 +260,12 @@ export default function FeedPage() {
                 <PostCard key={post.id} post={post as any} onUpdate={() => fetchPosts(0)} />
               ))}
               {hasMore && (
-                <div className="p-4 text-center">
-                  <Button variant="ghost" onClick={loadMore} disabled={loading}>
-                    {loading ? 'Loading...' : 'Load more'}
-                  </Button>
+                <div ref={loadMoreRef} className="p-4 text-center">
+                  {loadingMore && (
+                    <div className="flex justify-center">
+                      <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  )}
                 </div>
               )}
             </>
