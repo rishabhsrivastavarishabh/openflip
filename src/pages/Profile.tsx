@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Grid3X3, Bookmark, Settings, UserPlus, UserMinus, MessageCircle } from 'lucide-react';
+import { Grid3X3, Bookmark, Settings, UserPlus, UserMinus, MessageCircle, Plus } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { CreateStory } from '@/components/stories/CreateStory';
 
 interface ProfileData {
   id: string;
@@ -39,6 +40,7 @@ export default function ProfilePage() {
   const [followingCount, setFollowingCount] = useState(0);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
+  const [showCreateStory, setShowCreateStory] = useState(false);
 
   const isOwnProfile = user?.id === userId;
 
@@ -224,12 +226,22 @@ export default function ProfilePage() {
         {/* Profile Header */}
         <div className="p-4 md:py-8">
           <div className="flex items-start gap-6 md:gap-12">
-            <Avatar className="w-20 h-20 md:w-36 md:h-36 ring-2 ring-border">
-              <AvatarImage src={profile.avatar_url || undefined} />
-              <AvatarFallback className="text-2xl md:text-4xl bg-primary/10 text-primary">
-                {profile.username.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
+            <div className="relative">
+              <Avatar className="w-20 h-20 md:w-36 md:h-36 ring-2 ring-border">
+                <AvatarImage src={profile.avatar_url || undefined} />
+                <AvatarFallback className="text-2xl md:text-4xl bg-primary/10 text-primary">
+                  {profile.username.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              {isOwnProfile && (
+                <button
+                  onClick={() => setShowCreateStory(true)}
+                  className="absolute -bottom-1 -right-1 w-7 h-7 md:w-8 md:h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center border-2 border-background hover:bg-primary/90 transition-colors"
+                >
+                  <Plus className="w-4 h-4 md:w-5 md:h-5" />
+                </button>
+              )}
+            </div>
 
             <div className="flex-1 space-y-4">
               <div className="flex flex-col md:flex-row md:items-center gap-3">
@@ -430,6 +442,14 @@ export default function ProfilePage() {
             </TabsContent>
           )}
         </Tabs>
+
+        {/* Create Story Modal */}
+        {showCreateStory && (
+          <CreateStory
+            onClose={() => setShowCreateStory(false)}
+            onCreated={() => setShowCreateStory(false)}
+          />
+        )}
       </div>
     </MainLayout>
   );
