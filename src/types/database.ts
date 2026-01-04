@@ -62,11 +62,21 @@ export interface Follow {
   created_at: string;
 }
 
+export interface FollowRequest {
+  id: string;
+  requester_id: string;
+  target_id: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  created_at: string;
+  updated_at: string;
+  profiles?: Profile;
+}
+
 export interface Notification {
   id: string;
   user_id: string;
   actor_id: string;
-  type: 'like' | 'comment' | 'follow' | 'mention';
+  type: 'like' | 'comment' | 'follow' | 'follow_request' | 'follow_accepted' | 'mention' | 'message';
   post_id: string | null;
   comment_id: string | null;
   is_read: boolean;
