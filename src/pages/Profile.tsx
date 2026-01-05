@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Grid3X3, Bookmark, Settings, UserPlus, UserMinus, MessageCircle, Plus, Film, Lock, Clock } from 'lucide-react';
+import { Grid3X3, Bookmark, Settings, UserPlus, UserMinus, MessageCircle, Plus, Film, Lock, Clock, Share2, MoreHorizontal } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -10,6 +10,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { CreateStory } from '@/components/stories/CreateStory';
+import { StoryHighlights } from '@/components/stories/StoryHighlights';
+import { ShareSheet } from '@/components/share/ShareSheet';
+import { BlockReportSheet } from '@/components/moderation/BlockReportSheet';
 
 interface ProfileData {
   id: string;
@@ -54,6 +57,8 @@ export default function ProfilePage() {
   const [followLoading, setFollowLoading] = useState(false);
   const [showCreateStory, setShowCreateStory] = useState(false);
   const [canViewContent, setCanViewContent] = useState(true);
+  const [showShareSheet, setShowShareSheet] = useState(false);
+  const [showBlockReport, setShowBlockReport] = useState(false);
 
   const isOwnProfile = user?.id === userId;
 
@@ -466,6 +471,12 @@ export default function ProfilePage() {
                           Message
                         </Button>
                       )}
+                      <Button variant="ghost" size="icon-sm" onClick={() => setShowShareSheet(true)}>
+                        <Share2 className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon-sm" onClick={() => setShowBlockReport(true)}>
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
                     </>
                   )}
                 </div>
@@ -535,6 +546,9 @@ export default function ProfilePage() {
             )}
           </div>
         </div>
+
+        {/* Story Highlights */}
+        <StoryHighlights userId={userId!} isOwnProfile={isOwnProfile} />
 
         {/* Posts Grid - only show if can view content */}
         {canViewContent ? (
@@ -684,6 +698,26 @@ export default function ProfilePage() {
           <CreateStory
             onClose={() => setShowCreateStory(false)}
             onCreated={() => setShowCreateStory(false)}
+          />
+        )}
+
+        {/* Share Sheet */}
+        <ShareSheet
+          open={showShareSheet}
+          onOpenChange={setShowShareSheet}
+          type="profile"
+          itemId={userId!}
+          itemUrl={`${window.location.origin}/profile/${userId}`}
+        />
+
+        {/* Block/Report Sheet */}
+        {!isOwnProfile && profile && (
+          <BlockReportSheet
+            open={showBlockReport}
+            onOpenChange={setShowBlockReport}
+            targetUserId={userId!}
+            targetUsername={profile.username}
+            onBlocked={() => navigate('/')}
           />
         )}
       </div>

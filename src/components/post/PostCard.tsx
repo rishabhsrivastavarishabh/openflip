@@ -10,6 +10,8 @@ import { Post } from '@/types/database';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { ShareSheet } from '@/components/share/ShareSheet';
+import { BlockReportSheet } from '@/components/moderation/BlockReportSheet';
 
 interface PostCardProps {
   post: Post & {
@@ -33,6 +35,8 @@ export function PostCard({ post, onUpdate }: PostCardProps) {
   const [isSaved, setIsSaved] = useState(post.is_saved);
   const [likesCount, setLikesCount] = useState(post.likes_count);
   const [showHeart, setShowHeart] = useState(false);
+  const [showShareSheet, setShowShareSheet] = useState(false);
+  const [showBlockReport, setShowBlockReport] = useState(false);
 
   const handleLike = async () => {
     if (!user) {
@@ -141,7 +145,7 @@ export function PostCard({ post, onUpdate }: PostCardProps) {
             )}
           </div>
         </Link>
-        <Button variant="ghost" size="icon-sm">
+        <Button variant="ghost" size="icon-sm" onClick={() => setShowBlockReport(true)}>
           <MoreHorizontal className="h-5 w-5" />
         </Button>
       </div>
@@ -203,7 +207,7 @@ export function PostCard({ post, onUpdate }: PostCardProps) {
                 <MessageCircle className="h-6 w-6" />
               </Link>
             </Button>
-            <Button variant="icon" size="icon-sm">
+            <Button variant="icon" size="icon-sm" onClick={() => setShowShareSheet(true)}>
               <Send className="h-6 w-6" />
             </Button>
           </div>
@@ -257,6 +261,23 @@ export function PostCard({ post, onUpdate }: PostCardProps) {
           {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
         </p>
       </div>
+
+      {/* Share Sheet */}
+      <ShareSheet
+        open={showShareSheet}
+        onOpenChange={setShowShareSheet}
+        type="post"
+        itemId={post.id}
+      />
+
+      {/* Block/Report Sheet */}
+      <BlockReportSheet
+        open={showBlockReport}
+        onOpenChange={setShowBlockReport}
+        targetUserId={post.profiles.id}
+        targetUsername={post.profiles.username}
+        context={{ postId: post.id }}
+      />
     </article>
   );
 }

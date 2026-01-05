@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
+import { StoryReactions } from './StoryReactions';
+import { toast } from 'sonner';
 
 interface StoryViewerProps {
   storyGroups: StoryGroup[];
@@ -132,8 +134,72 @@ export function StoryViewer({ storyGroups, initialGroupIndex, onClose }: StoryVi
 
   const handleSendReply = async () => {
     if (!replyText.trim() || !currentStory || !user) return;
-    // TODO: Implement DM reply to story
-    setReplyText('');
+    
+    try {
+      // Find or create conversation with story owner
+      const storyOwnerId = currentStory.user_id;
+      
+      const { data: myConversations } = await supabase
+        .from('conversation_participants')
+        .select('conversation_id')
+        .eq('user_id', user.id);
+
+      const myConvoIds = myConversations?.map(c => c.conversation_id) || [];
+      let conversationId: string | null = null;
+
+      if (myConvoIds.length > 0) {
+        const { data: existingConvo } = await supabase
+          .from('conversation_participants')
+          .select('conversation_id')
+          .eq('user_id', storyOwnerId)
+          .in('conversation_id', myConvoIds)
+          .maybeSingle();
+
+        conversationId = existingConvo?.conversation_id || null;
+      }
+
+      if (!conversationId) {
+        const { data: newConvo, error: convoError } = await supabase
+          .from('conversations')
+          .insert({})
+          .select()
+          .single();
+
+        if (convoError) throw convoError;
+
+        await supabase.from('conversation_participants').insert([
+          { conversation_id: newConvo.id, user_id: user.id },
+          { conversation_id: newConvo.id, user_id: storyOwnerId },
+        ]);
+
+        conversationId = newConvo.id;
+      }
+
+      // Send message with story reference
+      await supabase.from('messages').insert({
+        conversation_id: conversationId,
+        sender_id: user.id,
+        content: replyText.trim(),
+        story_id: currentStory.id,
+      });
+
+      // Create notification
+      await supabase.from('notifications').insert({
+        user_id: storyOwnerId,
+        actor_id: user.id,
+        type: 'story_reply',
+      });
+
+      toast.success('Reply sent!');
+      setReplyText('');
+    } catch (error) {
+      console.error('Error sending story reply:', error);
+      toast.error('Failed to send reply');
+    }
+  };
+
+  const handleQuickReaction = (emoji: string) => {
+    toast.success(`${emoji} reaction sent!`);
   };
 
   if (!currentGroup || !currentStory) return null;
@@ -238,7 +304,7 @@ export function StoryViewer({ storyGroups, initialGroupIndex, onClose }: StoryVi
           )}
 
           {/* Footer */}
-          <div className="absolute bottom-4 left-2 right-2 z-20">
+          <div className="absolute bottom-4 left-2 right-2 z-20 space-y-3">
             {isOwnStory ? (
               <button
                 onClick={(e) => {
@@ -251,27 +317,39 @@ export function StoryViewer({ storyGroups, initialGroupIndex, onClose }: StoryVi
                 <span className="text-sm">{viewers.length} viewers</span>
               </button>
             ) : (
-              <div
-                className="flex gap-2"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Input
-                  placeholder="Reply..."
-                  value={replyText}
-                  onChange={(e) => setReplyText(e.target.value)}
-                  className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-white/50"
-                  onFocus={() => setIsPaused(true)}
-                  onBlur={() => setIsPaused(false)}
+              <div onClick={(e) => e.stopPropagation()} className="space-y-3">
+                {/* Quick reactions */}
+                <StoryReactions 
+                  storyId={currentStory.id} 
+                  storyOwnerId={currentStory.user_id}
+                  onReact={handleQuickReaction}
                 />
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={handleSendReply}
-                  disabled={!replyText.trim()}
-                  className="text-white hover:bg-white/10"
-                >
-                  <Send className="w-5 h-5" />
-                </Button>
+                
+                {/* Reply input */}
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Reply to story..."
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                    onFocus={() => setIsPaused(true)}
+                    onBlur={() => setIsPaused(false)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleSendReply();
+                      }
+                    }}
+                  />
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={handleSendReply}
+                    disabled={!replyText.trim()}
+                    className="text-white hover:bg-white/10"
+                  >
+                    <Send className="w-5 h-5" />
+                  </Button>
+                </div>
               </div>
             )}
           </div>

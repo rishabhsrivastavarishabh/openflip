@@ -10,6 +10,7 @@ import { ArrowLeft, Send, Image as ImageIcon, MoreVertical, Phone, Video, Check,
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Profile, Message } from '@/types/database';
+import { BlockReportSheet } from '@/components/moderation/BlockReportSheet';
 
 interface ChatMessage extends Message {
   isMine: boolean;
@@ -25,6 +26,7 @@ export default function ConversationPage() {
   const [newMessage, setNewMessage] = useState('');
   const [participant, setParticipant] = useState<Profile | null>(null);
   const [isTyping, setIsTyping] = useState(false);
+  const [showBlockReport, setShowBlockReport] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -271,11 +273,22 @@ export default function ConversationPage() {
           <Button variant="ghost" size="icon">
             <Video className="w-5 h-5" />
           </Button>
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" onClick={() => setShowBlockReport(true)}>
             <MoreVertical className="w-5 h-5" />
           </Button>
         </div>
       </div>
+
+      {/* Block/Report Sheet */}
+      {participant && (
+        <BlockReportSheet
+          open={showBlockReport}
+          onOpenChange={setShowBlockReport}
+          targetUserId={participant.id}
+          targetUsername={participant.username}
+          onBlocked={() => navigate('/messages')}
+        />
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
