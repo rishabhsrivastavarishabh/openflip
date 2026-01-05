@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
+import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, MessageCircle, Share2, Bookmark, Music2, MoreHorizontal, Volume2, VolumeX, Play } from 'lucide-react';
 import { Reel } from '@/types/database';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -8,6 +8,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { ShareSheet } from '@/components/share/ShareSheet';
+import { BlockReportSheet } from '@/components/moderation/BlockReportSheet';
 
 interface ReelCardProps {
   reel: Reel;
@@ -23,6 +25,8 @@ export function ReelCard({ reel, isActive, onLike }: ReelCardProps) {
   const [isLiked, setIsLiked] = useState(reel.isLiked || false);
   const [likeCount, setLikeCount] = useState(reel.likeCount || 0);
   const [showHeart, setShowHeart] = useState(false);
+  const [showShareSheet, setShowShareSheet] = useState(false);
+  const [showBlockReport, setShowBlockReport] = useState(false);
 
   // Play/pause based on active state
   useEffect(() => {
@@ -157,13 +161,16 @@ export function ReelCard({ reel, isActive, onLike }: ReelCardProps) {
         </button>
 
         {/* Share */}
-        <button className="flex flex-col items-center gap-1">
+        <button 
+          className="flex flex-col items-center gap-1"
+          onClick={() => setShowShareSheet(true)}
+        >
           <Share2 className="w-7 h-7 text-white" />
           <span className="text-white text-xs font-medium">Share</span>
         </button>
 
         {/* More */}
-        <button>
+        <button onClick={() => setShowBlockReport(true)}>
           <MoreHorizontal className="w-7 h-7 text-white" />
         </button>
 
@@ -211,6 +218,25 @@ export function ReelCard({ reel, isActive, onLike }: ReelCardProps) {
           <Volume2 className="w-5 h-5 text-white" />
         )}
       </button>
+
+      {/* Share Sheet */}
+      <ShareSheet
+        open={showShareSheet}
+        onOpenChange={setShowShareSheet}
+        type="reel"
+        itemId={reel.id}
+      />
+
+      {/* Block/Report Sheet */}
+      {reel.profiles && (
+        <BlockReportSheet
+          open={showBlockReport}
+          onOpenChange={setShowBlockReport}
+          targetUserId={reel.user_id}
+          targetUsername={reel.profiles.username}
+          context={{ reelId: reel.id }}
+        />
+      )}
     </div>
   );
 }

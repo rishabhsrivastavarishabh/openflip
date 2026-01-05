@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, User, Lock, Bell, HelpCircle, LogOut, Camera, ChevronRight, Shield } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { ArrowLeft, User, Lock, Bell, HelpCircle, LogOut, Camera, ChevronRight, Shield, Ban, Trash2 } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +18,8 @@ export default function SettingsPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showBlockedUsers, setShowBlockedUsers] = useState(false);
+  const [blockedUsers, setBlockedUsers] = useState<any[]>([]);
   const [isPrivate, setIsPrivate] = useState(profile?.is_private || false);
   const [formData, setFormData] = useState({
     username: profile?.username || '',
@@ -117,6 +119,104 @@ export default function SettingsPage() {
     navigate('/auth');
   };
 
+  const fetchBlockedUsers = async () => {
+    if (!user) return;
+    
+    const { data } = await (supabase as any)
+      .from('blocked_users')
+      .select(`
+        id,
+        blocked_id,
+        created_at
+      `)
+      .eq('blocker_id', user.id);
+
+    if (data) {
+      // Fetch profiles for blocked users
+      const blockedIds = data.map((b: any) => b.blocked_id);
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .in('id', blockedIds);
+
+      const profilesMap = new Map(profiles?.map(p => [p.id, p]) || []);
+      
+      setBlockedUsers(data.map((b: any) => ({
+        ...b,
+        profile: profilesMap.get(b.blocked_id),
+      })));
+    }
+  };
+
+  const handleUnblock = async (blockedId: string) => {
+    if (!user) return;
+    
+    await (supabase as any)
+      .from('blocked_users')
+      .delete()
+      .eq('blocker_id', user.id)
+      .eq('blocked_id', blockedId);
+
+    setBlockedUsers(prev => prev.filter(b => b.blocked_id !== blockedId));
+    toast.success('User unblocked');
+  };
+
+  useEffect(() => {
+    if (showBlockedUsers) {
+      fetchBlockedUsers();
+    }
+  }, [showBlockedUsers]);
+
+  if (showBlockedUsers) {
+    return (
+      <MainLayout>
+        <div className="max-w-lg mx-auto">
+          <header className="sticky top-0 z-40 glass-strong border-b px-4 py-3">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="icon" onClick={() => setShowBlockedUsers(false)}>
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <h1 className="font-semibold text-lg">Blocked Users</h1>
+            </div>
+          </header>
+
+          <div className="p-4 space-y-2">
+            {blockedUsers.length === 0 ? (
+              <div className="text-center py-12">
+                <Ban className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">No blocked users</p>
+              </div>
+            ) : (
+              blockedUsers.map((blocked) => (
+                <div
+                  key={blocked.id}
+                  className="flex items-center justify-between p-3 rounded-xl bg-secondary/50"
+                >
+                  <div className="flex items-center gap-3">
+                    <Avatar className="w-10 h-10">
+                      <AvatarImage src={blocked.profile?.avatar_url} />
+                      <AvatarFallback>
+                        {blocked.profile?.username?.charAt(0).toUpperCase() || '?'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="font-medium">{blocked.profile?.username || 'Unknown'}</span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleUnblock(blocked.blocked_id)}
+                  >
+                    Unblock
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
   if (showPrivacy) {
     return (
       <MainLayout>
@@ -169,19 +269,31 @@ export default function SettingsPage() {
 
             <Separator />
 
-            <Button
-              variant="outline"
-              className="w-full justify-between"
-              onClick={() => navigate(`/profile/${user.id}/followers`)}
-            >
-              <span>Manage Followers</span>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+              <Button
+                variant="outline"
+                className="w-full justify-between"
+                onClick={() => navigate(`/profile/${user.id}/followers`)}
+              >
+                <span>Manage Followers</span>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+
+              <Button
+                variant="outline"
+                className="w-full justify-between"
+                onClick={() => setShowBlockedUsers(true)}
+              >
+                <div className="flex items-center gap-2">
+                  <Ban className="h-4 w-4" />
+                  <span>Blocked Users</span>
+                </div>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
-        </div>
-      </MainLayout>
-    );
-  }
+        </MainLayout>
+      );
+    }
 
   return (
     <MainLayout>
