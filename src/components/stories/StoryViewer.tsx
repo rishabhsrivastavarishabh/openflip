@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
 import { StoryReactions } from './StoryReactions';
 import { toast } from 'sonner';
+import { ProtectedMedia } from '@/components/media/ProtectedMedia';
 
 interface StoryViewerProps {
   storyGroups: StoryGroup[];
@@ -283,25 +284,14 @@ export function StoryViewer({ storyGroups, initialGroupIndex, onClose }: StoryVi
             </div>
           </div>
 
-          {/* Story media */}
-          {currentStory.media_type === 'video' ? (
-            <video
-              ref={videoRef}
-              src={currentStory.media_url}
-              className="w-full h-full object-contain"
-              autoPlay
-              muted
-              playsInline
-              onPause={() => setIsPaused(true)}
-              onPlay={() => setIsPaused(false)}
-            />
-          ) : (
-            <img
-              src={currentStory.media_url}
-              alt=""
-              className="w-full h-full object-contain"
-            />
-          )}
+          {/* Story media - Protected */}
+          <ProtectedMedia
+            src={currentStory.media_url}
+            type={currentStory.media_type as 'image' | 'video'}
+            className="w-full h-full object-contain"
+            autoPlay={true}
+            muted={true}
+          />
 
           {/* Footer */}
           <div className="absolute bottom-4 left-2 right-2 z-20 space-y-3">

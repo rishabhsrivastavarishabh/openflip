@@ -4,11 +4,13 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { MultiAccountProvider } from "@/contexts/MultiAccountContext";
 import Feed from "./pages/Feed";
 import Auth from "./pages/Auth";
 import Explore from "./pages/Explore";
 import Create from "./pages/Create";
 import Profile from "./pages/Profile";
+import Post from "./pages/Post";
 import Notifications from "./pages/Notifications";
 import Messages from "./pages/Messages";
 import Conversation from "./pages/Conversation";
@@ -24,28 +26,31 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Feed />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/explore" element={<Explore />} />
-            <Route path="/create" element={<Create />} />
-            <Route path="/create/reel" element={<CreateReel />} />
-            <Route path="/reels" element={<Reels />} />
-            <Route path="/profile/:userId" element={<Profile />} />
-            <Route path="/profile/:userId/followers" element={<Followers />} />
-            <Route path="/profile/:userId/following" element={<Following />} />
-            <Route path="/notifications" element={<Notifications />} />
-            <Route path="/messages" element={<Messages />} />
-            <Route path="/messages/:conversationId" element={<Conversation />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+      <MultiAccountProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Feed />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/explore" element={<Explore />} />
+              <Route path="/create" element={<Create />} />
+              <Route path="/create/reel" element={<CreateReel />} />
+              <Route path="/reels" element={<Reels />} />
+              <Route path="/post/:postId" element={<Post />} />
+              <Route path="/profile/:userId" element={<Profile />} />
+              <Route path="/profile/:userId/followers" element={<Followers />} />
+              <Route path="/profile/:userId/following" element={<Following />} />
+              <Route path="/notifications" element={<Notifications />} />
+              <Route path="/messages" element={<Messages />} />
+              <Route path="/messages/:conversationId" element={<Conversation />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </MultiAccountProvider>
     </AuthProvider>
   </QueryClientProvider>
 );

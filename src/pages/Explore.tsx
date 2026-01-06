@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ProtectedMedia } from '@/components/media/ProtectedMedia';
 
 interface ExplorePost {
   id: string;
@@ -228,19 +229,11 @@ export default function ExplorePage() {
                         to={`/post/${post.id}`}
                         className="aspect-square relative group overflow-hidden"
                       >
-                        {post.media_type === 'video' ? (
-                          <video
-                            src={post.media_url}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <img
-                            src={post.media_url}
-                            alt=""
-                            className="w-full h-full object-cover"
-                            loading="lazy"
-                          />
-                        )}
+                        <ProtectedMedia
+                          src={post.media_url}
+                          type={post.media_type}
+                          className="w-full h-full object-cover"
+                        />
                         <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/30 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
                           <div className="flex items-center gap-4 text-primary-foreground font-semibold">
                             <span className="flex items-center gap-1">

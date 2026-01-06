@@ -13,6 +13,7 @@ import { CreateStory } from '@/components/stories/CreateStory';
 import { StoryHighlights } from '@/components/stories/StoryHighlights';
 import { ShareSheet } from '@/components/share/ShareSheet';
 import { BlockReportSheet } from '@/components/moderation/BlockReportSheet';
+import { ProtectedMedia } from '@/components/media/ProtectedMedia';
 
 interface ProfileData {
   id: string;
@@ -579,19 +580,11 @@ export default function ProfilePage() {
                       to={`/post/${post.id}`}
                       className="aspect-square relative group overflow-hidden"
                     >
-                      {post.media_type === 'video' ? (
-                        <video
-                          src={post.media_url}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <img
-                          src={post.media_url}
-                          alt=""
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                      )}
+                      <ProtectedMedia
+                        src={post.media_url}
+                        type={post.media_type}
+                        className="w-full h-full object-cover"
+                      />
                       <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/30 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
                         <div className="flex items-center gap-4 text-primary-foreground font-semibold">
                           <span>❤️ {post.likes_count}</span>
@@ -618,19 +611,11 @@ export default function ProfilePage() {
                     to={`/reels?id=${reel.id}`}
                     className="aspect-[9/16] relative group overflow-hidden"
                   >
-                    {reel.thumbnail_url ? (
-                      <img
-                        src={reel.thumbnail_url}
-                        alt=""
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <video
-                        src={reel.video_url}
-                        className="w-full h-full object-cover"
-                      />
-                    )}
+                    <ProtectedMedia
+                      src={reel.thumbnail_url || reel.video_url}
+                      type={reel.thumbnail_url ? 'image' : 'video'}
+                      className="w-full h-full object-cover"
+                    />
                     <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/30 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
                       <div className="flex items-center gap-4 text-primary-foreground font-semibold text-sm">
                         <span>▶️ {reel.view_count || 0}</span>
@@ -661,11 +646,10 @@ export default function ProfilePage() {
                       to={`/post/${post.id}`}
                       className="aspect-square relative group overflow-hidden"
                     >
-                      <img
+                      <ProtectedMedia
                         src={post.media_url}
-                        alt=""
+                        type={post.media_type}
                         className="w-full h-full object-cover"
-                        loading="lazy"
                       />
                     </Link>
                   ))}
