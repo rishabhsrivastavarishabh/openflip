@@ -1,7 +1,9 @@
-import { Home, Search, PlusSquare, Heart, MessageCircle, User, Menu, LogOut, Settings } from 'lucide-react';
+import { useState } from 'react';
+import { Home, Search, PlusSquare, Heart, MessageCircle, User, Menu, LogOut, Settings, Users } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMultiAccount } from '@/contexts/MultiAccountContext';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -11,11 +13,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { AccountSwitcher } from '@/components/account/AccountSwitcher';
 import openflipLogo from '@/assets/openflip-logo.png';
 
 export function Sidebar() {
   const location = useLocation();
   const { user, profile, signOut } = useAuth();
+  const { accounts } = useMultiAccount();
+  const [showAccountSwitcher, setShowAccountSwitcher] = useState(false);
+
+  const hasMultipleAccounts = accounts.length > 1;
 
   const navItems = [
     { icon: Home, href: '/', label: 'Home' },
@@ -95,6 +102,19 @@ export function Sidebar() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
+              {hasMultipleAccounts && (
+                <>
+                  <DropdownMenuItem onClick={() => setShowAccountSwitcher(true)}>
+                    <Users className="h-4 w-4 mr-2" />
+                    Switch Account
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
+              <DropdownMenuItem onClick={() => setShowAccountSwitcher(true)}>
+                <User className="h-4 w-4 mr-2" />
+                Add Account
+              </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link to="/settings" className="flex items-center gap-2">
                   <Settings className="h-4 w-4" />
@@ -113,6 +133,12 @@ export function Sidebar() {
             <Link to="/auth">Sign in</Link>
           </Button>
         )}
+
+        {/* Account Switcher Modal */}
+        <AccountSwitcher 
+          open={showAccountSwitcher} 
+          onOpenChange={setShowAccountSwitcher} 
+        />
       </div>
     </aside>
   );

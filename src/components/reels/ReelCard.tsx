@@ -10,6 +10,7 @@ import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { ShareSheet } from '@/components/share/ShareSheet';
 import { BlockReportSheet } from '@/components/moderation/BlockReportSheet';
+import { ProtectedMedia } from '@/components/media/ProtectedMedia';
 
 interface ReelCardProps {
   reel: Reel;
@@ -90,18 +91,33 @@ export function ReelCard({ reel, isActive, onLike }: ReelCardProps) {
   };
 
   return (
-    <div className="relative w-full h-full bg-black snap-start snap-always">
-      {/* Video */}
-      <video
-        ref={videoRef}
-        src={reel.video_url}
-        className="w-full h-full object-contain"
-        loop
-        muted={isMuted}
-        playsInline
-        onClick={togglePlay}
-        onDoubleClick={handleDoubleTap}
-      />
+    <div 
+      className="relative w-full h-full bg-black snap-start snap-always"
+      onContextMenu={(e) => e.preventDefault()}
+    >
+      {/* Video - Protected with no download */}
+      <div 
+        className="w-full h-full select-none"
+        style={{ WebkitTouchCallout: 'none' }}
+      >
+        <video
+          ref={videoRef}
+          src={reel.video_url}
+          className="w-full h-full object-contain pointer-events-none"
+          style={{ userSelect: 'none', WebkitUserSelect: 'none' } as React.CSSProperties}
+          loop
+          muted={isMuted}
+          playsInline
+          controlsList="nodownload noplaybackrate"
+          disablePictureInPicture
+        />
+        {/* Overlay for click handling */}
+        <div 
+          className="absolute inset-0"
+          onClick={togglePlay}
+          onDoubleClick={handleDoubleTap}
+        />
+      </div>
 
       {/* Play indicator */}
       <AnimatePresence>

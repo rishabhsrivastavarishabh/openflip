@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { ShareSheet } from '@/components/share/ShareSheet';
 import { BlockReportSheet } from '@/components/moderation/BlockReportSheet';
+import { ProtectedMedia } from '@/components/media/ProtectedMedia';
 
 interface PostCardProps {
   post: Post & {
@@ -155,21 +156,13 @@ export function PostCard({ post, onUpdate }: PostCardProps) {
         className="relative aspect-square bg-muted cursor-pointer"
         onDoubleClick={handleDoubleTap}
       >
-        {post.media_type === 'video' ? (
-          <video
-            src={post.media_url}
-            className="w-full h-full object-cover"
-            controls
-            playsInline
-          />
-        ) : (
-          <img
-            src={post.media_url}
-            alt={post.caption || 'Post image'}
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
-        )}
+        <ProtectedMedia
+          src={post.media_url}
+          type={post.media_type}
+          alt={post.caption || 'Post media'}
+          className="w-full h-full object-cover"
+          controls={post.media_type === 'video'}
+        />
         
         <AnimatePresence>
           {showHeart && (
