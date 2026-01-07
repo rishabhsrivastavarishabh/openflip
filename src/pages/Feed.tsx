@@ -4,13 +4,14 @@ import { PostCard } from '@/components/post/PostCard';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Camera, RefreshCw } from 'lucide-react';
+import { Camera, RefreshCw, Search, Bell, Film } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { StoriesBar } from '@/components/stories/StoriesBar';
 import { StoryViewer } from '@/components/stories/StoryViewer';
 import { CreateStory } from '@/components/stories/CreateStory';
 import { StoryGroup } from '@/types/database';
+import { useUnreadCounts } from '@/hooks/useUnreadCounts';
 interface FeedPost {
   id: string;
   user_id: string;
@@ -34,6 +35,7 @@ interface FeedPost {
 
 export default function FeedPage() {
   const { user } = useAuth();
+  const { unreadNotifications } = useUnreadCounts();
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
@@ -66,10 +68,11 @@ export default function FeedPage() {
       followingIds.push(user.id);
     }
 
-    // Fetch posts - only from followed users + own posts
+    // Fetch posts - only from followed users + own posts, images only (videos go to Reels)
     let query = supabase
       .from('posts')
       .select('*')
+      .eq('media_type', 'image')
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -87,10 +90,11 @@ export default function FeedPage() {
 
     if (!postsData || postsData.length === 0) {
       if (pageNum === 0) {
-        // No posts from following, fetch explore posts instead
+        // No posts from following, fetch explore posts instead (images only)
         const { data: explorePosts } = await supabase
           .from('posts')
           .select('*')
+          .eq('media_type', 'image')
           .order('created_at', { ascending: false })
           .limit(20);
 
@@ -291,6 +295,28 @@ export default function FeedPage() {
                 <span className="text-primary-foreground font-bold text-sm">O</span>
               </div>
               <span className="text-xl font-display font-bold gradient-text">Openflip</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Link to="/reels">
+                <Button variant="ghost" size="icon" className="relative">
+                  <Film className="w-5 h-5" />
+                </Button>
+              </Link>
+              <Link to="/explore">
+                <Button variant="ghost" size="icon">
+                  <Search className="w-5 h-5" />
+                </Button>
+              </Link>
+              <Link to="/notifications">
+                <Button variant="ghost" size="icon" className="relative">
+                  <Bell className="w-5 h-5" />
+                  {unreadNotifications > 0 && (
+                    <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 flex items-center justify-center bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full">
+                      {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                    </span>
+                  )}
+                </Button>
+              </Link>
             </div>
           </div>
         </header>

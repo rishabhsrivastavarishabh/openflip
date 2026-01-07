@@ -1,18 +1,21 @@
-import { Home, Search, PlusSquare, Heart, User } from 'lucide-react';
+import { Home, Search, PlusSquare, MessageCircle, User, Film } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUnreadCounts } from '@/hooks/useUnreadCounts';
 
 export function MobileNav() {
   const location = useLocation();
   const { user } = useAuth();
+  const { unreadMessages } = useUnreadCounts();
 
   const navItems = [
-    { icon: Home, href: '/', label: 'Home' },
-    { icon: Search, href: '/explore', label: 'Explore' },
-    { icon: PlusSquare, href: '/create', label: 'Create' },
-    { icon: Heart, href: '/notifications', label: 'Notifications' },
-    { icon: User, href: user ? `/profile/${user.id}` : '/auth', label: 'Profile' },
+    { icon: Home, href: '/', label: 'Home', badge: 0 },
+    { icon: Search, href: '/explore', label: 'Explore', badge: 0 },
+    { icon: PlusSquare, href: '/create', label: 'Create', badge: 0 },
+    { icon: Film, href: '/reels', label: 'Reels', badge: 0 },
+    { icon: MessageCircle, href: '/messages', label: 'Messages', badge: unreadMessages },
+    { icon: User, href: user ? `/profile/${user.id}` : '/auth', label: 'Profile', badge: 0 },
   ];
 
   return (
@@ -27,7 +30,7 @@ export function MobileNav() {
               key={item.href}
               to={item.href}
               className={cn(
-                "flex items-center justify-center w-12 h-12 rounded-xl transition-all duration-200",
+                "flex items-center justify-center w-12 h-12 rounded-xl transition-all duration-200 relative",
                 isActive 
                   ? "text-primary" 
                   : "text-muted-foreground hover:text-foreground"
@@ -40,6 +43,11 @@ export function MobileNav() {
                 )}
                 fill={isActive ? "currentColor" : "none"}
               />
+              {item.badge > 0 && (
+                <span className="absolute top-1 right-0.5 min-w-[16px] h-4 px-1 flex items-center justify-center bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full">
+                  {item.badge > 99 ? '99+' : item.badge}
+                </span>
+              )}
             </Link>
           );
         })}
