@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { PenSquare, Search } from 'lucide-react';
@@ -19,6 +19,8 @@ interface ConversationItem {
     avatar_url: string | null;
   };
   last_message: string | null;
+  unread_count: number;
+  last_sender_id: string | null;
 }
 
 export default function MessagesPage() {
@@ -27,13 +29,7 @@ export default function MessagesPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
-  useEffect(() => {
-    if (user) {
-      fetchConversations();
-    }
-  }, [user]);
-
-  const fetchConversations = async () => {
+  const fetchConversations = useCallback(async () => {
     if (!user) return;
 
     const { data: participations, error } = await supabase
@@ -70,14 +66,20 @@ export default function MessagesPage() {
     // Get last messages
     const { data: messages } = await supabase
       .from('messages')
-      .select('conversation_id, content, created_at')
+      .select('conversation_id, content, created_at, sender_id, is_read')
       .in('conversation_id', conversationIds)
       .order('created_at', { ascending: false });
 
-    const lastMessages: Record<string, string> = {};
+    const lastMessages: Record<string, { content: string; sender_id: string }> = {};
+    const unreadCounts: Record<string, number> = {};
+    
     messages?.forEach((m: any) => {
       if (!lastMessages[m.conversation_id]) {
-        lastMessages[m.conversation_id] = m.content;
+        lastMessages[m.conversation_id] = { content: m.content, sender_id: m.sender_id };
+      }
+      // Count unread messages not sent by current user
+      if (!m.is_read && m.sender_id !== user.id) {
+        unreadCounts[m.conversation_id] = (unreadCounts[m.conversation_id] || 0) + 1;
       }
     });
 
@@ -94,13 +96,52 @@ export default function MessagesPage() {
           username: 'Unknown',
           avatar_url: null,
         },
-        last_message: lastMessages[p.conversation_id] || null,
+        last_message: lastMessages[p.conversation_id]?.content || null,
+        last_sender_id: lastMessages[p.conversation_id]?.sender_id || null,
+        unread_count: unreadCounts[p.conversation_id] || 0,
       } as ConversationItem;
     });
 
+    // Sort by updated_at descending
+    conversationsData.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+
     setConversations(conversationsData);
     setLoading(false);
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchConversations();
+    }
+  }, [user, fetchConversations]);
+
+  // Subscribe to new messages for real-time updates
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('messages-list')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'messages',
+        },
+        () => {
+          fetchConversations();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, fetchConversations]);
+
+  const filteredConversations = conversations.filter(c =>
+    c.participant.username.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   if (!user) {
     return (
@@ -147,31 +188,43 @@ export default function MessagesPage() {
                 </div>
               </div>
             ))
-          ) : conversations.length > 0 ? (
-            conversations.map(conversation => (
+          ) : filteredConversations.length > 0 ? (
+            filteredConversations.map(conversation => (
               <Link
                 key={conversation.id}
                 to={`/messages/${conversation.id}`}
                 className="flex items-center gap-3 p-4 hover:bg-secondary/50 transition-colors"
               >
-                <Avatar className="h-14 w-14">
-                  <AvatarImage src={conversation.participant.avatar_url || undefined} />
-                  <AvatarFallback className="bg-primary/10 text-primary text-lg">
-                    {conversation.participant.username.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
+                <div className="relative">
+                  <Avatar className="h-14 w-14">
+                    <AvatarImage src={conversation.participant.avatar_url || undefined} />
+                    <AvatarFallback className="bg-primary/10 text-primary text-lg">
+                      {conversation.participant.username.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold">{conversation.participant.username}</span>
+                    <span className={`font-semibold ${conversation.unread_count > 0 ? 'text-foreground' : ''}`}>
+                      {conversation.participant.username}
+                    </span>
                     <span className="text-xs text-muted-foreground">
                       {formatDistanceToNow(new Date(conversation.updated_at), { addSuffix: false })}
                     </span>
                   </div>
-                  {conversation.last_message && (
-                    <p className="text-sm text-muted-foreground truncate">
-                      {conversation.last_message}
-                    </p>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {conversation.last_message && (
+                      <p className={`text-sm truncate flex-1 ${conversation.unread_count > 0 ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+                        {conversation.last_sender_id === user.id && 'You: '}
+                        {conversation.last_message}
+                      </p>
+                    )}
+                    {conversation.unread_count > 0 && (
+                      <span className="min-w-[20px] h-5 px-1.5 flex items-center justify-center bg-primary text-primary-foreground text-xs font-bold rounded-full">
+                        {conversation.unread_count}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </Link>
             ))

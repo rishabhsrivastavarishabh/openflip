@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Home, Search, PlusSquare, Heart, MessageCircle, User, Menu, LogOut, Settings, Users } from 'lucide-react';
+import { Home, Search, PlusSquare, Heart, MessageCircle, User, Menu, LogOut, Settings, Users, Film } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMultiAccount } from '@/contexts/MultiAccountContext';
+import { useUnreadCounts } from '@/hooks/useUnreadCounts';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -20,17 +21,19 @@ export function Sidebar() {
   const location = useLocation();
   const { user, profile, signOut } = useAuth();
   const { accounts } = useMultiAccount();
+  const { unreadMessages, unreadNotifications } = useUnreadCounts();
   const [showAccountSwitcher, setShowAccountSwitcher] = useState(false);
 
   const hasMultipleAccounts = accounts.length > 1;
 
   const navItems = [
-    { icon: Home, href: '/', label: 'Home' },
-    { icon: Search, href: '/explore', label: 'Explore' },
-    { icon: PlusSquare, href: '/create', label: 'Create' },
-    { icon: MessageCircle, href: '/messages', label: 'Messages' },
-    { icon: Heart, href: '/notifications', label: 'Notifications' },
-    { icon: User, href: user ? `/profile/${user.id}` : '/auth', label: 'Profile' },
+    { icon: Home, href: '/', label: 'Home', badge: 0 },
+    { icon: Search, href: '/explore', label: 'Explore', badge: 0 },
+    { icon: Film, href: '/reels', label: 'Reels', badge: 0 },
+    { icon: PlusSquare, href: '/create', label: 'Create', badge: 0 },
+    { icon: MessageCircle, href: '/messages', label: 'Messages', badge: unreadMessages },
+    { icon: Heart, href: '/notifications', label: 'Notifications', badge: unreadNotifications },
+    { icon: User, href: user ? `/profile/${user.id}` : '/auth', label: 'Profile', badge: 0 },
   ];
 
   return (
@@ -54,20 +57,32 @@ export function Sidebar() {
                 <Link
                   to={item.href}
                   className={cn(
-                    "flex items-center gap-4 px-3 py-3 rounded-xl transition-all duration-200 group",
+                    "flex items-center gap-4 px-3 py-3 rounded-xl transition-all duration-200 group relative",
                     isActive
                       ? "bg-secondary text-foreground font-medium"
                       : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
                   )}
                 >
-                  <item.icon
-                    className={cn(
-                      "w-6 h-6 transition-transform duration-200 group-hover:scale-110",
-                      isActive && "scale-110"
+                  <div className="relative">
+                    <item.icon
+                      className={cn(
+                        "w-6 h-6 transition-transform duration-200 group-hover:scale-110",
+                        isActive && "scale-110"
+                      )}
+                      strokeWidth={isActive ? 2.5 : 2}
+                    />
+                    {item.badge > 0 && (
+                      <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-destructive text-destructive-foreground text-xs font-bold rounded-full">
+                        {item.badge > 99 ? '99+' : item.badge}
+                      </span>
                     )}
-                    strokeWidth={isActive ? 2.5 : 2}
-                  />
+                  </div>
                   <span className="hidden lg:block">{item.label}</span>
+                  {item.badge > 0 && (
+                    <span className="hidden lg:flex ml-auto min-w-[20px] h-5 px-1.5 items-center justify-center bg-destructive text-destructive-foreground text-xs font-bold rounded-full">
+                      {item.badge > 99 ? '99+' : item.badge}
+                    </span>
+                  )}
                 </Link>
               </li>
             );
