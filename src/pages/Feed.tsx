@@ -253,11 +253,6 @@ export default function FeedPage() {
               <span className="text-xl font-display font-bold gradient-text">Openflip</span>
             </div>
             <div className="flex items-center gap-1">
-              <Link to="/reels">
-                <Button variant="ghost" size="icon" className="relative">
-                  
-                </Button>
-              </Link>
               <Link to="/explore">
                 <Button variant="ghost" size="icon">
                   <Search className="w-5 h-5" />
