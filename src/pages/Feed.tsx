@@ -12,6 +12,7 @@ import { StoryViewer } from '@/components/stories/StoryViewer';
 import { CreateStory } from '@/components/stories/CreateStory';
 import { StoryGroup } from '@/types/database';
 import { useUnreadCounts } from '@/hooks/useUnreadCounts';
+import openflipLogo from '@/assets/openflip-logo.png';
 interface FeedPost {
   id: string;
   user_id: string;
@@ -247,9 +248,7 @@ export default function FeedPage() {
         <header className="sticky top-0 z-40 glass-strong border-b px-4 py-4 md:hidden">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-sm">O</span>
-              </div>
+              <img src={openflipLogo} alt="Openflip" className="w-8 h-8 rounded-lg object-cover" />
               <span className="text-xl font-display font-bold gradient-text">Openflip</span>
             </div>
             <div className="flex items-center gap-1">
