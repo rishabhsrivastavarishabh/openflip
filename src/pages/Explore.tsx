@@ -216,18 +216,18 @@ export default function ExplorePage() {
 
               <TabsContent value="posts">
                 {loading ? (
-                  <div className="grid grid-cols-3 gap-1">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1">
                     {Array.from({ length: 12 }).map((_, i) => (
                       <Skeleton key={i} className="aspect-square" />
                     ))}
                   </div>
                 ) : posts.length > 0 ? (
-                  <div className="grid grid-cols-3 gap-1">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1">
                     {posts.map(post => (
                       <Link
                         key={post.id}
                         to={`/post/${post.id}`}
-                        className="aspect-square relative group overflow-hidden"
+                        className="aspect-square relative group overflow-hidden rounded-sm"
                       >
                         <ProtectedMedia
                           src={post.media_url}
@@ -235,7 +235,7 @@ export default function ExplorePage() {
                           className="w-full h-full object-cover"
                         />
                         <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/30 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                          <div className="flex items-center gap-4 text-primary-foreground font-semibold">
+                          <div className="flex items-center gap-2 sm:gap-4 text-primary-foreground font-semibold text-xs sm:text-sm">
                             <span className="flex items-center gap-1">
                               ❤️ {post.likes_count}
                             </span>

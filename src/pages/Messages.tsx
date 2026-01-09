@@ -158,7 +158,7 @@ export default function MessagesPage() {
 
   return (
     <MainLayout>
-      <div className="max-w-lg mx-auto">
+      <div className="max-w-2xl mx-auto">
         <header className="sticky top-0 z-40 glass-strong border-b px-4 py-3">
           <div className="flex items-center justify-between mb-3">
             <h1 className="font-semibold text-lg">Messages</h1>

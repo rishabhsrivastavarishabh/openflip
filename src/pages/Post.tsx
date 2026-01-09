@@ -16,6 +16,7 @@ import { ShareSheet } from '@/components/share/ShareSheet';
 import { BlockReportSheet } from '@/components/moderation/BlockReportSheet';
 import { ProtectedMedia } from '@/components/media/ProtectedMedia';
 import { useFollowRelationship } from '@/hooks/useFollowRelationship';
+import { PostActions } from '@/components/post/PostActions';
 
 interface PostData {
   id: string;
@@ -366,19 +367,26 @@ export default function PostPage() {
             </div>
           </Link>
           <div className="flex items-center gap-2">
-            {!isOwnPost && (
-              <Button
-                variant={isFollowing ? 'secondary' : 'gradient'}
-                size="sm"
-                onClick={handleFollow}
-                disabled={followLoading || followActionLoading}
-              >
-                {isFollowing ? 'Following' : 'Follow'}
-              </Button>
+            {isOwnPost ? (
+              <PostActions 
+                postId={postId!} 
+                onDeleted={() => navigate(-1)}
+              />
+            ) : (
+              <>
+                <Button
+                  variant={isFollowing ? 'secondary' : 'gradient'}
+                  size="sm"
+                  onClick={handleFollow}
+                  disabled={followLoading || followActionLoading}
+                >
+                  {isFollowing ? 'Following' : 'Follow'}
+                </Button>
+                <Button variant="ghost" size="icon-sm" onClick={() => setShowBlockReport(true)}>
+                  <MoreHorizontal className="h-5 w-5" />
+                </Button>
+              </>
             )}
-            <Button variant="ghost" size="icon-sm" onClick={() => setShowBlockReport(true)}>
-              <MoreHorizontal className="h-5 w-5" />
-            </Button>
           </div>
         </div>
 

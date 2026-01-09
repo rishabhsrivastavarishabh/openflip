@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Grid3X3, Bookmark, Settings, UserPlus, UserMinus, MessageCircle, Plus, Film, Lock, Clock, Share2, MoreHorizontal } from 'lucide-react';
+import { Grid3X3, Bookmark, Settings, UserPlus, UserMinus, MessageCircle, Plus, Film, Lock, Clock, Share2, MoreHorizontal, Pin } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -14,6 +14,7 @@ import { StoryHighlights } from '@/components/stories/StoryHighlights';
 import { ShareSheet } from '@/components/share/ShareSheet';
 import { BlockReportSheet } from '@/components/moderation/BlockReportSheet';
 import { ProtectedMedia } from '@/components/media/ProtectedMedia';
+import { PostActions } from '@/components/post/PostActions';
 
 interface ProfileData {
   id: string;
@@ -32,6 +33,8 @@ interface ProfilePost {
   media_type: 'image' | 'video';
   likes_count: number;
   comments_count: number;
+  is_pinned?: boolean;
+  pinned_at?: string;
 }
 
 interface ProfileReel {
@@ -108,7 +111,7 @@ export default function ProfilePage() {
   const fetchPosts = async () => {
     const { data: postsData } = await supabase
       .from('posts')
-      .select('id, media_url, media_type')
+      .select('id, media_url, media_type, is_pinned, pinned_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
@@ -135,11 +138,21 @@ export default function ProfilePage() {
         commentsCounts[comment.post_id] = (commentsCounts[comment.post_id] || 0) + 1;
       });
 
-      setPosts(postsData.map(post => ({
+      // Sort: pinned posts first, then by created_at
+      const enrichedPosts = postsData.map(post => ({
         ...post,
         likes_count: likesCounts[post.id] || 0,
         comments_count: commentsCounts[post.id] || 0,
-      })) as ProfilePost[]);
+      })) as ProfilePost[];
+
+      // Sort pinned posts to the top
+      enrichedPosts.sort((a, b) => {
+        if (a.is_pinned && !b.is_pinned) return -1;
+        if (!a.is_pinned && b.is_pinned) return 1;
+        return 0;
+      });
+
+      setPosts(enrichedPosts);
     }
   };
 
@@ -573,25 +586,38 @@ export default function ProfilePage() {
 
             <TabsContent value="posts" className="mt-0">
               {posts.length > 0 ? (
-                <div className="grid grid-cols-3 gap-0.5">
+                <div className="grid grid-cols-3 gap-0.5 sm:gap-1">
                   {posts.map(post => (
-                    <Link
-                      key={post.id}
-                      to={`/post/${post.id}`}
-                      className="aspect-square relative group overflow-hidden"
-                    >
-                      <ProtectedMedia
-                        src={post.media_url}
-                        type={post.media_type}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/30 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                        <div className="flex items-center gap-4 text-primary-foreground font-semibold">
-                          <span>❤️ {post.likes_count}</span>
-                          <span>💬 {post.comments_count}</span>
+                    <div key={post.id} className="aspect-square relative group overflow-hidden">
+                      <Link to={`/post/${post.id}`} className="block w-full h-full">
+                        <ProtectedMedia
+                          src={post.media_url}
+                          type={post.media_type}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/30 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                          <div className="flex items-center gap-4 text-primary-foreground font-semibold text-xs sm:text-sm">
+                            <span>❤️ {post.likes_count}</span>
+                            <span>💬 {post.comments_count}</span>
+                          </div>
                         </div>
-                      </div>
-                    </Link>
+                      </Link>
+                      {post.is_pinned && (
+                        <div className="absolute top-1 left-1 bg-background/80 backdrop-blur-sm rounded-full p-1">
+                          <Pin className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
+                        </div>
+                      )}
+                      {isOwnProfile && (
+                        <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <PostActions 
+                            postId={post.id}
+                            isPinned={post.is_pinned}
+                            onDeleted={fetchPosts}
+                            onPinChanged={fetchPosts}
+                          />
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
               ) : (
@@ -604,7 +630,7 @@ export default function ProfilePage() {
 
           <TabsContent value="reels" className="mt-0">
             {reels.length > 0 ? (
-              <div className="grid grid-cols-3 gap-0.5">
+              <div className="grid grid-cols-3 gap-0.5 sm:gap-1">
                 {reels.map(reel => (
                   <Link
                     key={reel.id}
@@ -617,12 +643,12 @@ export default function ProfilePage() {
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/30 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                      <div className="flex items-center gap-4 text-primary-foreground font-semibold text-sm">
+                      <div className="flex items-center gap-2 sm:gap-4 text-primary-foreground font-semibold text-xs sm:text-sm">
                         <span>▶️ {reel.view_count || 0}</span>
                         <span>❤️ {reel.likes_count}</span>
                       </div>
                     </div>
-                    <div className="absolute bottom-2 left-2 flex items-center gap-1 text-white text-xs">
+                    <div className="absolute bottom-1 left-1 sm:bottom-2 sm:left-2 flex items-center gap-1 text-white text-xs">
                       <Film className="w-3 h-3" />
                     </div>
                   </Link>
@@ -639,7 +665,7 @@ export default function ProfilePage() {
           {isOwnProfile && (
             <TabsContent value="saved" className="mt-0">
               {savedPosts.length > 0 ? (
-                <div className="grid grid-cols-3 gap-0.5">
+                <div className="grid grid-cols-3 gap-0.5 sm:gap-1">
                   {savedPosts.map(post => (
                     <Link
                       key={post.id}
@@ -651,6 +677,7 @@ export default function ProfilePage() {
                         type={post.media_type}
                         className="w-full h-full object-cover"
                       />
+                      <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/30 transition-colors" />
                     </Link>
                   ))}
                 </div>
