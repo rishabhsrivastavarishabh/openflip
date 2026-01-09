@@ -109,6 +109,39 @@ export type Database = {
         }
         Relationships: []
       }
+      drafts: {
+        Row: {
+          caption: string | null
+          created_at: string | null
+          id: string
+          location: string | null
+          media_type: string | null
+          media_url: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string | null
+          id?: string
+          location?: string | null
+          media_type?: string | null
+          media_url?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string | null
+          id?: string
+          location?: string | null
+          media_type?: string | null
+          media_url?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       follow_requests: {
         Row: {
           created_at: string | null
@@ -322,9 +355,11 @@ export type Database = {
           caption: string | null
           created_at: string | null
           id: string
+          is_pinned: boolean | null
           location: string | null
           media_type: string
           media_url: string
+          pinned_at: string | null
           updated_at: string | null
           user_id: string
         }
@@ -332,9 +367,11 @@ export type Database = {
           caption?: string | null
           created_at?: string | null
           id?: string
+          is_pinned?: boolean | null
           location?: string | null
           media_type: string
           media_url: string
+          pinned_at?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -342,9 +379,11 @@ export type Database = {
           caption?: string | null
           created_at?: string | null
           id?: string
+          is_pinned?: boolean | null
           location?: string | null
           media_type?: string
           media_url?: string
+          pinned_at?: string | null
           updated_at?: string | null
           user_id?: string
         }
@@ -520,6 +559,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      search_history: {
+        Row: {
+          created_at: string | null
+          id: string
+          query: string
+          search_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          query: string
+          search_type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          query?: string
+          search_type?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       stories: {
         Row: {
