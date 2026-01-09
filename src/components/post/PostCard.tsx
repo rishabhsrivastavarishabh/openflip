@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { ShareSheet } from '@/components/share/ShareSheet';
 import { BlockReportSheet } from '@/components/moderation/BlockReportSheet';
 import { ProtectedMedia } from '@/components/media/ProtectedMedia';
+import { PostActions } from '@/components/post/PostActions';
 
 interface PostCardProps {
   post: Post & {
@@ -146,9 +147,13 @@ export function PostCard({ post, onUpdate }: PostCardProps) {
             )}
           </div>
         </Link>
-        <Button variant="ghost" size="icon-sm" onClick={() => setShowBlockReport(true)}>
-          <MoreHorizontal className="h-5 w-5" />
-        </Button>
+        {user?.id === post.profiles.id ? (
+          <PostActions postId={post.id} onDeleted={onUpdate} />
+        ) : (
+          <Button variant="ghost" size="icon-sm" onClick={() => setShowBlockReport(true)}>
+            <MoreHorizontal className="h-5 w-5" />
+          </Button>
+        )}
       </div>
 
       {/* Media */}

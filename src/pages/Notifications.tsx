@@ -223,7 +223,7 @@ export default function NotificationsPage() {
 
   return (
     <MainLayout>
-      <div className="max-w-lg mx-auto">
+      <div className="max-w-2xl mx-auto">
         <header className="sticky top-0 z-40 glass-strong border-b px-4 py-4">
           <h1 className="font-semibold text-lg">Notifications</h1>
         </header>
