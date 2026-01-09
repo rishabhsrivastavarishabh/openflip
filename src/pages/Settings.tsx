@@ -417,6 +417,27 @@ export default function SettingsPage() {
 
           <Separator />
 
+          {/* Legal */}
+          <div className="space-y-2">
+            <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Legal</h2>
+            <Link
+              to="/privacy"
+              className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-secondary transition-colors"
+            >
+              <span>Privacy Policy</span>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </Link>
+            <Link
+              to="/terms"
+              className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-secondary transition-colors"
+            >
+              <span>Terms of Service</span>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </Link>
+          </div>
+
+          <Separator />
+
           <Button
             variant="ghost"
             className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"

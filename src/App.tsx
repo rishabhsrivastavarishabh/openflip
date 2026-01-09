@@ -18,6 +18,9 @@ import Settings from "./pages/Settings";
 import Reels from "./pages/Reels";
 import Followers from "./pages/Followers";
 import Following from "./pages/Following";
+import Search from "./pages/Search";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 import { CreateReel } from "./components/reels/CreateReel";
 import NotFound from "./pages/NotFound";
 
@@ -35,6 +38,7 @@ const App = () => (
               <Route path="/" element={<Feed />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/explore" element={<Explore />} />
+              <Route path="/search" element={<Search />} />
               <Route path="/create" element={<Create />} />
               <Route path="/create/reel" element={<CreateReel />} />
               <Route path="/reels" element={<Reels />} />
@@ -46,6 +50,8 @@ const App = () => (
               <Route path="/messages" element={<Messages />} />
               <Route path="/messages/:conversationId" element={<Conversation />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/terms" element={<TermsOfService />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
