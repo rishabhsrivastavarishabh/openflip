@@ -9,6 +9,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { OnlineIndicator } from '@/components/messages/OnlineIndicator';
+import { NewMessageModal } from '@/components/messages/NewMessageModal';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 
 interface ConversationItem {
   id: string;
@@ -21,6 +24,9 @@ interface ConversationItem {
   last_message: string | null;
   unread_count: number;
   last_sender_id: string | null;
+  is_group?: boolean;
+  group_name?: string;
+  group_avatar_url?: string;
 }
 
 export default function MessagesPage() {
@@ -28,16 +34,15 @@ export default function MessagesPage() {
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showNewMessage, setShowNewMessage] = useState(false);
+  const { fetchOnlineStatus, subscribeToOnlineStatus, isUserOnline } = useOnlineStatus();
 
   const fetchConversations = useCallback(async () => {
     if (!user) return;
 
     const { data: participations, error } = await supabase
       .from('conversation_participants')
-      .select(`
-        conversation_id,
-        conversations(id, updated_at)
-      `)
+      .select(`conversation_id, conversations(id, updated_at)`)
       .eq('user_id', user.id);
 
     if (error || !participations) {
@@ -52,18 +57,12 @@ export default function MessagesPage() {
       return;
     }
 
-    // Get other participants
     const { data: allParticipants } = await supabase
       .from('conversation_participants')
-      .select(`
-        conversation_id,
-        user_id,
-        profiles(id, username, avatar_url)
-      `)
+      .select(`conversation_id, user_id, profiles(id, username, avatar_url)`)
       .in('conversation_id', conversationIds)
       .neq('user_id', user.id);
 
-    // Get last messages
     const { data: messages } = await supabase
       .from('messages')
       .select('conversation_id, content, created_at, sender_id, is_read')
@@ -77,7 +76,6 @@ export default function MessagesPage() {
       if (!lastMessages[m.conversation_id]) {
         lastMessages[m.conversation_id] = { content: m.content, sender_id: m.sender_id };
       }
-      // Count unread messages not sent by current user
       if (!m.is_read && m.sender_id !== user.id) {
         unreadCounts[m.conversation_id] = (unreadCounts[m.conversation_id] || 0) + 1;
       }
@@ -91,53 +89,46 @@ export default function MessagesPage() {
       return {
         id: p.conversation_id,
         updated_at: p.conversations?.updated_at || '',
-        participant: otherParticipant?.profiles || {
-          id: '',
-          username: 'Unknown',
-          avatar_url: null,
-        },
+        participant: otherParticipant?.profiles || { id: '', username: 'Unknown', avatar_url: null },
         last_message: lastMessages[p.conversation_id]?.content || null,
         last_sender_id: lastMessages[p.conversation_id]?.sender_id || null,
         unread_count: unreadCounts[p.conversation_id] || 0,
       } as ConversationItem;
     });
 
-    // Sort by updated_at descending
     conversationsData.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
-
     setConversations(conversationsData);
     setLoading(false);
-  }, [user]);
+
+    // Fetch online status for all participants
+    const participantIds = conversationsData.map(c => c.participant.id).filter(Boolean);
+    if (participantIds.length > 0) {
+      fetchOnlineStatus(participantIds);
+    }
+  }, [user, fetchOnlineStatus]);
 
   useEffect(() => {
-    if (user) {
-      fetchConversations();
-    }
+    if (user) fetchConversations();
   }, [user, fetchConversations]);
 
-  // Subscribe to new messages for real-time updates
   useEffect(() => {
     if (!user) return;
 
     const channel = supabase
       .channel('messages-list')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'messages',
-        },
-        () => {
-          fetchConversations();
-        }
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => fetchConversations())
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [user, fetchConversations]);
+
+  // Subscribe to online status
+  useEffect(() => {
+    const participantIds = conversations.map(c => c.participant.id).filter(Boolean);
+    if (participantIds.length > 0) {
+      return subscribeToOnlineStatus(participantIds);
+    }
+  }, [conversations, subscribeToOnlineStatus]);
 
   const filteredConversations = conversations.filter(c =>
     c.participant.username.toLowerCase().includes(searchQuery.toLowerCase())
@@ -162,7 +153,7 @@ export default function MessagesPage() {
         <header className="sticky top-0 z-40 glass-strong border-b px-4 py-3">
           <div className="flex items-center justify-between mb-3">
             <h1 className="font-semibold text-lg">Messages</h1>
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" onClick={() => setShowNewMessage(true)}>
               <PenSquare className="h-5 w-5" />
             </Button>
           </div>
@@ -202,6 +193,9 @@ export default function MessagesPage() {
                       {conversation.participant.username.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
+                  {isUserOnline(conversation.participant.id) && (
+                    <OnlineIndicator isOnline={true} size="md" className="absolute bottom-0 right-0" />
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
@@ -232,16 +226,16 @@ export default function MessagesPage() {
             <div className="text-center py-12">
               <PenSquare className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="font-semibold mb-2">No messages yet</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Start a conversation with someone from their profile
-              </p>
-              <Button asChild variant="gradient">
-                <Link to="/explore">Find people</Link>
+              <p className="text-sm text-muted-foreground mb-4">Start a conversation with someone</p>
+              <Button variant="gradient" onClick={() => setShowNewMessage(true)}>
+                New Message
               </Button>
             </div>
           )}
         </div>
       </div>
+
+      <NewMessageModal open={showNewMessage} onOpenChange={setShowNewMessage} />
     </MainLayout>
   );
 }
