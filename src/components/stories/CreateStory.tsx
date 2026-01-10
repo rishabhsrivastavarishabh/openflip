@@ -95,7 +95,7 @@ export function CreateStory({
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex items-center justify-center p-4 px-[5px] py-[2px]">
+      <div className="flex-1 p-4 px-[5px] py-[2px] flex-row flex items-start justify-center">
         {preview ? <div className="relative max-w-sm w-full aspect-[9/16] rounded-2xl overflow-hidden bg-black">
             {file?.type.startsWith('video/') ? <video src={preview} className="w-full h-full object-contain" controls autoPlay muted loop /> : <img src={preview} alt="Preview" className="w-full h-full object-contain" />}
             <button onClick={() => {
