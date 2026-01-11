@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, MessageCircle, Share2, Bookmark, Music2, MoreHorizontal, Volume2, VolumeX, Play } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Bookmark, Music2, MoreHorizontal, Volume2, VolumeX, Play, Eye, UserPlus } from 'lucide-react';
 import { Reel } from '@/types/database';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,8 @@ import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { ShareSheet } from '@/components/share/ShareSheet';
 import { BlockReportSheet } from '@/components/moderation/BlockReportSheet';
-import { ProtectedMedia } from '@/components/media/ProtectedMedia';
+import { ReelProgress } from './ReelProgress';
+import { ReelComments } from './ReelComments';
 
 interface ReelCardProps {
   reel: Reel;
@@ -24,10 +25,62 @@ export function ReelCard({ reel, isActive, onLike }: ReelCardProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [isLiked, setIsLiked] = useState(reel.isLiked || false);
+  const [isSaved, setIsSaved] = useState(false);
   const [likeCount, setLikeCount] = useState(reel.likeCount || 0);
   const [showHeart, setShowHeart] = useState(false);
   const [showShareSheet, setShowShareSheet] = useState(false);
   const [showBlockReport, setShowBlockReport] = useState(false);
+  const [showComments, setShowComments] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+
+  // Check follow status
+  useEffect(() => {
+    if (user && reel.user_id !== user.id) {
+      checkFollowStatus();
+    }
+  }, [user, reel.user_id]);
+
+  const checkFollowStatus = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('follows')
+      .select('id')
+      .eq('follower_id', user.id)
+      .eq('following_id', reel.user_id)
+      .maybeSingle();
+    setIsFollowing(!!data);
+  };
+
+  const handleFollow = async () => {
+    if (!user || followLoading) return;
+    setFollowLoading(true);
+
+    if (isFollowing) {
+      await supabase.from('follows').delete()
+        .eq('follower_id', user.id)
+        .eq('following_id', reel.user_id);
+      setIsFollowing(false);
+    } else {
+      await supabase.from('follows').insert({
+        follower_id: user.id,
+        following_id: reel.user_id,
+      });
+      await supabase.from('notifications').insert({
+        user_id: reel.user_id,
+        actor_id: user.id,
+        type: 'follow',
+      });
+      setIsFollowing(true);
+    }
+    setFollowLoading(false);
+  };
+
+  const handleSave = async () => {
+    if (!user) return;
+    setIsSaved(!isSaved);
+    // Note: Would need a reel_saves table for full implementation
+  };
 
   // Play/pause based on active state
   useEffect(() => {
@@ -150,72 +203,137 @@ export function ReelCard({ reel, isActive, onLike }: ReelCardProps) {
       </AnimatePresence>
 
       {/* Right actions */}
-      <div className="absolute right-3 bottom-24 flex flex-col items-center gap-5">
-        {/* Profile */}
-        <Link to={`/profile/${reel.user_id}`} className="relative">
-          <Avatar className="w-11 h-11 ring-2 ring-white">
-            <AvatarImage src={reel.profiles?.avatar_url || undefined} />
-            <AvatarFallback>{reel.profiles?.username?.charAt(0).toUpperCase()}</AvatarFallback>
-          </Avatar>
-          <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-5 h-5 bg-primary rounded-full flex items-center justify-center border-2 border-black">
-            <span className="text-primary-foreground text-xs">+</span>
-          </div>
-        </Link>
+      <div className="absolute right-3 bottom-32 flex flex-col items-center gap-4">
+        {/* Profile with follow */}
+        <div className="relative">
+          <Link to={`/profile/${reel.user_id}`}>
+            <Avatar className="w-12 h-12 ring-2 ring-white shadow-lg">
+              <AvatarImage src={reel.profiles?.avatar_url || undefined} />
+              <AvatarFallback>{reel.profiles?.username?.charAt(0).toUpperCase()}</AvatarFallback>
+            </Avatar>
+          </Link>
+          {user && user.id !== reel.user_id && !isFollowing && (
+            <button
+              onClick={handleFollow}
+              disabled={followLoading}
+              className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-6 h-6 bg-primary rounded-full flex items-center justify-center border-2 border-black hover:bg-primary/90 transition-colors"
+            >
+              <UserPlus className="w-3 h-3 text-primary-foreground" />
+            </button>
+          )}
+        </div>
 
         {/* Like */}
-        <button onClick={handleLike} className="flex flex-col items-center gap-1">
-          <Heart
-            className={cn('w-7 h-7', isLiked ? 'text-destructive fill-destructive' : 'text-white')}
-          />
+        <button onClick={handleLike} className="flex flex-col items-center gap-1 active:scale-90 transition-transform">
+          <div className={cn(
+            "w-12 h-12 rounded-full flex items-center justify-center",
+            isLiked ? "bg-destructive/20" : "bg-white/10"
+          )}>
+            <Heart
+              className={cn('w-6 h-6 transition-all', isLiked ? 'text-destructive fill-destructive scale-110' : 'text-white')}
+            />
+          </div>
           <span className="text-white text-xs font-medium">{likeCount}</span>
         </button>
 
         {/* Comment */}
-        <button className="flex flex-col items-center gap-1">
-          <MessageCircle className="w-7 h-7 text-white" />
+        <button 
+          className="flex flex-col items-center gap-1 active:scale-90 transition-transform"
+          onClick={() => setShowComments(true)}
+        >
+          <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
+            <MessageCircle className="w-6 h-6 text-white" />
+          </div>
           <span className="text-white text-xs font-medium">{reel.commentCount || 0}</span>
+        </button>
+
+        {/* Save */}
+        <button 
+          className="flex flex-col items-center gap-1 active:scale-90 transition-transform"
+          onClick={handleSave}
+        >
+          <div className={cn(
+            "w-12 h-12 rounded-full flex items-center justify-center",
+            isSaved ? "bg-primary/20" : "bg-white/10"
+          )}>
+            <Bookmark className={cn('w-6 h-6', isSaved ? 'text-primary fill-primary' : 'text-white')} />
+          </div>
+          <span className="text-white text-xs font-medium">Save</span>
         </button>
 
         {/* Share */}
         <button 
-          className="flex flex-col items-center gap-1"
+          className="flex flex-col items-center gap-1 active:scale-90 transition-transform"
           onClick={() => setShowShareSheet(true)}
         >
-          <Share2 className="w-7 h-7 text-white" />
+          <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
+            <Share2 className="w-6 h-6 text-white" />
+          </div>
           <span className="text-white text-xs font-medium">Share</span>
         </button>
 
         {/* More */}
-        <button onClick={() => setShowBlockReport(true)}>
-          <MoreHorizontal className="w-7 h-7 text-white" />
+        <button 
+          onClick={() => setShowBlockReport(true)}
+          className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center active:scale-90 transition-transform"
+        >
+          <MoreHorizontal className="w-6 h-6 text-white" />
         </button>
 
         {/* Audio disc */}
         {reel.audio_name && (
-          <div className="w-11 h-11 rounded-full bg-gradient-to-r from-muted to-muted/80 flex items-center justify-center animate-spin-slow">
-            <div className="w-4 h-4 rounded-full bg-black" />
-          </div>
+          <motion.div 
+            animate={{ rotate: isPlaying ? 360 : 0 }}
+            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+            className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg"
+          >
+            <div className="w-3 h-3 rounded-full bg-black" />
+          </motion.div>
         )}
       </div>
 
       {/* Bottom info */}
-      <div className="absolute left-3 right-16 bottom-6 space-y-3">
-        {/* Username */}
-        <Link to={`/profile/${reel.user_id}`} className="flex items-center gap-2">
-          <span className="text-white font-semibold">{reel.profiles?.username}</span>
-        </Link>
+      <div className="absolute left-4 right-20 bottom-8 space-y-3">
+        {/* Username + Follow */}
+        <div className="flex items-center gap-3">
+          <Link to={`/profile/${reel.user_id}`} className="flex items-center gap-2">
+            <span className="text-white font-bold text-base">{reel.profiles?.username}</span>
+            {reel.profiles?.is_verified && (
+              <svg className="w-4 h-4 text-accent" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+              </svg>
+            )}
+          </Link>
+          {user && user.id !== reel.user_id && !isFollowing && (
+            <button
+              onClick={handleFollow}
+              disabled={followLoading}
+              className="px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-white text-xs font-medium hover:bg-white/20 transition-colors border border-white/30"
+            >
+              Follow
+            </button>
+          )}
+        </div>
 
         {/* Caption */}
         {reel.caption && (
-          <p className="text-white text-sm line-clamp-2">{reel.caption}</p>
+          <p className="text-white text-sm line-clamp-2 drop-shadow-lg">{reel.caption}</p>
+        )}
+
+        {/* View count */}
+        {reel.view_count !== undefined && reel.view_count > 0 && (
+          <div className="flex items-center gap-1.5 text-white/80">
+            <Eye className="w-4 h-4" />
+            <span className="text-xs">{reel.view_count.toLocaleString()} views</span>
+          </div>
         )}
 
         {/* Audio */}
         {reel.audio_name && (
-          <div className="flex items-center gap-2">
-            <Music2 className="w-4 h-4 text-white" />
-            <div className="flex items-center gap-1 overflow-hidden">
-              <span className="text-white text-xs truncate">
+          <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5 w-fit">
+            <Music2 className="w-3.5 h-3.5 text-white animate-bounce" />
+            <div className="overflow-hidden max-w-[200px]">
+              <span className="text-white text-xs whitespace-nowrap animate-marquee">
                 {reel.audio_name} {reel.audio_artist && `• ${reel.audio_artist}`}
               </span>
             </div>
@@ -223,10 +341,10 @@ export function ReelCard({ reel, isActive, onLike }: ReelCardProps) {
         )}
       </div>
 
-      {/* Mute toggle */}
+      {/* Mute toggle - top left */}
       <button
         onClick={() => setIsMuted(!isMuted)}
-        className="absolute top-4 right-3 w-10 h-10 bg-black/50 rounded-full flex items-center justify-center"
+        className="absolute top-16 md:top-20 right-4 w-10 h-10 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-black/60 transition-colors"
       >
         {isMuted ? (
           <VolumeX className="w-5 h-5 text-white" />
@@ -234,6 +352,16 @@ export function ReelCard({ reel, isActive, onLike }: ReelCardProps) {
           <Volume2 className="w-5 h-5 text-white" />
         )}
       </button>
+
+      {/* Progress bar */}
+      <ReelProgress duration={30000} isPlaying={isPlaying} />
+
+      {/* Comments Sheet */}
+      <ReelComments
+        reelId={reel.id}
+        isOpen={showComments}
+        onClose={() => setShowComments(false)}
+      />
 
       {/* Share Sheet */}
       <ShareSheet
