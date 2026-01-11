@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
-import { Heart, MessageCircle, UserPlus, UserCheck, X, Check } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Heart, MessageCircle, UserPlus, UserCheck, X, Check, Send } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -38,6 +38,7 @@ interface FollowRequest {
 
 export default function NotificationsPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [followRequests, setFollowRequests] = useState<FollowRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -187,6 +188,12 @@ export default function NotificationsPage() {
         return 'mentioned you in a comment';
       case 'message':
         return 'sent you a message';
+      case 'message_request':
+        return 'wants to send you a message';
+      case 'story_reply':
+        return 'replied to your story';
+      case 'story_reaction':
+        return 'reacted to your story';
       default:
         return '';
     }
@@ -203,8 +210,26 @@ export default function NotificationsPage() {
         return <UserPlus className="h-4 w-4 text-primary" />;
       case 'follow_accepted':
         return <UserCheck className="h-4 w-4 text-green-500" />;
+      case 'message':
+      case 'message_request':
+      case 'story_reply':
+        return <Send className="h-4 w-4 text-primary" />;
       default:
         return null;
+    }
+  };
+
+  const getNotificationLink = (notification: NotificationItem) => {
+    switch (notification.type) {
+      case 'message':
+      case 'message_request':
+      case 'story_reply':
+        return '/messages';
+      case 'like':
+      case 'comment':
+        return notification.post_id ? `/post/${notification.post_id}` : `/profile/${notification.actor.id}`;
+      default:
+        return `/profile/${notification.actor.id}`;
     }
   };
 
@@ -257,7 +282,7 @@ export default function NotificationsPage() {
                 notifications.map(notification => (
                   <Link
                     key={notification.id}
-                    to={notification.post_id ? `/post/${notification.post_id}` : `/profile/${notification.actor.id}`}
+                    to={getNotificationLink(notification)}
                     className="flex items-start gap-3 p-4 hover:bg-secondary/50 transition-colors"
                   >
                     <div className="relative">

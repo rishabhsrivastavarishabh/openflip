@@ -157,15 +157,32 @@ export function ShareSheet({ open, onOpenChange, type, itemId, itemUrl }: ShareS
         conversationId = newConvo.id;
       }
 
-      // Send share message
-      const shareMessage = type === 'profile' 
-        ? `Check out this profile: ${shareUrl}`
-        : `Shared a ${type}: ${shareUrl}`;
-
-      await supabase.from('messages').insert({
+      // Send share message with proper content type
+      const messageData: any = {
         conversation_id: conversationId,
         sender_id: user.id,
-        content: shareMessage,
+        content: type === 'profile' 
+          ? `Check out this profile!`
+          : `Shared a ${type}`,
+        message_type: 'shared_content',
+      };
+
+      // Add proper reference based on type
+      if (type === 'post') {
+        messageData.shared_post_id = itemId;
+      } else if (type === 'reel') {
+        messageData.shared_reel_id = itemId;
+      } else if (type === 'profile') {
+        messageData.shared_profile_id = itemId;
+      }
+
+      await (supabase as any).from('messages').insert(messageData);
+
+      // Create notification for the recipient
+      await supabase.from('notifications').insert({
+        user_id: friend.id,
+        actor_id: user.id,
+        type: 'message',
       });
 
       // Track share
