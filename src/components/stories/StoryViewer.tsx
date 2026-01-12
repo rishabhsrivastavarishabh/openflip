@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { X, ChevronLeft, ChevronRight, Eye, Send, Pause, Play } from 'lucide-react';
 import { StoryGroup, StoryView } from '@/types/database';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -18,6 +18,12 @@ interface StoryViewerProps {
   onClose: () => void;
 }
 
+const springConfig = {
+  type: "spring" as const,
+  stiffness: 300,
+  damping: 30,
+};
+
 export function StoryViewer({ storyGroups, initialGroupIndex, onClose }: StoryViewerProps) {
   const { user } = useAuth();
   const [currentGroupIndex, setCurrentGroupIndex] = useState(initialGroupIndex);
@@ -27,6 +33,8 @@ export function StoryViewer({ storyGroups, initialGroupIndex, onClose }: StoryVi
   const [viewers, setViewers] = useState<StoryView[]>([]);
   const [showViewers, setShowViewers] = useState(false);
   const [replyText, setReplyText] = useState('');
+  const [dragY, setDragY] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
   
   const progressInterval = useRef<NodeJS.Timeout | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -34,7 +42,7 @@ export function StoryViewer({ storyGroups, initialGroupIndex, onClose }: StoryVi
   const currentGroup = storyGroups[currentGroupIndex];
   const currentStory = currentGroup?.stories[currentStoryIndex];
   const isOwnStory = currentStory?.user_id === user?.id;
-  const storyDuration = currentStory?.media_type === 'video' ? 30000 : 5000; // 30s for video, 5s for image
+  const storyDuration = currentStory?.media_type === 'video' ? 30000 : 5000;
 
   // Record view
   useEffect(() => {
@@ -79,7 +87,7 @@ export function StoryViewer({ storyGroups, initialGroupIndex, onClose }: StoryVi
 
   // Progress timer
   useEffect(() => {
-    if (isPaused) return;
+    if (isPaused || isDragging) return;
 
     setProgress(0);
     progressInterval.current = setInterval(() => {
@@ -97,7 +105,7 @@ export function StoryViewer({ storyGroups, initialGroupIndex, onClose }: StoryVi
         clearInterval(progressInterval.current);
       }
     };
-  }, [currentStoryIndex, currentGroupIndex, isPaused, storyDuration]);
+  }, [currentStoryIndex, currentGroupIndex, isPaused, isDragging, storyDuration]);
 
   const goToNextStory = useCallback(() => {
     if (currentStoryIndex < currentGroup.stories.length - 1) {
@@ -133,11 +141,31 @@ export function StoryViewer({ storyGroups, initialGroupIndex, onClose }: StoryVi
     }
   };
 
+  const handleDrag = (_: any, info: PanInfo) => {
+    setDragY(info.offset.y);
+  };
+
+  const handleDragStart = () => {
+    setIsDragging(true);
+    setIsPaused(true);
+  };
+
+  const handleDragEnd = (_: any, info: PanInfo) => {
+    setIsDragging(false);
+    setDragY(0);
+    
+    // Close if dragged down more than 100px
+    if (info.offset.y > 100) {
+      onClose();
+    } else {
+      setIsPaused(false);
+    }
+  };
+
   const handleSendReply = async () => {
     if (!replyText.trim() || !currentStory || !user) return;
     
     try {
-      // Find or create conversation with story owner
       const storyOwnerId = currentStory.user_id;
       
       const { data: myConversations } = await supabase
@@ -176,7 +204,6 @@ export function StoryViewer({ storyGroups, initialGroupIndex, onClose }: StoryVi
         conversationId = newConvo.id;
       }
 
-      // Send message with story reference
       await supabase.from('messages').insert({
         conversation_id: conversationId,
         sender_id: user.id,
@@ -184,7 +211,6 @@ export function StoryViewer({ storyGroups, initialGroupIndex, onClose }: StoryVi
         story_id: currentStory.id,
       });
 
-      // Create notification
       await supabase.from('notifications').insert({
         user_id: storyOwnerId,
         actor_id: user.id,
@@ -205,6 +231,10 @@ export function StoryViewer({ storyGroups, initialGroupIndex, onClose }: StoryVi
 
   if (!currentGroup || !currentStory) return null;
 
+  // Calculate opacity based on drag distance
+  const opacity = Math.max(0, 1 - Math.abs(dragY) / 300);
+  const scale = Math.max(0.8, 1 - Math.abs(dragY) / 500);
+
   return (
     <AnimatePresence>
       <motion.div
@@ -212,6 +242,7 @@ export function StoryViewer({ storyGroups, initialGroupIndex, onClose }: StoryVi
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         className="fixed inset-0 z-50 bg-black flex items-center justify-center"
+        style={{ backgroundColor: `rgba(0,0,0,${opacity})` }}
       >
         {/* Navigation arrows - desktop */}
         <button
@@ -229,8 +260,19 @@ export function StoryViewer({ storyGroups, initialGroupIndex, onClose }: StoryVi
           <ChevronRight className="w-6 h-6 text-white" />
         </button>
 
-        {/* Story container */}
-        <div
+        {/* Story container with drag gesture */}
+        <motion.div
+          drag="y"
+          dragConstraints={{ top: 0, bottom: 0 }}
+          dragElastic={0.4}
+          onDrag={handleDrag}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          animate={{ 
+            y: isDragging ? dragY : 0,
+            scale: isDragging ? scale : 1,
+          }}
+          transition={springConfig}
           className="relative w-full max-w-[420px] h-full max-h-[90vh] md:max-h-[800px] md:rounded-2xl overflow-hidden bg-black"
           onClick={handleTap}
         >
@@ -343,7 +385,24 @@ export function StoryViewer({ storyGroups, initialGroupIndex, onClose }: StoryVi
               </div>
             )}
           </div>
-        </div>
+        </motion.div>
+
+        {/* Drag hint indicator */}
+        {!isDragging && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.5 }}
+            className="absolute bottom-20 left-1/2 -translate-x-1/2 text-white/60 text-xs flex flex-col items-center pointer-events-none"
+          >
+            <motion.div
+              animate={{ y: [0, 5, 0] }}
+              transition={{ repeat: Infinity, duration: 1.5 }}
+            >
+              ↓
+            </motion.div>
+            <span>Swipe down to close</span>
+          </motion.div>
+        )}
 
         {/* Viewers panel */}
         {showViewers && (
