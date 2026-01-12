@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Image, Video, X, MapPin, ArrowLeft, Upload, Save, FileText, Trash2 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Image, Video, X, MapPin, ArrowLeft, Upload, Save, FileText, Trash2, Camera, Film, Hash, Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatDistanceToNow } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface Draft {
   id: string;
@@ -22,6 +23,8 @@ interface Draft {
   updated_at: string;
 }
 
+type MediaMode = 'photo' | 'video';
+
 export default function CreatePage() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -30,6 +33,8 @@ export default function CreatePage() {
   const draftId = searchParams.get('draft');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [caption, setCaption] = useState('');
@@ -41,7 +46,13 @@ export default function CreatePage() {
   const [existingMediaUrl, setExistingMediaUrl] = useState<string | null>(null);
   const [existingMediaType, setExistingMediaType] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [mediaMode, setMediaMode] = useState<MediaMode>('photo');
+  const [audioName, setAudioName] = useState('');
+  const [audioArtist, setAudioArtist] = useState('');
+  
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const isVideo = file?.type.startsWith('video/') || existingMediaType === 'video';
 
   useEffect(() => {
     if (user) {
@@ -62,7 +73,6 @@ export default function CreatePage() {
       clearTimeout(autoSaveTimeoutRef.current);
     }
 
-    // Only auto-save if there's content
     if (caption.trim() || existingMediaUrl) {
       autoSaveTimeoutRef.current = setTimeout(() => {
         saveDraft(true);
@@ -105,6 +115,7 @@ export default function CreatePage() {
       setExistingMediaType(post.media_type);
       setPreview(post.media_url);
       setIsEditing(true);
+      setMediaMode(post.media_type === 'video' ? 'video' : 'photo');
     } else {
       toast.error('Post not found or you cannot edit it');
       navigate('/create');
@@ -120,6 +131,7 @@ export default function CreatePage() {
         setExistingMediaUrl(draft.media_url);
         setExistingMediaType(draft.media_type);
         setPreview(draft.media_url);
+        setMediaMode(draft.media_type === 'video' ? 'video' : 'photo');
       }
       setCurrentDraftId(draft.id);
       setActiveTab('create');
@@ -133,7 +145,6 @@ export default function CreatePage() {
       let mediaUrl = existingMediaUrl;
       let mediaType = existingMediaType;
 
-      // Upload file if there's a new one
       if (file) {
         const fileExt = file.name.split('.').pop();
         const fileName = `drafts/${user.id}/${Date.now()}.${fileExt}`;
@@ -208,6 +219,8 @@ export default function CreatePage() {
     setPreview(null);
     setCaption('');
     setLocation('');
+    setAudioName('');
+    setAudioArtist('');
     setCurrentDraftId(null);
     setExistingMediaUrl(null);
     setExistingMediaType(null);
@@ -226,16 +239,16 @@ export default function CreatePage() {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
 
-    const isImage = selectedFile.type.startsWith('image/');
-    const isVideo = selectedFile.type.startsWith('video/');
+    const isImageFile = selectedFile.type.startsWith('image/');
+    const isVideoFile = selectedFile.type.startsWith('video/');
 
-    if (!isImage && !isVideo) {
+    if (!isImageFile && !isVideoFile) {
       toast.error('Please select an image or video file');
       return;
     }
 
-    if (selectedFile.size > 50 * 1024 * 1024) {
-      toast.error('File size must be less than 50MB');
+    if (selectedFile.size > 100 * 1024 * 1024) {
+      toast.error('File size must be less than 100MB');
       return;
     }
 
@@ -243,6 +256,7 @@ export default function CreatePage() {
     setPreview(URL.createObjectURL(selectedFile));
     setExistingMediaUrl(null);
     setExistingMediaType(null);
+    setMediaMode(isVideoFile ? 'video' : 'photo');
   };
 
   const clearFile = () => {
@@ -252,6 +266,9 @@ export default function CreatePage() {
     setExistingMediaType(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+    if (cameraInputRef.current) {
+      cameraInputRef.current.value = '';
     }
   };
 
@@ -267,7 +284,6 @@ export default function CreatePage() {
       let mediaUrl = existingMediaUrl;
       let mediaType = existingMediaType;
 
-      // Upload new file if provided
       if (file) {
         const fileExt = file.name.split('.').pop();
         const fileName = `${user.id}/${Date.now()}.${fileExt}`;
@@ -286,47 +302,67 @@ export default function CreatePage() {
         mediaType = file.type.startsWith('image/') ? 'image' : 'video';
       }
 
-      if (isEditing && editPostId) {
-        // Update existing post
-        const { error: updateError } = await supabase
-          .from('posts')
-          .update({
-            media_url: mediaUrl,
-            media_type: mediaType,
-            caption: caption.trim() || null,
-            location: location.trim() || null,
-          })
-          .eq('id', editPostId)
-          .eq('user_id', user.id);
-
-        if (updateError) throw updateError;
-        toast.success('Post updated!');
-      } else {
-        // Create new post
-        const { error: postError } = await supabase
-          .from('posts')
+      // If it's a video, create a Reel instead of a Post
+      if (mediaType === 'video') {
+        const { error: reelError } = await supabase
+          .from('reels')
           .insert({
             user_id: user.id,
-            media_url: mediaUrl,
-            media_type: mediaType,
+            video_url: mediaUrl,
             caption: caption.trim() || null,
-            location: location.trim() || null,
+            audio_name: audioName.trim() || null,
+            audio_artist: audioArtist.trim() || null,
           });
 
-        if (postError) throw postError;
+        if (reelError) throw reelError;
 
-        // Delete draft if we're posting from one
+        // Delete draft if posting from one
         if (currentDraftId) {
           await supabase.from('drafts').delete().eq('id', currentDraftId);
         }
 
-        toast.success('Post created!');
-      }
+        toast.success('Reel created!');
+        navigate('/reels');
+      } else {
+        // Create post for images
+        if (isEditing && editPostId) {
+          const { error: updateError } = await supabase
+            .from('posts')
+            .update({
+              media_url: mediaUrl,
+              media_type: mediaType,
+              caption: caption.trim() || null,
+              location: location.trim() || null,
+            })
+            .eq('id', editPostId)
+            .eq('user_id', user.id);
 
-      navigate('/');
+          if (updateError) throw updateError;
+          toast.success('Post updated!');
+        } else {
+          const { error: postError } = await supabase
+            .from('posts')
+            .insert({
+              user_id: user.id,
+              media_url: mediaUrl,
+              media_type: mediaType,
+              caption: caption.trim() || null,
+              location: location.trim() || null,
+            });
+
+          if (postError) throw postError;
+
+          if (currentDraftId) {
+            await supabase.from('drafts').delete().eq('id', currentDraftId);
+          }
+
+          toast.success('Post created!');
+        }
+        navigate('/');
+      }
     } catch (error: any) {
-      console.error('Error creating post:', error);
-      toast.error(error.message || 'Failed to create post');
+      console.error('Error creating content:', error);
+      toast.error(error.message || 'Failed to create');
     } finally {
       setUploading(false);
     }
@@ -341,7 +377,9 @@ export default function CreatePage() {
             <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h1 className="font-semibold">{isEditing ? 'Edit Post' : 'Create Post'}</h1>
+            <h1 className="font-semibold">
+              {isEditing ? 'Edit' : 'Create'} {isVideo ? 'Reel' : 'Post'}
+            </h1>
             <div className="flex items-center gap-2">
               {!isEditing && (
                 <Button
@@ -359,6 +397,9 @@ export default function CreatePage() {
                 onClick={handleSubmit}
                 disabled={(!file && !existingMediaUrl) || uploading}
               >
+                {uploading ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                ) : null}
                 {uploading ? 'Posting...' : isEditing ? 'Update' : 'Share'}
               </Button>
             </div>
@@ -383,31 +424,80 @@ export default function CreatePage() {
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="border-2 border-dashed border-border rounded-2xl p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
-                onClick={() => fileInputRef.current?.click()}
+                className="space-y-4"
               >
+                {/* Media Type Selector */}
+                <div className="flex gap-2 justify-center">
+                  <Button
+                    variant={mediaMode === 'photo' ? 'gradient' : 'outline'}
+                    onClick={() => setMediaMode('photo')}
+                    className="flex-1"
+                  >
+                    <Image className="w-4 h-4 mr-2" />
+                    Photo
+                  </Button>
+                  <Button
+                    variant={mediaMode === 'video' ? 'gradient' : 'outline'}
+                    onClick={() => setMediaMode('video')}
+                    className="flex-1"
+                  >
+                    <Film className="w-4 h-4 mr-2" />
+                    Reel
+                  </Button>
+                </div>
+
+                {/* Upload Area */}
+                <div
+                  className="border-2 border-dashed border-border rounded-2xl p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept={mediaMode === 'photo' ? 'image/*' : 'video/*'}
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                    {mediaMode === 'photo' ? (
+                      <Image className="w-8 h-8 text-primary" />
+                    ) : (
+                      <Film className="w-8 h-8 text-primary" />
+                    )}
+                  </div>
+                  <h3 className="font-semibold mb-2">
+                    Upload a {mediaMode === 'photo' ? 'photo' : 'video'}
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Tap to select from your device
+                  </p>
+                </div>
+
+                {/* Camera Option */}
+                <div className="flex gap-4 justify-center">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={() => {
+                      if (cameraInputRef.current) {
+                        cameraInputRef.current.accept = mediaMode === 'photo' ? 'image/*' : 'video/*';
+                        cameraInputRef.current.capture = 'environment';
+                        cameraInputRef.current.click();
+                      }
+                    }}
+                  >
+                    <Camera className="w-5 h-5 mr-2" />
+                    Camera
+                  </Button>
+                </div>
                 <input
-                  ref={fileInputRef}
+                  ref={cameraInputRef}
                   type="file"
                   accept="image/*,video/*"
+                  capture="environment"
                   onChange={handleFileSelect}
                   className="hidden"
                 />
-                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                  <Upload className="w-8 h-8 text-primary" />
-                </div>
-                <h3 className="font-semibold mb-2">Upload a photo or video</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Drag and drop or click to select
-                </p>
-                <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <Image className="w-4 h-4" /> Photos
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Video className="w-4 h-4" /> Videos
-                  </span>
-                </div>
               </motion.div>
             ) : (
               <motion.div
@@ -423,10 +513,22 @@ export default function CreatePage() {
                 >
                   <X className="w-4 h-4" />
                 </Button>
-                {(file?.type.startsWith('video/') || existingMediaType === 'video') ? (
+                
+                {/* Media Type Badge */}
+                <div className={cn(
+                  "absolute top-2 left-2 z-10 px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1",
+                  isVideo 
+                    ? "bg-primary text-primary-foreground" 
+                    : "bg-secondary text-secondary-foreground"
+                )}>
+                  {isVideo ? <Film className="w-3 h-3" /> : <Image className="w-3 h-3" />}
+                  {isVideo ? 'Reel' : 'Post'}
+                </div>
+
+                {isVideo ? (
                   <video
                     src={preview}
-                    className="w-full aspect-square object-cover rounded-xl"
+                    className="w-full aspect-[9/16] object-cover rounded-xl"
                     controls
                   />
                 ) : (
@@ -452,16 +554,38 @@ export default function CreatePage() {
               </p>
             </div>
 
-            {/* Location */}
-            <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input
-                placeholder="Add location"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                className="pl-10"
-              />
-            </div>
+            {/* Location (only for photos) */}
+            {!isVideo && (
+              <div className="relative">
+                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                  placeholder="Add location"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            )}
+
+            {/* Audio info (only for videos/reels) */}
+            {isVideo && (
+              <div className="space-y-3 p-4 bg-secondary/50 rounded-xl">
+                <h4 className="font-medium flex items-center gap-2">
+                  <Hash className="w-4 h-4" />
+                  Audio (Optional)
+                </h4>
+                <Input
+                  placeholder="Song name"
+                  value={audioName}
+                  onChange={(e) => setAudioName(e.target.value)}
+                />
+                <Input
+                  placeholder="Artist"
+                  value={audioArtist}
+                  onChange={(e) => setAudioArtist(e.target.value)}
+                />
+              </div>
+            )}
 
             {currentDraftId && (
               <p className="text-xs text-muted-foreground text-center">
@@ -488,9 +612,14 @@ export default function CreatePage() {
                     onClick={() => loadDraft(draft.id)}
                   >
                     {draft.media_url ? (
-                      <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                      <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0 relative">
                         {draft.media_type === 'video' ? (
-                          <video src={draft.media_url} className="w-full h-full object-cover" />
+                          <>
+                            <video src={draft.media_url} className="w-full h-full object-cover" />
+                            <div className="absolute top-1 right-1 bg-primary rounded px-1">
+                              <Film className="w-3 h-3 text-primary-foreground" />
+                            </div>
+                          </>
                         ) : (
                           <img src={draft.media_url} alt="" className="w-full h-full object-cover" />
                         )}
@@ -500,6 +629,7 @@ export default function CreatePage() {
                         <FileText className="w-6 h-6 text-muted-foreground" />
                       </div>
                     )}
+                    
                     <div className="flex-1 min-w-0">
                       <p className="text-sm line-clamp-2">
                         {draft.caption || 'No caption'}
@@ -508,10 +638,10 @@ export default function CreatePage() {
                         {formatDistanceToNow(new Date(draft.updated_at), { addSuffix: true })}
                       </p>
                     </div>
+
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="flex-shrink-0"
                       onClick={(e) => {
                         e.stopPropagation();
                         deleteDraft(draft.id);
