@@ -244,7 +244,17 @@ export type Database = {
           created_at: string | null
           id: string
           is_read: boolean | null
+          is_view_once: boolean | null
+          media_type: string | null
+          media_url: string | null
+          message_type: string | null
           sender_id: string
+          shared_post_id: string | null
+          shared_profile_id: string | null
+          shared_reel_id: string | null
+          story_id: string | null
+          viewed_at: string | null
+          voice_duration: number | null
         }
         Insert: {
           content: string
@@ -252,7 +262,17 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_read?: boolean | null
+          is_view_once?: boolean | null
+          media_type?: string | null
+          media_url?: string | null
+          message_type?: string | null
           sender_id: string
+          shared_post_id?: string | null
+          shared_profile_id?: string | null
+          shared_reel_id?: string | null
+          story_id?: string | null
+          viewed_at?: string | null
+          voice_duration?: number | null
         }
         Update: {
           content?: string
@@ -260,7 +280,17 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_read?: boolean | null
+          is_view_once?: boolean | null
+          media_type?: string | null
+          media_url?: string | null
+          message_type?: string | null
           sender_id?: string
+          shared_post_id?: string | null
+          shared_profile_id?: string | null
+          shared_reel_id?: string | null
+          story_id?: string | null
+          viewed_at?: string | null
+          voice_duration?: number | null
         }
         Relationships: [
           {
@@ -391,8 +421,12 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_type: string | null
           avatar_url: string | null
           bio: string | null
+          business_category: string | null
+          business_email: string | null
+          business_website: string | null
           created_at: string | null
           full_name: string | null
           id: string
@@ -400,11 +434,17 @@ export type Database = {
           is_verified: boolean | null
           updated_at: string | null
           username: string
+          verification_requested_at: string | null
+          verification_status: string | null
           website: string | null
         }
         Insert: {
+          account_type?: string | null
           avatar_url?: string | null
           bio?: string | null
+          business_category?: string | null
+          business_email?: string | null
+          business_website?: string | null
           created_at?: string | null
           full_name?: string | null
           id: string
@@ -412,11 +452,17 @@ export type Database = {
           is_verified?: boolean | null
           updated_at?: string | null
           username: string
+          verification_requested_at?: string | null
+          verification_status?: string | null
           website?: string | null
         }
         Update: {
+          account_type?: string | null
           avatar_url?: string | null
           bio?: string | null
+          business_category?: string | null
+          business_email?: string | null
+          business_website?: string | null
           created_at?: string | null
           full_name?: string | null
           id?: string
@@ -424,6 +470,8 @@ export type Database = {
           is_verified?: boolean | null
           updated_at?: string | null
           username?: string
+          verification_requested_at?: string | null
+          verification_status?: string | null
           website?: string | null
         }
         Relationships: []
@@ -657,6 +705,48 @@ export type Database = {
         Update: {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      verification_requests: {
+        Row: {
+          business_email: string | null
+          business_name: string | null
+          category: string
+          created_at: string
+          id: string
+          notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          business_email?: string | null
+          business_name?: string | null
+          category: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          business_email?: string | null
+          business_name?: string | null
+          category?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []

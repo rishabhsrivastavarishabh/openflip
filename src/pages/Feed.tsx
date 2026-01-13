@@ -12,6 +12,7 @@ import { StoryViewer } from '@/components/stories/StoryViewer';
 import { CreateStory } from '@/components/stories/CreateStory';
 import { StoryGroup } from '@/types/database';
 import { useUnreadCounts } from '@/hooks/useUnreadCounts';
+import { SuggestedUsers } from '@/components/feed/SuggestedUsers';
 import openflipLogo from '@/assets/openflip-logo.png';
 interface FeedPost {
   id: string;
@@ -271,6 +272,9 @@ export default function FeedPage() {
 
         {/* Stories Bar */}
         <StoriesBar onViewStory={storyGroup => setViewingStory(storyGroup)} onCreateStory={() => setShowCreateStory(true)} />
+
+        {/* Suggested Users */}
+        <SuggestedUsers />
 
         {/* Story Viewer Modal */}
         {viewingStory && <StoryViewer storyGroups={[viewingStory]} initialGroupIndex={0} onClose={() => setViewingStory(null)} />}

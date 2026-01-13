@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
-import { X, ChevronLeft, ChevronRight, Eye, Send, Pause, Play } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Eye, Send, Pause, Play, Heart, Bookmark, Share2 } from 'lucide-react';
 import { StoryGroup, StoryView } from '@/types/database';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,8 @@ import { formatDistanceToNow } from 'date-fns';
 import { StoryReactions } from './StoryReactions';
 import { toast } from 'sonner';
 import { ProtectedMedia } from '@/components/media/ProtectedMedia';
+import { MobileAppFrame } from '@/components/layout/MobileAppFrame';
+import { ShareSheet } from '@/components/share/ShareSheet';
 
 interface StoryViewerProps {
   storyGroups: StoryGroup[];
@@ -35,6 +37,8 @@ export function StoryViewer({ storyGroups, initialGroupIndex, onClose }: StoryVi
   const [replyText, setReplyText] = useState('');
   const [dragY, setDragY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [showShareSheet, setShowShareSheet] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
   
   const progressInterval = useRef<NodeJS.Timeout | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
