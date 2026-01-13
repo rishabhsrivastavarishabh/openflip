@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, User, Lock, Bell, HelpCircle, LogOut, Camera, ChevronRight, Shield, Ban, Trash2 } from 'lucide-react';
+import { ArrowLeft, User, Lock, Bell, HelpCircle, LogOut, Camera, ChevronRight, Shield, Ban, Trash2, Briefcase } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
+import { BusinessAccountSettings } from '@/components/settings/BusinessAccountSettings';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -19,6 +20,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showBlockedUsers, setShowBlockedUsers] = useState(false);
+  const [showBusinessSettings, setShowBusinessSettings] = useState(false);
   const [blockedUsers, setBlockedUsers] = useState<any[]>([]);
   const [isPrivate, setIsPrivate] = useState(profile?.is_private || false);
   const [formData, setFormData] = useState({
@@ -217,6 +219,16 @@ export default function SettingsPage() {
     );
   }
 
+  if (showBusinessSettings) {
+    return (
+      <MainLayout>
+        <div className="max-w-lg mx-auto p-4">
+          <BusinessAccountSettings onBack={() => setShowBusinessSettings(false)} />
+        </div>
+      </MainLayout>
+    );
+  }
+
   if (showPrivacy) {
     return (
       <MainLayout>
@@ -408,6 +420,21 @@ export default function SettingsPage() {
             <button className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary transition-colors text-left">
               <Bell className="h-5 w-5 text-muted-foreground" />
               <span>Notifications</span>
+            </button>
+            <button 
+              onClick={() => setShowBusinessSettings(true)}
+              className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-secondary transition-colors text-left"
+            >
+              <div className="flex items-center gap-3">
+                <Briefcase className="h-5 w-5 text-muted-foreground" />
+                <span>Account Type</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground capitalize">
+                  {(profile as any)?.account_type || 'Personal'}
+                </span>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </div>
             </button>
             <button className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary transition-colors text-left">
               <HelpCircle className="h-5 w-5 text-muted-foreground" />

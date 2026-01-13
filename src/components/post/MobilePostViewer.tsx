@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { X, Heart, MessageCircle, Send, Bookmark, ChevronDown, MoreHorizontal } from 'lucide-react';
+import { MobileAppFrame } from '@/components/layout/MobileAppFrame';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -150,20 +151,60 @@ export function MobilePostViewer({ postId, isOpen, onClose }: MobilePostViewerPr
     fetchPost();
   };
 
+  const [dragY, setDragY] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const springConfig = {
+    type: "spring" as const,
+    stiffness: 300,
+    damping: 30,
+  };
+
+  const handleDrag = useCallback((_: any, info: PanInfo) => {
+    setDragY(info.offset.y);
+  }, []);
+
+  const handleDragStart = useCallback(() => {
+    setIsDragging(true);
+  }, []);
+
+  const handleDragEndEnhanced = useCallback((_: any, info: PanInfo) => {
+    setIsDragging(false);
+    setDragY(0);
+    
+    if (info.offset.y > 100 || info.velocity.y > 500) {
+      onClose();
+    }
+  }, [onClose]);
+
   if (!isOpen) return null;
+
+  const opacity = Math.max(0, 1 - Math.abs(dragY) / 300);
+  const scale = Math.max(0.9, 1 - Math.abs(dragY) / 500);
 
   return (
     <AnimatePresence>
       <motion.div
-        initial={{ opacity: 0, y: '100%' }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: '100%' }}
-        drag="y"
-        dragConstraints={{ top: 0, bottom: 0 }}
-        dragElastic={0.2}
-        onDragEnd={handleDragEnd}
-        className="fixed inset-0 z-50 bg-background"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 bg-black flex items-center justify-center"
+        style={{ backgroundColor: `rgba(0,0,0,${opacity})` }}
       >
+        <MobileAppFrame fullBleed>
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: isDragging ? dragY : 0, scale: isDragging ? scale : 1 }}
+            exit={{ y: '100%' }}
+            drag="y"
+            dragConstraints={{ top: 0, bottom: 0 }}
+            dragElastic={0.4}
+            onDrag={handleDrag}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEndEnhanced}
+            transition={springConfig}
+            className="h-full bg-background overflow-hidden rounded-t-2xl md:rounded-2xl"
+          >
         {/* Drag Handle */}
         <div className="flex justify-center pt-2 pb-1">
           <div className="w-10 h-1 bg-muted-foreground/30 rounded-full" />
@@ -305,12 +346,28 @@ export function MobilePostViewer({ postId, isOpen, onClose }: MobilePostViewerPr
           )}
         </div>
 
-        <ShareSheet
-          open={showShareSheet}
-          onOpenChange={setShowShareSheet}
-          type="post"
-          itemId={postId}
-        />
+            <ShareSheet
+              open={showShareSheet}
+              onOpenChange={setShowShareSheet}
+              type="post"
+              itemId={postId}
+            />
+          </motion.div>
+        </MobileAppFrame>
+
+        {/* Swipe hint */}
+        {!isDragging && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.5 }}
+            className="absolute bottom-20 left-1/2 -translate-x-1/2 text-white/60 text-xs flex flex-col items-center pointer-events-none"
+          >
+            <motion.div animate={{ y: [0, 5, 0] }} transition={{ repeat: Infinity, duration: 1.5 }}>
+              ↓
+            </motion.div>
+            <span>Swipe down to close</span>
+          </motion.div>
+        )}
       </motion.div>
     </AnimatePresence>
   );
