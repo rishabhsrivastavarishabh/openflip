@@ -14,6 +14,7 @@ import { ShareSheet } from '@/components/share/ShareSheet';
 import { BlockReportSheet } from '@/components/moderation/BlockReportSheet';
 import { ProtectedMedia } from '@/components/media/ProtectedMedia';
 import { PostActions } from '@/components/post/PostActions';
+import { VerifiedBadge } from '@/components/common/VerifiedBadge';
 
 interface PostCardProps {
   post: Post & {
@@ -136,11 +137,7 @@ export function PostCard({ post, onUpdate }: PostCardProps) {
               <span className="text-sm font-semibold group-hover:text-primary transition-colors">
                 {post.profiles.username}
               </span>
-              {post.profiles.is_verified && (
-                <svg className="w-4 h-4 text-accent" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                </svg>
-              )}
+              {post.profiles.is_verified && <VerifiedBadge size="sm" />}
             </div>
             {post.location && (
               <span className="text-xs text-muted-foreground">{post.location}</span>

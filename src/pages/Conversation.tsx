@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Send, Image as ImageIcon, MoreVertical, Phone, Video, Check, CheckCheck } from 'lucide-react';
+import { ArrowLeft, Send, MoreVertical, Phone, Video, Check, CheckCheck, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Profile, Message } from '@/types/database';
 import { BlockReportSheet } from '@/components/moderation/BlockReportSheet';
@@ -14,6 +14,12 @@ import { OnlineIndicator } from '@/components/messages/OnlineIndicator';
 import { VoiceRecordButton } from '@/components/messages/VoiceRecordButton';
 import { VoiceMessage } from '@/components/messages/VoiceMessage';
 import { SharedPostPreview } from '@/components/messages/SharedPostPreview';
+import { ChatMediaInput } from '@/components/messages/ChatMediaInput';
+import { ViewOnceMedia } from '@/components/messages/ViewOnceMedia';
+import { MediaMessage } from '@/components/messages/MediaMessage';
+import { DisappearingMessagesIndicator } from '@/components/messages/DisappearingMessagesIndicator';
+import { GroupChatSettings } from '@/components/messages/GroupChatSettings';
+import { VerifiedBadge } from '@/components/common/VerifiedBadge';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { toast } from 'sonner';
 
@@ -21,10 +27,21 @@ interface ChatMessage extends Message {
   isMine: boolean;
   message_type?: string;
   media_url?: string;
+  media_type?: string;
   voice_duration?: number;
   shared_post_id?: string;
   shared_reel_id?: string;
   shared_profile_id?: string;
+  is_view_once?: boolean;
+  viewed_at?: string;
+}
+
+interface ConversationData {
+  id: string;
+  is_group: boolean;
+  group_name: string | null;
+  group_avatar_url: string | null;
+  disappearing_messages_timer: number | null;
 }
 
 export default function ConversationPage() {
@@ -35,9 +52,12 @@ export default function ConversationPage() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [newMessage, setNewMessage] = useState('');
-  const [participant, setParticipant] = useState<Profile | null>(null);
+  const [participant, setParticipant] = useState<(Profile & { is_verified?: boolean }) | null>(null);
+  const [participants, setParticipants] = useState<(Profile & { is_verified?: boolean })[]>([]);
+  const [conversation, setConversation] = useState<ConversationData | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [showBlockReport, setShowBlockReport] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -45,6 +65,7 @@ export default function ConversationPage() {
 
   useEffect(() => {
     if (user && conversationId) {
+      fetchConversation();
       fetchMessages();
       fetchParticipant();
       const unsubscribe = subscribeToMessages();
@@ -54,22 +75,52 @@ export default function ConversationPage() {
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
+  const fetchConversation = async () => {
+    if (!conversationId) return;
+    
+    const { data } = await (supabase as any)
+      .from('conversations')
+      .select('id, is_group, group_name, group_avatar_url, disappearing_messages_timer')
+      .eq('id', conversationId)
+      .single();
+    
+    if (data) {
+      setConversation(data);
+    }
+  };
+
   const fetchParticipant = async () => {
     if (!conversationId || !user) return;
-    const { data: participants } = await supabase
+    const { data: participantsData } = await supabase
       .from('conversation_participants')
-      .select('user_id, typing_at')
-      .eq('conversation_id', conversationId)
-      .neq('user_id', user.id);
+      .select('user_id, typing_at, is_admin')
+      .eq('conversation_id', conversationId);
 
-    if (participants && participants.length > 0) {
-      const { data: profile } = await supabase.from('profiles').select('*').eq('id', participants[0].user_id).single();
-      if (profile) {
-        setParticipant(profile as Profile);
-        fetchOnlineStatus([profile.id]);
-      }
-      if (participants[0].typing_at) {
-        setIsTyping(new Date().getTime() - new Date(participants[0].typing_at).getTime() < 5000);
+    if (participantsData) {
+      // Check if current user is admin
+      const currentUserParticipant = participantsData.find(p => p.user_id === user.id);
+      setIsAdmin(currentUserParticipant?.is_admin || false);
+
+      const otherParticipants = participantsData.filter(p => p.user_id !== user.id);
+      
+      if (otherParticipants.length > 0) {
+        const userIds = otherParticipants.map(p => p.user_id);
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('id', userIds);
+        
+        if (profiles && profiles.length > 0) {
+          setParticipants(profiles as (Profile & { is_verified?: boolean })[]);
+          setParticipant(profiles[0] as (Profile & { is_verified?: boolean }));
+          fetchOnlineStatus(profiles.map(p => p.id));
+        }
+
+        // Check typing status
+        const typingParticipant = otherParticipants.find(p => p.typing_at);
+        if (typingParticipant?.typing_at) {
+          setIsTyping(new Date().getTime() - new Date(typingParticipant.typing_at).getTime() < 5000);
+        }
       }
     }
   };
@@ -115,7 +166,7 @@ export default function ConversationPage() {
     }, 5000);
   };
 
-  const handleSendMessage = async (content?: string, messageType: string = 'text', mediaUrl?: string, voiceDuration?: number) => {
+  const handleSendMessage = async (content?: string, messageType: string = 'text', mediaUrl?: string, voiceDuration?: number, isViewOnce?: boolean) => {
     const messageContent = content || newMessage.trim();
     if (!messageContent && !mediaUrl) return;
     if (!user || !conversationId) return;
@@ -123,16 +174,28 @@ export default function ConversationPage() {
     setSending(true);
     setNewMessage('');
     try {
-      const insertData: any = { conversation_id: conversationId, sender_id: user.id, content: messageContent || 'Voice message' };
+      const insertData: any = { conversation_id: conversationId, sender_id: user.id, content: messageContent || (messageType === 'voice' ? '🎤 Voice message' : '📷 Media') };
       if (messageType !== 'text') insertData.message_type = messageType;
       if (mediaUrl) insertData.media_url = mediaUrl;
       if (voiceDuration) insertData.voice_duration = voiceDuration;
+      if (isViewOnce) insertData.is_view_once = true;
+
+      // Set expiration for disappearing messages
+      if (conversation?.disappearing_messages_timer) {
+        const expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + conversation.disappearing_messages_timer);
+        insertData.expires_at = expiresAt.toISOString();
+      }
 
       await supabase.from('messages').insert(insertData);
       await supabase.from('conversation_participants').update({ typing_at: null }).eq('conversation_id', conversationId).eq('user_id', user.id);
       await supabase.from('conversations').update({ updated_at: new Date().toISOString() }).eq('id', conversationId);
     } catch (error) { console.error('Error sending message:', error); setNewMessage(messageContent); } 
     finally { setSending(false); }
+  };
+
+  const handleMediaSend = async (mediaUrl: string, mediaType: string, isViewOnce: boolean, caption?: string) => {
+    await handleSendMessage(caption || '', isViewOnce ? 'view_once' : 'image', mediaUrl, undefined, isViewOnce);
   };
 
   const handleVoiceSend = async (blob: Blob, duration: number) => {
@@ -145,63 +208,158 @@ export default function ConversationPage() {
     } catch (error) { console.error('Error uploading voice:', error); toast.error('Failed to send voice message'); }
   };
 
+  const renderMessage = (message: ChatMessage, index: number) => {
+    const showAvatar = !message.isMine && (index === 0 || messages[index - 1]?.sender_id !== message.sender_id);
+    const messageType = message.message_type || 'text';
+    const senderProfile = participants.find(p => p.id === message.sender_id) || participant;
+
+    // View once media
+    if (messageType === 'view_once' && message.is_view_once) {
+      return (
+        <div key={message.id} className={cn("flex items-end gap-2", message.isMine ? "justify-end" : "justify-start")}>
+          {!message.isMine && showAvatar && senderProfile && (
+            <Avatar className="w-8 h-8">
+              <AvatarImage src={senderProfile.avatar_url || undefined} />
+              <AvatarFallback>{senderProfile.username.charAt(0).toUpperCase()}</AvatarFallback>
+            </Avatar>
+          )}
+          {!message.isMine && !showAvatar && <div className="w-8" />}
+          <ViewOnceMedia
+            messageId={message.id}
+            mediaUrl={message.media_url!}
+            mediaType={(message.media_type as 'image' | 'video') || 'image'}
+            isViewed={!!message.viewed_at}
+            isMine={message.isMine}
+            senderId={message.sender_id}
+          />
+        </div>
+      );
+    }
+
+    // Regular media
+    if ((messageType === 'image' || messageType === 'video') && message.media_url) {
+      return (
+        <div key={message.id} className={cn("flex items-end gap-2", message.isMine ? "justify-end" : "justify-start")}>
+          {!message.isMine && showAvatar && senderProfile && (
+            <Avatar className="w-8 h-8">
+              <AvatarImage src={senderProfile.avatar_url || undefined} />
+              <AvatarFallback>{senderProfile.username.charAt(0).toUpperCase()}</AvatarFallback>
+            </Avatar>
+          )}
+          {!message.isMine && !showAvatar && <div className="w-8" />}
+          <div className={cn("max-w-[70%] rounded-2xl overflow-hidden", message.isMine ? "bg-primary" : "bg-muted")}>
+            <MediaMessage
+              mediaUrl={message.media_url}
+              mediaType={(message.media_type as 'image' | 'video') || 'image'}
+              caption={message.content !== '📷 Media' ? message.content : undefined}
+              isMine={message.isMine}
+            />
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div key={message.id} className={cn("flex items-end gap-2", message.isMine ? "justify-end" : "justify-start")}>
+        {!message.isMine && <div className="w-8">{showAvatar && senderProfile && <Avatar className="w-8 h-8"><AvatarImage src={senderProfile.avatar_url || undefined} /><AvatarFallback>{senderProfile.username.charAt(0).toUpperCase()}</AvatarFallback></Avatar>}</div>}
+        <div className={cn("max-w-[70%] px-4 py-2 rounded-2xl", message.isMine ? "bg-primary text-primary-foreground rounded-br-md" : "bg-muted rounded-bl-md")}>
+          {messageType === 'voice' && message.media_url ? <VoiceMessage audioUrl={message.media_url} duration={message.voice_duration} isMine={message.isMine} />
+          : message.shared_post_id || message.shared_reel_id || message.shared_profile_id ? <SharedPostPreview postId={message.shared_post_id} reelId={message.shared_reel_id} profileId={message.shared_profile_id} isMine={message.isMine} />
+          : <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>}
+        </div>
+        {message.isMine && <div className="w-4 flex items-center justify-center">{message.is_read ? <CheckCheck className="w-3.5 h-3.5 text-primary" /> : <Check className="w-3.5 h-3.5 text-muted-foreground" />}</div>}
+      </div>
+    );
+  };
+
   if (!user) return <div className="h-screen flex items-center justify-center"><p>Please sign in</p></div>;
+
+  const isGroupChat = conversation?.is_group;
+  const displayName = isGroupChat ? conversation?.group_name : participant?.username;
+  const displayAvatar = isGroupChat ? conversation?.group_avatar_url : participant?.avatar_url;
 
   return (
     <div className="h-screen flex flex-col bg-background">
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border p-3 flex items-center gap-3">
         <button onClick={() => navigate('/messages')}><ArrowLeft className="w-6 h-6" /></button>
-        {participant ? (
-          <Link to={`/profile/${participant.id}`} className="flex items-center gap-3 flex-1">
+        
+        {participant || isGroupChat ? (
+          <Link to={isGroupChat ? '#' : `/profile/${participant?.id}`} className="flex items-center gap-3 flex-1">
             <div className="relative">
-              <Avatar className="w-10 h-10">
-                <AvatarImage src={participant.avatar_url || undefined} />
-                <AvatarFallback>{participant.username.charAt(0).toUpperCase()}</AvatarFallback>
-              </Avatar>
-              {isUserOnline(participant.id) && <OnlineIndicator isOnline={true} size="sm" className="absolute bottom-0 right-0" />}
+              {isGroupChat ? (
+                <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                  <Users className="w-5 h-5 text-primary" />
+                </div>
+              ) : (
+                <Avatar className="w-10 h-10">
+                  <AvatarImage src={displayAvatar || undefined} />
+                  <AvatarFallback>{(displayName || 'U').charAt(0).toUpperCase()}</AvatarFallback>
+                </Avatar>
+              )}
+              {!isGroupChat && participant && isUserOnline(participant.id) && (
+                <OnlineIndicator isOnline={true} size="sm" className="absolute bottom-0 right-0" />
+              )}
             </div>
             <div>
-              <p className="font-medium">{participant.username}</p>
+              <div className="flex items-center gap-1">
+                <p className="font-medium">{displayName}</p>
+                {!isGroupChat && participant?.is_verified && <VerifiedBadge size="sm" />}
+              </div>
               <p className="text-xs text-muted-foreground">
-                {isTyping ? <span className="text-primary animate-pulse">typing...</span> : getLastSeenText(participant.id) || ''}
+                {isTyping ? (
+                  <span className="text-primary animate-pulse">typing...</span>
+                ) : isGroupChat ? (
+                  `${participants.length + 1} members`
+                ) : participant ? (
+                  getLastSeenText(participant.id) || ''
+                ) : ''}
               </p>
             </div>
           </Link>
         ) : <Skeleton className="w-24 h-4" />}
+
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon"><Phone className="w-5 h-5" /></Button>
-          <Button variant="ghost" size="icon"><Video className="w-5 h-5" /></Button>
-          <Button variant="ghost" size="icon" onClick={() => setShowBlockReport(true)}><MoreVertical className="w-5 h-5" /></Button>
+          {!isGroupChat && (
+            <>
+              <Button variant="ghost" size="icon"><Phone className="w-5 h-5" /></Button>
+              <Button variant="ghost" size="icon"><Video className="w-5 h-5" /></Button>
+            </>
+          )}
+          {isGroupChat && conversation ? (
+            <GroupChatSettings
+              conversationId={conversationId!}
+              groupName={conversation.group_name || 'Group'}
+              groupAvatarUrl={conversation.group_avatar_url}
+              isAdmin={isAdmin}
+              disappearingTimer={conversation.disappearing_messages_timer}
+              onLeave={() => navigate('/messages')}
+              onUpdate={fetchConversation}
+            />
+          ) : (
+            <Button variant="ghost" size="icon" onClick={() => setShowBlockReport(true)}><MoreVertical className="w-5 h-5" /></Button>
+          )}
         </div>
       </div>
 
-      {participant && <BlockReportSheet open={showBlockReport} onOpenChange={setShowBlockReport} targetUserId={participant.id} targetUsername={participant.username} onBlocked={() => navigate('/messages')} />}
+      {participant && !isGroupChat && (
+        <BlockReportSheet open={showBlockReport} onOpenChange={setShowBlockReport} targetUserId={participant.id} targetUsername={participant.username} onBlocked={() => navigate('/messages')} />
+      )}
 
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        {/* Disappearing messages indicator */}
+        {conversation?.disappearing_messages_timer && (
+          <DisappearingMessagesIndicator timer={conversation.disappearing_messages_timer} />
+        )}
+
         {loading ? Array.from({ length: 5 }).map((_, i) => <div key={i} className={cn("flex", i % 2 === 0 ? "justify-end" : "justify-start")}><Skeleton className={cn("h-10 rounded-2xl", i % 2 === 0 ? "w-40" : "w-32")} /></div>)
         : messages.length === 0 ? <div className="flex flex-col items-center justify-center h-full text-muted-foreground"><p>No messages yet</p></div>
-        : messages.map((message, index) => {
-          const showAvatar = !message.isMine && (index === 0 || messages[index - 1]?.sender_id !== message.sender_id);
-          const messageType = (message as any).message_type || 'text';
-          
-          return (
-            <div key={message.id} className={cn("flex items-end gap-2", message.isMine ? "justify-end" : "justify-start")}>
-              {!message.isMine && <div className="w-8">{showAvatar && participant && <Avatar className="w-8 h-8"><AvatarImage src={participant.avatar_url || undefined} /><AvatarFallback>{participant.username.charAt(0).toUpperCase()}</AvatarFallback></Avatar>}</div>}
-              <div className={cn("max-w-[70%] px-4 py-2 rounded-2xl", message.isMine ? "bg-primary text-primary-foreground rounded-br-md" : "bg-muted rounded-bl-md")}>
-                {messageType === 'voice' && (message as any).media_url ? <VoiceMessage audioUrl={(message as any).media_url} duration={(message as any).voice_duration} isMine={message.isMine} />
-                : (message as any).shared_post_id || (message as any).shared_reel_id || (message as any).shared_profile_id ? <SharedPostPreview postId={(message as any).shared_post_id} reelId={(message as any).shared_reel_id} profileId={(message as any).shared_profile_id} isMine={message.isMine} />
-                : <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>}
-              </div>
-              {message.isMine && <div className="w-4 flex items-center justify-center">{message.is_read ? <CheckCheck className="w-3.5 h-3.5 text-primary" /> : <Check className="w-3.5 h-3.5 text-muted-foreground" />}</div>}
-            </div>
-          );
-        })}
+        : messages.map((message, index) => renderMessage(message, index))}
         <div ref={messagesEndRef} />
       </div>
 
       <div className="sticky bottom-0 bg-background border-t border-border p-3">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="shrink-0"><ImageIcon className="w-5 h-5" /></Button>
+          <ChatMediaInput onSend={handleMediaSend} disabled={sending} />
           <Input ref={inputRef} placeholder="Message..." value={newMessage} onChange={(e) => { setNewMessage(e.target.value); handleTyping(); }} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }}} className="flex-1" />
           {newMessage.trim() ? <Button size="icon" onClick={() => handleSendMessage()} disabled={sending}><Send className="w-5 h-5" /></Button> : <VoiceRecordButton onSend={handleVoiceSend} disabled={sending} />}
         </div>

@@ -12,6 +12,7 @@ import { ShareSheet } from '@/components/share/ShareSheet';
 import { BlockReportSheet } from '@/components/moderation/BlockReportSheet';
 import { ReelProgress } from './ReelProgress';
 import { ReelComments } from './ReelComments';
+import { VerifiedBadge } from '@/components/common/VerifiedBadge';
 
 interface ReelCardProps {
   reel: Reel;
@@ -298,11 +299,7 @@ export function ReelCard({ reel, isActive, onLike }: ReelCardProps) {
         <div className="flex items-center gap-3">
           <Link to={`/profile/${reel.user_id}`} className="flex items-center gap-2">
             <span className="text-white font-bold text-base">{reel.profiles?.username}</span>
-            {reel.profiles?.is_verified && (
-              <svg className="w-4 h-4 text-accent" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-              </svg>
-            )}
+            {reel.profiles?.is_verified && <VerifiedBadge size="sm" />}
           </Link>
           {user && user.id !== reel.user_id && !isFollowing && (
             <button
