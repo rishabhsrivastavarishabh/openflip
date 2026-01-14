@@ -14,6 +14,35 @@ export type Database = {
   }
   public: {
     Tables: {
+      broadcast_followers: {
+        Row: {
+          channel_id: string
+          followed_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          channel_id: string
+          followed_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          channel_id?: string
+          followed_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "broadcast_followers_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comments: {
         Row: {
           content: string
@@ -61,21 +90,27 @@ export type Database = {
       }
       conversation_participants: {
         Row: {
+          can_post: boolean | null
           conversation_id: string
+          is_admin: boolean | null
           joined_at: string | null
           last_read_at: string | null
           typing_at: string | null
           user_id: string
         }
         Insert: {
+          can_post?: boolean | null
           conversation_id: string
+          is_admin?: boolean | null
           joined_at?: string | null
           last_read_at?: string | null
           typing_at?: string | null
           user_id: string
         }
         Update: {
+          can_post?: boolean | null
           conversation_id?: string
+          is_admin?: boolean | null
           joined_at?: string | null
           last_read_at?: string | null
           typing_at?: string | null
@@ -93,18 +128,39 @@ export type Database = {
       }
       conversations: {
         Row: {
+          broadcast_description: string | null
           created_at: string | null
+          created_by: string | null
+          disappearing_messages_timer: number | null
+          group_avatar_url: string | null
+          group_name: string | null
           id: string
+          is_broadcast: boolean | null
+          is_group: boolean | null
           updated_at: string | null
         }
         Insert: {
+          broadcast_description?: string | null
           created_at?: string | null
+          created_by?: string | null
+          disappearing_messages_timer?: number | null
+          group_avatar_url?: string | null
+          group_name?: string | null
           id?: string
+          is_broadcast?: boolean | null
+          is_group?: boolean | null
           updated_at?: string | null
         }
         Update: {
+          broadcast_description?: string | null
           created_at?: string | null
+          created_by?: string | null
+          disappearing_messages_timer?: number | null
+          group_avatar_url?: string | null
+          group_name?: string | null
           id?: string
+          is_broadcast?: boolean | null
+          is_group?: boolean | null
           updated_at?: string | null
         }
         Relationships: []
@@ -242,6 +298,7 @@ export type Database = {
           content: string
           conversation_id: string
           created_at: string | null
+          expires_at: string | null
           id: string
           is_read: boolean | null
           is_view_once: boolean | null
@@ -253,6 +310,7 @@ export type Database = {
           shared_profile_id: string | null
           shared_reel_id: string | null
           story_id: string | null
+          story_reply_preview_url: string | null
           viewed_at: string | null
           voice_duration: number | null
         }
@@ -260,6 +318,7 @@ export type Database = {
           content: string
           conversation_id: string
           created_at?: string | null
+          expires_at?: string | null
           id?: string
           is_read?: boolean | null
           is_view_once?: boolean | null
@@ -271,6 +330,7 @@ export type Database = {
           shared_profile_id?: string | null
           shared_reel_id?: string | null
           story_id?: string | null
+          story_reply_preview_url?: string | null
           viewed_at?: string | null
           voice_duration?: number | null
         }
@@ -278,6 +338,7 @@ export type Database = {
           content?: string
           conversation_id?: string
           created_at?: string | null
+          expires_at?: string | null
           id?: string
           is_read?: boolean | null
           is_view_once?: boolean | null
@@ -289,6 +350,7 @@ export type Database = {
           shared_profile_id?: string | null
           shared_reel_id?: string | null
           story_id?: string | null
+          story_reply_preview_url?: string | null
           viewed_at?: string | null
           voice_duration?: number | null
         }

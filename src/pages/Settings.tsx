@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, User, Lock, Bell, HelpCircle, LogOut, Camera, ChevronRight, Shield, Ban, Trash2, Briefcase } from 'lucide-react';
+import { ArrowLeft, User, Lock, Bell, HelpCircle, LogOut, Camera, ChevronRight, Shield, Ban, Trash2, Briefcase, ShieldCheck } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { BusinessAccountSettings } from '@/components/settings/BusinessAccountSettings';
+import { VerificationPanel } from '@/components/admin/VerificationPanel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -21,7 +22,9 @@ export default function SettingsPage() {
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showBlockedUsers, setShowBlockedUsers] = useState(false);
   const [showBusinessSettings, setShowBusinessSettings] = useState(false);
+  const [showVerificationPanel, setShowVerificationPanel] = useState(false);
   const [blockedUsers, setBlockedUsers] = useState<any[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [isPrivate, setIsPrivate] = useState(profile?.is_private || false);
   const [formData, setFormData] = useState({
     username: profile?.username || '',
@@ -41,6 +44,18 @@ export default function SettingsPage() {
       });
     }
   }, [profile]);
+
+  useEffect(() => {
+    if (user) {
+      supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .maybeSingle()
+        .then(({ data }) => setIsAdmin(!!data));
+    }
+  }, [user]);
 
   if (!user) {
     navigate('/auth');
@@ -440,7 +455,18 @@ export default function SettingsPage() {
               <HelpCircle className="h-5 w-5 text-muted-foreground" />
               <span>Help</span>
             </button>
+            {isAdmin && (
+              <button
+                onClick={() => setShowVerificationPanel(true)}
+                className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary transition-colors text-left"
+              >
+                <ShieldCheck className="h-5 w-5 text-primary" />
+                <span>Verification Requests</span>
+              </button>
+            )}
           </div>
+
+          <VerificationPanel open={showVerificationPanel} onOpenChange={setShowVerificationPanel} />
 
           <Separator />
 
