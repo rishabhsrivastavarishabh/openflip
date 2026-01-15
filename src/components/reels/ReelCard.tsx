@@ -18,13 +18,15 @@ interface ReelCardProps {
   reel: Reel;
   isActive: boolean;
   onLike: () => void;
+  globalMuted?: boolean;
+  onMuteToggle?: () => void;
 }
 
-export function ReelCard({ reel, isActive, onLike }: ReelCardProps) {
+export function ReelCard({ reel, isActive, onLike, globalMuted = false, onMuteToggle }: ReelCardProps) {
   const { user } = useAuth();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(true);
+  const [isMuted, setIsMuted] = useState(globalMuted);
   const [isLiked, setIsLiked] = useState(reel.isLiked || false);
   const [isSaved, setIsSaved] = useState(false);
   const [likeCount, setLikeCount] = useState(reel.likeCount || 0);
@@ -83,19 +85,28 @@ export function ReelCard({ reel, isActive, onLike }: ReelCardProps) {
     // Note: Would need a reel_saves table for full implementation
   };
 
-  // Play/pause based on active state
+  // Sync with global mute state
+  useEffect(() => {
+    setIsMuted(globalMuted);
+  }, [globalMuted]);
+
+  // Play/pause based on active state - audio ON by default when active
   useEffect(() => {
     if (videoRef.current) {
       if (isActive) {
         videoRef.current.play().catch(() => {});
         setIsPlaying(true);
+        // Unmute by default when reel becomes active (unless globally muted)
+        if (!globalMuted) {
+          setIsMuted(false);
+        }
       } else {
         videoRef.current.pause();
         videoRef.current.currentTime = 0;
         setIsPlaying(false);
       }
     }
-  }, [isActive]);
+  }, [isActive, globalMuted]);
 
   const togglePlay = () => {
     if (videoRef.current) {
@@ -340,7 +351,11 @@ export function ReelCard({ reel, isActive, onLike }: ReelCardProps) {
 
       {/* Mute toggle - top left */}
       <button
-        onClick={() => setIsMuted(!isMuted)}
+        onClick={() => {
+          const newMuted = !isMuted;
+          setIsMuted(newMuted);
+          onMuteToggle?.();
+        }}
         className="absolute top-16 md:top-20 right-4 w-10 h-10 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-black/60 transition-colors"
       >
         {isMuted ? (

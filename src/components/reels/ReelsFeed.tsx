@@ -14,6 +14,7 @@ export function ReelsFeed({ initialReels }: ReelsFeedProps) {
   const [reels, setReels] = useState<Reel[]>(initialReels || []);
   const [loading, setLoading] = useState(!initialReels);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [globalMuted, setGlobalMuted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -21,6 +22,70 @@ export function ReelsFeed({ initialReels }: ReelsFeedProps) {
       fetchReels();
     }
   }, []);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowDown' || e.key === 'j') {
+        e.preventDefault();
+        navigateToReel(activeIndex + 1);
+      } else if (e.key === 'ArrowUp' || e.key === 'k') {
+        e.preventDefault();
+        navigateToReel(activeIndex - 1);
+      } else if (e.key === 'm') {
+        setGlobalMuted(prev => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeIndex, reels.length]);
+
+  // Mouse wheel navigation (desktop)
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    let scrollTimeout: NodeJS.Timeout;
+    let isScrolling = false;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (isScrolling) return;
+      
+      e.preventDefault();
+      isScrolling = true;
+
+      if (e.deltaY > 50) {
+        navigateToReel(activeIndex + 1);
+      } else if (e.deltaY < -50) {
+        navigateToReel(activeIndex - 1);
+      }
+
+      scrollTimeout = setTimeout(() => {
+        isScrolling = false;
+      }, 500);
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => {
+      container.removeEventListener('wheel', handleWheel);
+      clearTimeout(scrollTimeout);
+    };
+  }, [activeIndex]);
+
+  const navigateToReel = useCallback((index: number) => {
+    if (index < 0 || index >= reels.length) return;
+    
+    const container = containerRef.current;
+    if (!container) return;
+
+    const itemHeight = container.clientHeight;
+    container.scrollTo({
+      top: index * itemHeight,
+      behavior: 'smooth',
+    });
+    setActiveIndex(index);
+  }, [reels.length]);
 
   const fetchReels = async () => {
     setLoading(true);
@@ -134,6 +199,8 @@ export function ReelsFeed({ initialReels }: ReelsFeedProps) {
             reel={reel}
             isActive={index === activeIndex}
             onLike={() => {}}
+            globalMuted={globalMuted}
+            onMuteToggle={() => setGlobalMuted(prev => !prev)}
           />
         </div>
       ))}
