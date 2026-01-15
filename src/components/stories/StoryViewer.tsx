@@ -13,24 +13,21 @@ import { toast } from 'sonner';
 import { ProtectedMedia } from '@/components/media/ProtectedMedia';
 import { MobileAppFrame } from '@/components/layout/MobileAppFrame';
 import { ShareSheet } from '@/components/share/ShareSheet';
+
 interface StoryViewerProps {
   storyGroups: StoryGroup[];
   initialGroupIndex: number;
   onClose: () => void;
 }
+
 const springConfig = {
   type: "spring" as const,
   stiffness: 300,
-  damping: 30
+  damping: 30,
 };
-export function StoryViewer({
-  storyGroups,
-  initialGroupIndex,
-  onClose
-}: StoryViewerProps) {
-  const {
-    user
-  } = useAuth();
+
+export function StoryViewer({ storyGroups, initialGroupIndex, onClose }: StoryViewerProps) {
+  const { user } = useAuth();
   const [currentGroupIndex, setCurrentGroupIndex] = useState(initialGroupIndex);
   const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
   const [progress, setProgress] = useState(0);
@@ -42,8 +39,10 @@ export function StoryViewer({
   const [isDragging, setIsDragging] = useState(false);
   const [showShareSheet, setShowShareSheet] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  
   const progressInterval = useRef<NodeJS.Timeout | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+
   const currentGroup = storyGroups[currentGroupIndex];
   const currentStory = currentGroup?.stories[currentStoryIndex];
   const isOwnStory = currentStory?.user_id === user?.id;
@@ -52,12 +51,13 @@ export function StoryViewer({
   // Record view
   useEffect(() => {
     if (currentStory && user && !isOwnStory) {
-      supabase.from('story_views').upsert({
-        story_id: currentStory.id,
-        viewer_id: user.id
-      }, {
-        onConflict: 'story_id,viewer_id'
-      }).then(() => {});
+      supabase
+        .from('story_views')
+        .upsert({
+          story_id: currentStory.id,
+          viewer_id: user.id,
+        }, { onConflict: 'story_id,viewer_id' })
+        .then(() => {});
     }
   }, [currentStory?.id, user, isOwnStory]);
 
@@ -67,20 +67,23 @@ export function StoryViewer({
       fetchViewers();
     }
   }, [currentStory?.id, isOwnStory]);
+
   const fetchViewers = async () => {
     if (!currentStory) return;
-    const {
-      data
-    } = await supabase.from('story_views').select(`
+    
+    const { data } = await supabase
+      .from('story_views')
+      .select(`
         *,
         profiles:viewer_id (
           id,
           username,
           avatar_url
         )
-      `).eq('story_id', currentStory.id).order('viewed_at', {
-      ascending: false
-    });
+      `)
+      .eq('story_id', currentStory.id)
+      .order('viewed_at', { ascending: false });
+
     if (data) {
       setViewers(data as any);
     }
@@ -89,63 +92,72 @@ export function StoryViewer({
   // Progress timer
   useEffect(() => {
     if (isPaused || isDragging) return;
+
     setProgress(0);
     progressInterval.current = setInterval(() => {
-      setProgress(prev => {
+      setProgress((prev) => {
         if (prev >= 100) {
           goToNextStory();
           return 0;
         }
-        return prev + 100 / (storyDuration / 100);
+        return prev + (100 / (storyDuration / 100));
       });
     }, 100);
+
     return () => {
       if (progressInterval.current) {
         clearInterval(progressInterval.current);
       }
     };
   }, [currentStoryIndex, currentGroupIndex, isPaused, isDragging, storyDuration]);
+
   const goToNextStory = useCallback(() => {
     if (currentStoryIndex < currentGroup.stories.length - 1) {
-      setCurrentStoryIndex(prev => prev + 1);
+      setCurrentStoryIndex((prev) => prev + 1);
     } else if (currentGroupIndex < storyGroups.length - 1) {
-      setCurrentGroupIndex(prev => prev + 1);
+      setCurrentGroupIndex((prev) => prev + 1);
       setCurrentStoryIndex(0);
     } else {
       onClose();
     }
   }, [currentStoryIndex, currentGroupIndex, currentGroup?.stories.length, storyGroups.length, onClose]);
+
   const goToPrevStory = useCallback(() => {
     if (currentStoryIndex > 0) {
-      setCurrentStoryIndex(prev => prev - 1);
+      setCurrentStoryIndex((prev) => prev - 1);
     } else if (currentGroupIndex > 0) {
-      setCurrentGroupIndex(prev => prev - 1);
+      setCurrentGroupIndex((prev) => prev - 1);
       setCurrentStoryIndex(storyGroups[currentGroupIndex - 1].stories.length - 1);
     }
   }, [currentStoryIndex, currentGroupIndex, storyGroups]);
+
   const handleTap = (e: React.MouseEvent) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const width = rect.width;
+
     if (x < width / 3) {
       goToPrevStory();
-    } else if (x > width * 2 / 3) {
+    } else if (x > (width * 2) / 3) {
       goToNextStory();
     } else {
       setIsPaused(!isPaused);
     }
   };
+
   const handleDrag = (_: any, info: PanInfo) => {
     setDragY(info.offset.y);
   };
+
   const handleDragStart = () => {
     setIsDragging(true);
     setIsPaused(true);
   };
+
   const handleDragEnd = (_: any, info: PanInfo) => {
     setIsDragging(false);
     setDragY(0);
-
+    
     // Close if dragged down more than 100px
     if (info.offset.y > 100) {
       onClose();
@@ -153,47 +165,62 @@ export function StoryViewer({
       setIsPaused(false);
     }
   };
+
   const handleSendReply = async () => {
     if (!replyText.trim() || !currentStory || !user) return;
+    
     try {
       const storyOwnerId = currentStory.user_id;
-      const {
-        data: myConversations
-      } = await supabase.from('conversation_participants').select('conversation_id').eq('user_id', user.id);
+      
+      const { data: myConversations } = await supabase
+        .from('conversation_participants')
+        .select('conversation_id')
+        .eq('user_id', user.id);
+
       const myConvoIds = myConversations?.map(c => c.conversation_id) || [];
       let conversationId: string | null = null;
+
       if (myConvoIds.length > 0) {
-        const {
-          data: existingConvo
-        } = await supabase.from('conversation_participants').select('conversation_id').eq('user_id', storyOwnerId).in('conversation_id', myConvoIds).maybeSingle();
+        const { data: existingConvo } = await supabase
+          .from('conversation_participants')
+          .select('conversation_id')
+          .eq('user_id', storyOwnerId)
+          .in('conversation_id', myConvoIds)
+          .maybeSingle();
+
         conversationId = existingConvo?.conversation_id || null;
       }
+
       if (!conversationId) {
-        const {
-          data: newConvo,
-          error: convoError
-        } = await supabase.from('conversations').insert({}).select().single();
+        const { data: newConvo, error: convoError } = await supabase
+          .from('conversations')
+          .insert({})
+          .select()
+          .single();
+
         if (convoError) throw convoError;
-        await supabase.from('conversation_participants').insert([{
-          conversation_id: newConvo.id,
-          user_id: user.id
-        }, {
-          conversation_id: newConvo.id,
-          user_id: storyOwnerId
-        }]);
+
+        await supabase.from('conversation_participants').insert([
+          { conversation_id: newConvo.id, user_id: user.id },
+          { conversation_id: newConvo.id, user_id: storyOwnerId },
+        ]);
+
         conversationId = newConvo.id;
       }
+
       await supabase.from('messages').insert({
         conversation_id: conversationId,
         sender_id: user.id,
         content: replyText.trim(),
-        story_id: currentStory.id
+        story_id: currentStory.id,
       });
+
       await supabase.from('notifications').insert({
         user_id: storyOwnerId,
         actor_id: user.id,
-        type: 'story_reply'
+        type: 'story_reply',
       });
+
       toast.success('Reply sent!');
       setReplyText('');
     } catch (error) {
@@ -201,48 +228,70 @@ export function StoryViewer({
       toast.error('Failed to send reply');
     }
   };
+
   const handleQuickReaction = (emoji: string) => {
     toast.success(`${emoji} reaction sent!`);
   };
+
   if (!currentGroup || !currentStory) return null;
 
   // Calculate opacity based on drag distance
   const opacity = Math.max(0, 1 - Math.abs(dragY) / 300);
   const scale = Math.max(0.8, 1 - Math.abs(dragY) / 500);
-  return <AnimatePresence>
-      <motion.div initial={{
-      opacity: 0
-    }} animate={{
-      opacity: 1
-    }} exit={{
-      opacity: 0
-    }} className="fixed inset-0 z-50 flex items-start justify-center bg-primary-foreground" style={{
-      backgroundColor: `rgba(0,0,0,${opacity})`
-    }}>
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 bg-black flex items-center justify-center"
+        style={{ backgroundColor: `rgba(0,0,0,${opacity})` }}
+      >
         {/* Navigation arrows - desktop */}
-        <button onClick={goToPrevStory} className="hidden md:flex absolute left-4 z-50 w-10 h-10 items-center justify-center bg-background/20 rounded-full hover:bg-background/30 transition-colors" disabled={currentGroupIndex === 0 && currentStoryIndex === 0}>
+        <button
+          onClick={goToPrevStory}
+          className="hidden md:flex absolute left-4 z-50 w-10 h-10 items-center justify-center bg-background/20 rounded-full hover:bg-background/30 transition-colors"
+          disabled={currentGroupIndex === 0 && currentStoryIndex === 0}
+        >
           <ChevronLeft className="w-6 h-6 text-white" />
         </button>
 
-        <button onClick={goToNextStory} className="hidden md:flex absolute right-4 z-50 w-10 h-10 items-center justify-center bg-background/20 rounded-full hover:bg-background/30 transition-colors">
+        <button
+          onClick={goToNextStory}
+          className="hidden md:flex absolute right-4 z-50 w-10 h-10 items-center justify-center bg-background/20 rounded-full hover:bg-background/30 transition-colors"
+        >
           <ChevronRight className="w-6 h-6 text-white" />
         </button>
 
         {/* Story container with drag gesture */}
-        <motion.div drag="y" dragConstraints={{
-        top: 0,
-        bottom: 0
-      }} dragElastic={0.4} onDrag={handleDrag} onDragStart={handleDragStart} onDragEnd={handleDragEnd} animate={{
-        y: isDragging ? dragY : 0,
-        scale: isDragging ? scale : 1
-      }} transition={springConfig} className="relative w-full max-w-[420px] h-full max-h-[90vh] md:max-h-[800px] md:rounded-2xl overflow-hidden bg-black" onClick={handleTap}>
+        <motion.div
+          drag="y"
+          dragConstraints={{ top: 0, bottom: 0 }}
+          dragElastic={0.4}
+          onDrag={handleDrag}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          animate={{ 
+            y: isDragging ? dragY : 0,
+            scale: isDragging ? scale : 1,
+          }}
+          transition={springConfig}
+          className="relative w-full max-w-[420px] h-full max-h-[90vh] md:max-h-[800px] md:rounded-2xl overflow-hidden bg-black"
+          onClick={handleTap}
+        >
           {/* Progress bars */}
           <div className="absolute top-2 left-2 right-2 z-20 flex gap-1">
-            {currentGroup.stories.map((_, index) => <div key={index} className="flex-1 h-0.5 bg-white/30 rounded-full overflow-hidden">
-                <div className="h-full bg-white transition-all duration-100" style={{
-              width: index < currentStoryIndex ? '100%' : index === currentStoryIndex ? `${progress}%` : '0%'
-            }} />
-              </div>)}
+            {currentGroup.stories.map((_, index) => (
+              <div key={index} className="flex-1 h-0.5 bg-white/30 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-white transition-all duration-100"
+                  style={{
+                    width: index < currentStoryIndex ? '100%' : index === currentStoryIndex ? `${progress}%` : '0%'
+                  }}
+                />
+              </div>
+            ))}
           </div>
 
           {/* Header */}
@@ -255,83 +304,119 @@ export function StoryViewer({
               <div>
                 <p className="text-white font-medium text-sm">{currentGroup.username}</p>
                 <p className="text-white/60 text-xs">
-                  {formatDistanceToNow(new Date(currentStory.created_at), {
-                  addSuffix: true
-                })}
+                  {formatDistanceToNow(new Date(currentStory.created_at), { addSuffix: true })}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={e => {
-              e.stopPropagation();
-              setIsPaused(!isPaused);
-            }} className="w-8 h-8 flex items-center justify-center text-white/80 hover:text-white">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsPaused(!isPaused);
+                }}
+                className="w-8 h-8 flex items-center justify-center text-white/80 hover:text-white"
+              >
                 {isPaused ? <Play className="w-5 h-5" /> : <Pause className="w-5 h-5" />}
               </button>
-              <button onClick={e => {
-              e.stopPropagation();
-              onClose();
-            }} className="w-8 h-8 flex items-center justify-center text-white/80 hover:text-white">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onClose();
+                }}
+                className="w-8 h-8 flex items-center justify-center text-white/80 hover:text-white"
+              >
                 <X className="w-6 h-6" />
               </button>
             </div>
           </div>
 
           {/* Story media - Protected */}
-          <ProtectedMedia src={currentStory.media_url} type={currentStory.media_type as 'image' | 'video'} className="w-full h-full object-contain" autoPlay={true} muted={true} />
+          <ProtectedMedia
+            src={currentStory.media_url}
+            type={currentStory.media_type as 'image' | 'video'}
+            className="w-full h-full object-contain"
+            autoPlay={true}
+            muted={true}
+          />
 
           {/* Footer */}
           <div className="absolute bottom-4 left-2 right-2 z-20 space-y-3">
-            {isOwnStory ? <button onClick={e => {
-            e.stopPropagation();
-            setShowViewers(true);
-          }} className="flex items-center gap-2 text-white/80 hover:text-white">
+            {isOwnStory ? (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowViewers(true);
+                }}
+                className="flex items-center gap-2 text-white/80 hover:text-white"
+              >
                 <Eye className="w-5 h-5" />
                 <span className="text-sm">{viewers.length} viewers</span>
-              </button> : <div onClick={e => e.stopPropagation()} className="space-y-3">
+              </button>
+            ) : (
+              <div onClick={(e) => e.stopPropagation()} className="space-y-3">
                 {/* Quick reactions */}
-                <StoryReactions storyId={currentStory.id} storyOwnerId={currentStory.user_id} onReact={handleQuickReaction} />
+                <StoryReactions 
+                  storyId={currentStory.id} 
+                  storyOwnerId={currentStory.user_id}
+                  onReact={handleQuickReaction}
+                />
                 
                 {/* Reply input */}
                 <div className="flex gap-2">
-                  <Input placeholder="Reply to story..." value={replyText} onChange={e => setReplyText(e.target.value)} className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-white/50" onFocus={() => setIsPaused(true)} onBlur={() => setIsPaused(false)} onKeyDown={e => {
-                if (e.key === 'Enter') {
-                  handleSendReply();
-                }
-              }} />
-                  <Button size="icon" variant="ghost" onClick={handleSendReply} disabled={!replyText.trim()} className="text-white hover:bg-white/10">
+                  <Input
+                    placeholder="Reply to story..."
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                    onFocus={() => setIsPaused(true)}
+                    onBlur={() => setIsPaused(false)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleSendReply();
+                      }
+                    }}
+                  />
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={handleSendReply}
+                    disabled={!replyText.trim()}
+                    className="text-white hover:bg-white/10"
+                  >
                     <Send className="w-5 h-5" />
                   </Button>
                 </div>
-              </div>}
+              </div>
+            )}
           </div>
         </motion.div>
 
         {/* Drag hint indicator */}
-        {!isDragging && <motion.div initial={{
-        opacity: 0
-      }} animate={{
-        opacity: 0.5
-      }} className="absolute bottom-20 left-1/2 -translate-x-1/2 text-white/60 text-xs flex flex-col items-center pointer-events-none">
-            <motion.div animate={{
-          y: [0, 5, 0]
-        }} transition={{
-          repeat: Infinity,
-          duration: 1.5
-        }}>
+        {!isDragging && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.5 }}
+            className="absolute bottom-20 left-1/2 -translate-x-1/2 text-white/60 text-xs flex flex-col items-center pointer-events-none"
+          >
+            <motion.div
+              animate={{ y: [0, 5, 0] }}
+              transition={{ repeat: Infinity, duration: 1.5 }}
+            >
               ↓
             </motion.div>
             <span>Swipe down to close</span>
-          </motion.div>}
+          </motion.div>
+        )}
 
         {/* Viewers panel */}
-        {showViewers && <motion.div initial={{
-        y: '100%'
-      }} animate={{
-        y: 0
-      }} exit={{
-        y: '100%'
-      }} className="fixed bottom-0 left-0 right-0 max-w-[420px] mx-auto bg-card rounded-t-2xl p-4 z-50" onClick={e => e.stopPropagation()}>
+        {showViewers && (
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            className="fixed bottom-0 left-0 right-0 max-w-[420px] mx-auto bg-card rounded-t-2xl p-4 z-50"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-card-foreground">Viewers</h3>
               <button onClick={() => setShowViewers(false)}>
@@ -339,16 +424,22 @@ export function StoryViewer({
               </button>
             </div>
             <div className="max-h-[300px] overflow-y-auto space-y-3">
-              {viewers.map((view: any) => <div key={view.id} className="flex items-center gap-3">
+              {viewers.map((view: any) => (
+                <div key={view.id} className="flex items-center gap-3">
                   <Avatar className="w-10 h-10">
                     <AvatarImage src={view.profiles?.avatar_url || undefined} />
                     <AvatarFallback>{view.profiles?.username?.charAt(0).toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <span className="text-sm text-card-foreground">{view.profiles?.username}</span>
-                </div>)}
-              {viewers.length === 0 && <p className="text-muted-foreground text-center py-4">No viewers yet</p>}
+                </div>
+              ))}
+              {viewers.length === 0 && (
+                <p className="text-muted-foreground text-center py-4">No viewers yet</p>
+              )}
             </div>
-          </motion.div>}
+          </motion.div>
+        )}
       </motion.div>
-    </AnimatePresence>;
+    </AnimatePresence>
+  );
 }
