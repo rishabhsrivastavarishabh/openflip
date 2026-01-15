@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, User, Lock, Bell, HelpCircle, LogOut, Camera, ChevronRight, Shield, Ban, Trash2, Briefcase, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, User, Lock, Bell, HelpCircle, LogOut, Camera, ChevronRight, Shield, Ban, Trash2, Briefcase, ShieldCheck, Radio, Settings2 } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { BusinessAccountSettings } from '@/components/settings/BusinessAccountSettings';
+import { AccountSettings } from '@/components/settings/AccountSettings';
 import { VerificationPanel } from '@/components/admin/VerificationPanel';
+import { BroadcastChannelManager } from '@/components/broadcast/BroadcastChannelManager';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -22,7 +24,9 @@ export default function SettingsPage() {
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showBlockedUsers, setShowBlockedUsers] = useState(false);
   const [showBusinessSettings, setShowBusinessSettings] = useState(false);
+  const [showAccountSettings, setShowAccountSettings] = useState(false);
   const [showVerificationPanel, setShowVerificationPanel] = useState(false);
+  const [showBroadcastManager, setShowBroadcastManager] = useState(false);
   const [blockedUsers, setBlockedUsers] = useState<any[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isPrivate, setIsPrivate] = useState(profile?.is_private || false);
@@ -234,6 +238,16 @@ export default function SettingsPage() {
     );
   }
 
+  if (showAccountSettings) {
+    return (
+      <MainLayout>
+        <div className="max-w-lg mx-auto p-4">
+          <AccountSettings onBack={() => setShowAccountSettings(false)} />
+        </div>
+      </MainLayout>
+    );
+  }
+
   if (showBusinessSettings) {
     return (
       <MainLayout>
@@ -436,6 +450,16 @@ export default function SettingsPage() {
               <Bell className="h-5 w-5 text-muted-foreground" />
               <span>Notifications</span>
             </button>
+            <button
+              onClick={() => setShowAccountSettings(true)}
+              className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-secondary transition-colors text-left"
+            >
+              <div className="flex items-center gap-3">
+                <Settings2 className="h-5 w-5 text-muted-foreground" />
+                <span>Account</span>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </button>
             <button 
               onClick={() => setShowBusinessSettings(true)}
               className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-secondary transition-colors text-left"
@@ -464,9 +488,17 @@ export default function SettingsPage() {
                 <span>Verification Requests</span>
               </button>
             )}
+            <button
+              onClick={() => setShowBroadcastManager(true)}
+              className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary transition-colors text-left"
+            >
+              <Radio className="h-5 w-5 text-muted-foreground" />
+              <span>Broadcast Channels</span>
+            </button>
           </div>
 
           <VerificationPanel open={showVerificationPanel} onOpenChange={setShowVerificationPanel} />
+          <BroadcastChannelManager open={showBroadcastManager} onOpenChange={setShowBroadcastManager} />
 
           <Separator />
 
