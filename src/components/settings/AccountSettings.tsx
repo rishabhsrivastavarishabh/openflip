@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,9 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   AlertDialog, 
-  AlertDialogAction, 
   AlertDialogCancel, 
   AlertDialogContent, 
   AlertDialogDescription, 
@@ -18,25 +18,41 @@ import {
   AlertDialogTitle 
 } from '@/components/ui/alert-dialog';
 import { 
-  ArrowLeft, User, Mail, Phone, Shield, Key, 
-  Trash2, Loader2, LogOut, Smartphone, Clock, AlertTriangle
+  ArrowLeft, User, Mail, Shield, Key, Calendar, Users2,
+  Trash2, Loader2, Clock, AlertTriangle, ChevronRight, Lock, Radio, ShieldCheck
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface AccountSettingsProps {
   onBack: () => void;
+  onShowPrivacy?: () => void;
+  onShowVerification?: () => void;
+  onShowBroadcast?: () => void;
 }
 
-export function AccountSettings({ onBack }: AccountSettingsProps) {
-  const { user, profile, signOut } = useAuth();
+export function AccountSettings({ onBack, onShowPrivacy, onShowVerification, onShowBroadcast }: AccountSettingsProps) {
+  const { user, profile, signOut, updateProfile } = useAuth();
   const navigate = useNavigate();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [changingPassword, setChangingPassword] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [changingEmail, setChangingEmail] = useState(false);
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [gender, setGender] = useState('');
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  useEffect(() => {
+    if (profile) {
+      setDateOfBirth((profile as any).date_of_birth || '');
+      setGender((profile as any).gender || '');
+    }
+  }, [profile]);
 
   const handleChangePassword = async () => {
     if (newPassword.length < 6) {
@@ -64,6 +80,49 @@ export function AccountSettings({ onBack }: AccountSettingsProps) {
     }
   };
 
+  const handleChangeEmail = async () => {
+    if (!newEmail || !newEmail.includes('@')) {
+      toast.error('Please enter a valid email');
+      return;
+    }
+
+    setChangingEmail(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ email: newEmail });
+      if (error) throw error;
+      
+      toast.success('Verification email sent! Please check your inbox.');
+      setShowEmailDialog(false);
+      setNewEmail('');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update email');
+    } finally {
+      setChangingEmail(false);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!user) return;
+    
+    setSavingProfile(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          date_of_birth: dateOfBirth || null,
+          gender: gender || null,
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+      toast.success('Profile updated');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update profile');
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
   const handleDeleteAccount = async () => {
     if (!user || !deletePassword) return;
     
@@ -82,43 +141,19 @@ export function AccountSettings({ onBack }: AccountSettingsProps) {
       }
 
       // Delete user's data
-      // Note: In a production app, this would be done server-side
-      // Delete posts
       await supabase.from('posts').delete().eq('user_id', user.id);
-      
-      // Delete comments
       await supabase.from('comments').delete().eq('user_id', user.id);
-      
-      // Delete likes
       await supabase.from('likes').delete().eq('user_id', user.id);
-      
-      // Delete saves
       await supabase.from('saves').delete().eq('user_id', user.id);
-      
-      // Delete follows
       await supabase.from('follows').delete().or(`follower_id.eq.${user.id},following_id.eq.${user.id}`);
-      
-      // Delete messages
       await supabase.from('messages').delete().eq('sender_id', user.id);
-      
-      // Delete conversation participants
       await supabase.from('conversation_participants').delete().eq('user_id', user.id);
-      
-      // Delete stories
       await supabase.from('stories').delete().eq('user_id', user.id);
-      
-      // Delete reels
       await supabase.from('reels').delete().eq('user_id', user.id);
-      
-      // Delete notifications
       await supabase.from('notifications').delete().or(`user_id.eq.${user.id},actor_id.eq.${user.id}`);
-      
-      // Delete profile
       await supabase.from('profiles').delete().eq('id', user.id);
 
-      // Sign out
       await signOut();
-      
       toast.success('Account deleted successfully');
       navigate('/auth');
     } catch (error: any) {
@@ -164,15 +199,19 @@ export function AccountSettings({ onBack }: AccountSettingsProps) {
             </div>
           </div>
 
-          <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/50">
+          <button
+            onClick={() => setShowEmailDialog(true)}
+            className="w-full flex items-center justify-between p-4 rounded-xl bg-secondary/50 hover:bg-secondary transition-colors"
+          >
             <div className="flex items-center gap-3">
               <Mail className="w-5 h-5 text-muted-foreground" />
-              <div>
+              <div className="text-left">
                 <p className="text-sm text-muted-foreground">Email</p>
                 <p className="font-medium">{user.email}</p>
               </div>
             </div>
-          </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          </button>
 
           <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/50">
             <div className="flex items-center gap-3">
@@ -204,11 +243,124 @@ export function AccountSettings({ onBack }: AccountSettingsProps) {
 
       <Separator />
 
-      {/* Security */}
+      {/* Personal Information */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
+        className="space-y-4"
+      >
+        <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+          Personal Information
+        </h2>
+
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="date-of-birth" className="flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              Date of Birth
+            </Label>
+            <Input
+              id="date-of-birth"
+              type="date"
+              value={dateOfBirth}
+              onChange={(e) => setDateOfBirth(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="gender" className="flex items-center gap-2">
+              <Users2 className="w-4 h-4" />
+              Gender
+            </Label>
+            <Select value={gender} onValueChange={setGender}>
+              <SelectTrigger id="gender">
+                <SelectValue placeholder="Select gender" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="male">Male</SelectItem>
+                <SelectItem value="female">Female</SelectItem>
+                <SelectItem value="non-binary">Non-binary</SelectItem>
+                <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Button onClick={handleSaveProfile} disabled={savingProfile} className="w-full">
+            {savingProfile ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              'Save Changes'
+            )}
+          </Button>
+        </div>
+      </motion.div>
+
+      <Separator />
+
+      {/* Quick Access */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
+        className="space-y-4"
+      >
+        <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+          Settings
+        </h2>
+
+        <div className="space-y-2">
+          {onShowPrivacy && (
+            <button
+              onClick={onShowPrivacy}
+              className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-secondary transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <Lock className="w-5 h-5 text-muted-foreground" />
+                <span>Privacy</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            </button>
+          )}
+          
+          {onShowVerification && (
+            <button
+              onClick={onShowVerification}
+              className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-secondary transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <ShieldCheck className="w-5 h-5 text-primary" />
+                <span>Verification Requests</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            </button>
+          )}
+          
+          {onShowBroadcast && (
+            <button
+              onClick={onShowBroadcast}
+              className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-secondary transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <Radio className="w-5 h-5 text-muted-foreground" />
+                <span>Broadcast Channels</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            </button>
+          )}
+        </div>
+      </motion.div>
+
+      <Separator />
+
+      {/* Security */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
         className="space-y-4"
       >
         <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
@@ -253,6 +405,54 @@ export function AccountSettings({ onBack }: AccountSettingsProps) {
           </Button>
         </div>
       </motion.div>
+
+      {/* Change Email Dialog */}
+      <AlertDialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Change Email</AlertDialogTitle>
+            <AlertDialogDescription>
+              Enter your new email address. You'll receive a verification email.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="current-email">Current Email</Label>
+              <Input
+                id="current-email"
+                value={user.email || ''}
+                disabled
+                className="bg-muted"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-email">New Email</Label>
+              <Input
+                id="new-email"
+                type="email"
+                placeholder="newemail@example.com"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <Button onClick={handleChangeEmail} disabled={changingEmail}>
+              {changingEmail ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                'Update Email'
+              )}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Change Password Dialog */}
       <AlertDialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
