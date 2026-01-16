@@ -43,6 +43,35 @@ export type Database = {
           },
         ]
       }
+      chat_disabled: {
+        Row: {
+          conversation_id: string
+          disabled_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          disabled_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          disabled_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_disabled_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comments: {
         Row: {
           content: string
@@ -264,6 +293,42 @@ export type Database = {
         }
         Relationships: []
       }
+      highlight_stories: {
+        Row: {
+          added_at: string | null
+          highlight_id: string
+          id: string
+          story_id: string
+        }
+        Insert: {
+          added_at?: string | null
+          highlight_id: string
+          id?: string
+          story_id: string
+        }
+        Update: {
+          added_at?: string | null
+          highlight_id?: string
+          id?: string
+          story_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "highlight_stories_highlight_id_fkey"
+            columns: ["highlight_id"]
+            isOneToOne: false
+            referencedRelation: "story_highlights"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "highlight_stories_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       likes: {
         Row: {
           created_at: string | null
@@ -363,6 +428,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notification_settings: {
+        Row: {
+          chat_notifications: boolean | null
+          comment_notifications: boolean | null
+          created_at: string | null
+          follow_notifications: boolean | null
+          id: string
+          notification_sound: boolean | null
+          ringtone: string | null
+          story_like_notifications: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          chat_notifications?: boolean | null
+          comment_notifications?: boolean | null
+          created_at?: string | null
+          follow_notifications?: boolean | null
+          id?: string
+          notification_sound?: boolean | null
+          ringtone?: string | null
+          story_like_notifications?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          chat_notifications?: boolean | null
+          comment_notifications?: boolean | null
+          created_at?: string | null
+          follow_notifications?: boolean | null
+          id?: string
+          notification_sound?: boolean | null
+          ringtone?: string | null
+          story_like_notifications?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       notifications: {
         Row: {
@@ -490,7 +594,9 @@ export type Database = {
           business_email: string | null
           business_website: string | null
           created_at: string | null
+          date_of_birth: string | null
           full_name: string | null
+          gender: string | null
           id: string
           is_private: boolean | null
           is_verified: boolean | null
@@ -508,7 +614,9 @@ export type Database = {
           business_email?: string | null
           business_website?: string | null
           created_at?: string | null
+          date_of_birth?: string | null
           full_name?: string | null
+          gender?: string | null
           id: string
           is_private?: boolean | null
           is_verified?: boolean | null
@@ -526,7 +634,9 @@ export type Database = {
           business_email?: string | null
           business_website?: string | null
           created_at?: string | null
+          date_of_birth?: string | null
           full_name?: string | null
+          gender?: string | null
           id?: string
           is_private?: boolean | null
           is_verified?: boolean | null
@@ -720,6 +830,33 @@ export type Database = {
           id?: string
           media_type?: string
           media_url?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      story_highlights: {
+        Row: {
+          cover_url: string | null
+          created_at: string | null
+          id: string
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          cover_url?: string | null
+          created_at?: string | null
+          id?: string
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          cover_url?: string | null
+          created_at?: string | null
+          id?: string
+          title?: string
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []

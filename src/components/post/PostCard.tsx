@@ -28,6 +28,7 @@ interface PostCardProps {
     comments_count: number;
     is_liked: boolean;
     is_saved: boolean;
+    is_suggested?: boolean;
   };
   onUpdate?: () => void;
 }
@@ -120,6 +121,13 @@ export function PostCard({ post, onUpdate }: PostCardProps) {
 
   return (
     <article className="border-b border-border bg-card">
+      {/* Suggested Label */}
+      {post.is_suggested && (
+        <div className="px-4 pt-2">
+          <span className="text-xs font-medium text-muted-foreground">Suggested for you</span>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3">
         <Link 

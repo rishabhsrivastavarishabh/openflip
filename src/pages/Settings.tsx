@@ -4,6 +4,7 @@ import { ArrowLeft, User, Lock, Bell, HelpCircle, LogOut, Camera, ChevronRight, 
 import { MainLayout } from '@/components/layout/MainLayout';
 import { BusinessAccountSettings } from '@/components/settings/BusinessAccountSettings';
 import { AccountSettings } from '@/components/settings/AccountSettings';
+import { NotificationSettings } from '@/components/settings/NotificationSettings';
 import { VerificationPanel } from '@/components/admin/VerificationPanel';
 import { BroadcastChannelManager } from '@/components/broadcast/BroadcastChannelManager';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,7 @@ export default function SettingsPage() {
   const [showBlockedUsers, setShowBlockedUsers] = useState(false);
   const [showBusinessSettings, setShowBusinessSettings] = useState(false);
   const [showAccountSettings, setShowAccountSettings] = useState(false);
+  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
   const [showVerificationPanel, setShowVerificationPanel] = useState(false);
   const [showBroadcastManager, setShowBroadcastManager] = useState(false);
   const [blockedUsers, setBlockedUsers] = useState<any[]>([]);
@@ -242,7 +244,31 @@ export default function SettingsPage() {
     return (
       <MainLayout>
         <div className="max-w-lg mx-auto p-4">
-          <AccountSettings onBack={() => setShowAccountSettings(false)} />
+          <AccountSettings 
+            onBack={() => setShowAccountSettings(false)} 
+            onShowPrivacy={() => {
+              setShowAccountSettings(false);
+              setShowPrivacy(true);
+            }}
+            onShowVerification={isAdmin ? () => {
+              setShowAccountSettings(false);
+              setShowVerificationPanel(true);
+            } : undefined}
+            onShowBroadcast={() => {
+              setShowAccountSettings(false);
+              setShowBroadcastManager(true);
+            }}
+          />
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (showNotificationSettings) {
+    return (
+      <MainLayout>
+        <div className="max-w-lg mx-auto p-4">
+          <NotificationSettings onBack={() => setShowNotificationSettings(false)} />
         </div>
       </MainLayout>
     );
@@ -446,9 +472,15 @@ export default function SettingsPage() {
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
               </div>
             </button>
-            <button className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary transition-colors text-left">
-              <Bell className="h-5 w-5 text-muted-foreground" />
-              <span>Notifications</span>
+            <button
+              onClick={() => setShowNotificationSettings(true)}
+              className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-secondary transition-colors text-left"
+            >
+              <div className="flex items-center gap-3">
+                <Bell className="h-5 w-5 text-muted-foreground" />
+                <span>Notifications</span>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </button>
             <button
               onClick={() => setShowAccountSettings(true)}

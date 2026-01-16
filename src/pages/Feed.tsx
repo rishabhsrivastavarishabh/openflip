@@ -33,6 +33,7 @@ interface FeedPost {
   comments_count: number;
   is_liked: boolean;
   is_saved: boolean;
+  is_suggested?: boolean; // Mark posts from non-followed users
 }
 export default function FeedPage() {
   const {
@@ -69,46 +70,70 @@ export default function FeedPage() {
       followingIds.push(user.id);
     }
 
-    // Fetch posts - only from followed users + own posts, images only (videos go to Reels)
-    let query = supabase.from('posts').select('*').eq('media_type', 'image').order('created_at', {
-      ascending: false
-    }).range(offset, offset + limit - 1);
+    // Fetch posts from followed users + own posts, images only (videos go to Reels)
+    let followedPosts: any[] = [];
+    let suggestedPosts: any[] = [];
+
     if (user && followingIds.length > 0) {
-      query = query.in('user_id', followingIds);
+      const { data: followedData } = await supabase
+        .from('posts')
+        .select('*')
+        .eq('media_type', 'image')
+        .in('user_id', followingIds)
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+      
+      followedPosts = followedData || [];
     }
-    const {
-      data: postsData,
-      error
-    } = await query;
-    if (error) {
-      console.error('Error fetching posts:', error);
-      setLoading(false);
-      return;
+
+    // Fetch some suggested/trending posts from non-followed users
+    const suggestedLimit = Math.max(2, Math.floor(limit * 0.3)); // 30% suggested posts
+    if (user) {
+      const { data: suggestedData } = await supabase
+        .from('posts')
+        .select('*')
+        .eq('media_type', 'image')
+        .not('user_id', 'in', `(${followingIds.join(',')})`)
+        .order('created_at', { ascending: false })
+        .limit(suggestedLimit);
+      
+      suggestedPosts = (suggestedData || []).map(p => ({ ...p, is_suggested: true }));
     }
-    if (!postsData || postsData.length === 0) {
-      if (pageNum === 0) {
-        // No posts from following, fetch explore posts instead (images only)
-        const {
-          data: explorePosts
-        } = await supabase.from('posts').select('*').eq('media_type', 'image').order('created_at', {
-          ascending: false
-        }).limit(20);
-        if (explorePosts && explorePosts.length > 0) {
-          const enrichedPosts = await enrichPosts(explorePosts);
-          setPosts(enrichedPosts);
-        }
+
+    // Combine and mix posts
+    let combinedPosts = [...followedPosts];
+    
+    // Insert suggested posts at intervals
+    suggestedPosts.forEach((suggestedPost, index) => {
+      const insertPosition = Math.min((index + 1) * 3, combinedPosts.length);
+      combinedPosts.splice(insertPosition, 0, suggestedPost);
+    });
+
+    if (combinedPosts.length === 0 && pageNum === 0) {
+      // No posts from following, fetch explore posts instead (images only)
+      const { data: explorePosts } = await supabase
+        .from('posts')
+        .select('*')
+        .eq('media_type', 'image')
+        .order('created_at', { ascending: false })
+        .limit(20);
+      
+      if (explorePosts && explorePosts.length > 0) {
+        const enrichedPosts = await enrichPosts(explorePosts.map(p => ({ ...p, is_suggested: true })));
+        setPosts(enrichedPosts);
       }
       setHasMore(false);
       setLoading(false);
       return;
     }
-    const enrichedPosts = await enrichPosts(postsData);
+
+    const enrichedPosts = await enrichPosts(combinedPosts);
     if (pageNum === 0) {
       setPosts(enrichedPosts);
     } else {
       setPosts(prev => [...prev, ...enrichedPosts]);
     }
-    setHasMore(postsData.length === limit);
+    setHasMore(followedPosts.length === limit);
     setLoading(false);
   }, [user]);
   const enrichPosts = async (postsData: any[]): Promise<FeedPost[]> => {
@@ -166,7 +191,8 @@ export default function FeedPage() {
       likes_count: likesCounts[post.id] || 0,
       comments_count: commentsCounts[post.id] || 0,
       is_liked: userLikes.includes(post.id),
-      is_saved: userSaves.includes(post.id)
+      is_saved: userSaves.includes(post.id),
+      is_suggested: post.is_suggested || false,
     }));
   };
   useEffect(() => {
