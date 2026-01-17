@@ -15,7 +15,7 @@ import { ShareSheet } from '@/components/share/ShareSheet';
 import { BlockReportSheet } from '@/components/moderation/BlockReportSheet';
 import { ProtectedMedia } from '@/components/media/ProtectedMedia';
 import { PostActions } from '@/components/post/PostActions';
-
+import { VerifiedBadge } from '@/components/common/VerifiedBadge';
 interface ProfileData {
   id: string;
   username: string;
@@ -450,11 +450,7 @@ export default function ProfilePage() {
               <div className="flex flex-col md:flex-row md:items-center gap-3">
                 <div className="flex items-center gap-2">
                   <h1 className="text-xl md:text-2xl font-semibold">{profile.username}</h1>
-                  {profile.is_verified && (
-                    <svg className="w-5 h-5 text-accent" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                    </svg>
-                  )}
+                  {profile.is_verified && <VerifiedBadge size="lg" />}
                 </div>
 
                 <div className="flex gap-2">

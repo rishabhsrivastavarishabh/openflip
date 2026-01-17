@@ -10,10 +10,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Bell, Heart, MessageCircle, UserPlus, AtSign, 
-  Play, X, CheckCheck, Loader2, Film, Image
+  Play, X, CheckCheck, Loader2, Film, Image, Trash2
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface NotificationItem {
   id: string;
@@ -177,6 +178,23 @@ export function NotificationPanel({ open, onOpenChange }: NotificationPanelProps
     onOpenChange(false);
   };
 
+  const handleDeleteNotification = async (notificationId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    try {
+      await supabase
+        .from('notifications')
+        .delete()
+        .eq('id', notificationId);
+      
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+      toast.success('Notification deleted');
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+      toast.error('Failed to delete notification');
+    }
+  };
+
   const filteredNotifications = notifications.filter(n => {
     if (activeTab === 'all') return true;
     if (activeTab === 'likes') return n.type === 'like';
@@ -229,7 +247,7 @@ export function NotificationPanel({ open, onOpenChange }: NotificationPanelProps
                         transition={{ delay: index * 0.03 }}
                         onClick={() => handleNotificationClick(notification)}
                         className={cn(
-                          "w-full flex items-start gap-3 p-4 text-left hover:bg-secondary/50 transition-colors",
+                          "w-full flex items-start gap-3 p-4 text-left hover:bg-secondary/50 transition-colors group",
                           !notification.is_read && "bg-primary/5"
                         )}
                       >
@@ -258,6 +276,15 @@ export function NotificationPanel({ open, onOpenChange }: NotificationPanelProps
                         {!notification.is_read && (
                           <div className="w-2 h-2 rounded-full bg-primary shrink-0 mt-2" />
                         )}
+                        
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                          onClick={(e) => handleDeleteNotification(notification.id, e)}
+                        >
+                          <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                        </Button>
                       </motion.button>
                     ))}
                   </AnimatePresence>
