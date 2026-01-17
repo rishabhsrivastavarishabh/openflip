@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
-import { Heart, MessageCircle, UserPlus, UserCheck, X, Check, Send } from 'lucide-react';
+import { Heart, MessageCircle, UserPlus, UserCheck, X, Check, Send, Trash2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -172,6 +172,24 @@ export default function NotificationsPage() {
     }
   };
 
+  const handleDeleteNotification = async (notificationId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    try {
+      await supabase
+        .from('notifications')
+        .delete()
+        .eq('id', notificationId);
+      
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+      toast.success('Notification deleted');
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+      toast.error('Failed to delete notification');
+    }
+  };
+
   const getNotificationText = (type: string) => {
     switch (type) {
       case 'like':
@@ -280,35 +298,44 @@ export default function NotificationsPage() {
                 ))
               ) : notifications.length > 0 ? (
                 notifications.map(notification => (
-                  <Link
+                  <div
                     key={notification.id}
-                    to={getNotificationLink(notification)}
-                    className="flex items-start gap-3 p-4 hover:bg-secondary/50 transition-colors"
+                    className="flex items-start gap-3 p-4 hover:bg-secondary/50 transition-colors group"
                   >
-                    <div className="relative">
-                      <Avatar className="h-11 w-11">
-                        <AvatarImage src={notification.actor.avatar_url || undefined} />
-                        <AvatarFallback className="bg-primary/10 text-primary">
-                          {notification.actor.username.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-background flex items-center justify-center">
-                        {getNotificationIcon(notification.type)}
+                    <Link to={getNotificationLink(notification)} className="flex items-start gap-3 flex-1">
+                      <div className="relative">
+                        <Avatar className="h-11 w-11">
+                          <AvatarImage src={notification.actor.avatar_url || undefined} />
+                          <AvatarFallback className="bg-primary/10 text-primary">
+                            {notification.actor.username.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-background flex items-center justify-center">
+                          {getNotificationIcon(notification.type)}
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm">
-                        <span className="font-semibold">{notification.actor.username}</span>{' '}
-                        {getNotificationText(notification.type)}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
-                      </p>
-                    </div>
-                    {!notification.is_read && (
-                      <div className="w-2 h-2 rounded-full bg-accent" />
-                    )}
-                  </Link>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm">
+                          <span className="font-semibold">{notification.actor.username}</span>{' '}
+                          {getNotificationText(notification.type)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                        </p>
+                      </div>
+                      {!notification.is_read && (
+                        <div className="w-2 h-2 rounded-full bg-accent" />
+                      )}
+                    </Link>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                      onClick={(e) => handleDeleteNotification(notification.id, e)}
+                    >
+                      <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                    </Button>
+                  </div>
                 ))
               ) : (
                 <div className="text-center py-12">
