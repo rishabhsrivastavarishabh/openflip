@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { 
   ArrowLeft, User, Mail, Shield, Key, Calendar, Users2,
-  Trash2, Loader2, Clock, AlertTriangle, ChevronRight, Lock, Radio, ShieldCheck
+  Trash2, Loader2, Clock, AlertTriangle, ChevronRight, Lock, ShieldCheck, Briefcase
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -27,10 +27,10 @@ interface AccountSettingsProps {
   onBack: () => void;
   onShowPrivacy?: () => void;
   onShowVerification?: () => void;
-  onShowBroadcast?: () => void;
+  onShowBusiness?: () => void;
 }
 
-export function AccountSettings({ onBack, onShowPrivacy, onShowVerification, onShowBroadcast }: AccountSettingsProps) {
+export function AccountSettings({ onBack, onShowPrivacy, onShowVerification, onShowBusiness }: AccountSettingsProps) {
   const { user, profile, signOut, updateProfile } = useAuth();
   const navigate = useNavigate();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -339,14 +339,14 @@ export function AccountSettings({ onBack, onShowPrivacy, onShowVerification, onS
             </button>
           )}
           
-          {onShowBroadcast && (
+          {onShowBusiness && (
             <button
-              onClick={onShowBroadcast}
+              onClick={onShowBusiness}
               className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-secondary transition-colors"
             >
               <div className="flex items-center gap-3">
-                <Radio className="w-5 h-5 text-muted-foreground" />
-                <span>Broadcast Channels</span>
+                <Briefcase className="w-5 h-5 text-muted-foreground" />
+                <span>Account Type</span>
               </div>
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </button>
