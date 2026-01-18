@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -20,6 +20,7 @@ import { MediaMessage } from '@/components/messages/MediaMessage';
 import { DisappearingMessagesIndicator } from '@/components/messages/DisappearingMessagesIndicator';
 import { GroupChatSettings } from '@/components/messages/GroupChatSettings';
 import { VerifiedBadge } from '@/components/common/VerifiedBadge';
+import { ProfileViewDialog } from '@/components/messages/ProfileViewDialog';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { toast } from 'sonner';
 
@@ -57,13 +58,25 @@ export default function ConversationPage() {
   const [conversation, setConversation] = useState<ConversationData | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [showBlockReport, setShowBlockReport] = useState(false);
+  const [showProfileView, setShowProfileView] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { fetchOnlineStatus, isUserOnline, getLastSeenText } = useOnlineStatus();
 
+  // Validate conversationId is a valid UUID
+  const isValidUUID = (id: string | undefined): boolean => {
+    if (!id) return false;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(id);
+  };
+
   useEffect(() => {
+    if (!isValidUUID(conversationId)) {
+      navigate('/messages');
+      return;
+    }
     if (user && conversationId) {
       fetchConversation();
       fetchMessages();
@@ -284,7 +297,10 @@ export default function ConversationPage() {
         <button onClick={() => navigate('/messages')}><ArrowLeft className="w-6 h-6" /></button>
         
         {participant || isGroupChat ? (
-          <Link to={isGroupChat ? '#' : `/profile/${participant?.id}`} className="flex items-center gap-3 flex-1">
+          <button 
+            onClick={() => !isGroupChat && setShowProfileView(true)} 
+            className="flex items-center gap-3 flex-1 text-left"
+          >
             <div className="relative">
               {isGroupChat ? (
                 <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
@@ -315,7 +331,7 @@ export default function ConversationPage() {
                 ) : ''}
               </p>
             </div>
-          </Link>
+          </button>
         ) : <Skeleton className="w-24 h-4" />}
 
         <div className="flex items-center gap-2">
@@ -340,6 +356,16 @@ export default function ConversationPage() {
           )}
         </div>
       </div>
+
+      {/* Profile View Dialog */}
+      {participant && !isGroupChat && (
+        <ProfileViewDialog
+          open={showProfileView}
+          onOpenChange={setShowProfileView}
+          profile={participant}
+          isOnline={isUserOnline(participant.id)}
+        />
+      )}
 
       {participant && !isGroupChat && (
         <BlockReportSheet open={showBlockReport} onOpenChange={setShowBlockReport} targetUserId={participant.id} targetUsername={participant.username} onBlocked={() => navigate('/messages')} />
