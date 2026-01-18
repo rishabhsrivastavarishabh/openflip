@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
-import { PenSquare, Search } from 'lucide-react';
+import { PenSquare, Search, Users } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,9 +40,10 @@ export default function MessagesPage() {
   const fetchConversations = useCallback(async () => {
     if (!user) return;
 
+    // Get all conversations with their details including group info
     const { data: participations, error } = await supabase
       .from('conversation_participants')
-      .select(`conversation_id, conversations(id, updated_at)`)
+      .select(`conversation_id, conversations(id, updated_at, is_group, group_name, group_avatar_url)`)
       .eq('user_id', user.id);
 
     if (error || !participations) {
@@ -82,17 +83,26 @@ export default function MessagesPage() {
     });
 
     const conversationsData = participations.map((p: any) => {
-      const otherParticipant = allParticipants?.find(
+      const convo = p.conversations;
+      const isGroup = convo?.is_group || false;
+      const otherParticipants = allParticipants?.filter(
         (op: any) => op.conversation_id === p.conversation_id
-      );
+      ) || [];
+
+      // For 1-on-1 chats, use the other participant's info
+      // For group chats, use group info
+      const firstParticipant = otherParticipants[0]?.profiles || { id: '', username: 'Unknown', avatar_url: null };
 
       return {
         id: p.conversation_id,
-        updated_at: p.conversations?.updated_at || '',
-        participant: otherParticipant?.profiles || { id: '', username: 'Unknown', avatar_url: null },
+        updated_at: convo?.updated_at || '',
+        participant: firstParticipant,
         last_message: lastMessages[p.conversation_id]?.content || null,
         last_sender_id: lastMessages[p.conversation_id]?.sender_id || null,
         unread_count: unreadCounts[p.conversation_id] || 0,
+        is_group: isGroup,
+        group_name: convo?.group_name || null,
+        group_avatar_url: convo?.group_avatar_url || null,
       } as ConversationItem;
     });
 
@@ -100,8 +110,11 @@ export default function MessagesPage() {
     setConversations(conversationsData);
     setLoading(false);
 
-    // Fetch online status for all participants
-    const participantIds = conversationsData.map(c => c.participant.id).filter(Boolean);
+    // Fetch online status for all participants (for 1-on-1 chats)
+    const participantIds = conversationsData
+      .filter(c => !c.is_group)
+      .map(c => c.participant.id)
+      .filter(Boolean);
     if (participantIds.length > 0) {
       fetchOnlineStatus(participantIds);
     }
@@ -130,9 +143,13 @@ export default function MessagesPage() {
     }
   }, [conversations, subscribeToOnlineStatus]);
 
-  const filteredConversations = conversations.filter(c =>
-    c.participant.username.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredConversations = conversations.filter(c => {
+    const searchTerm = searchQuery.toLowerCase();
+    if (c.is_group) {
+      return c.group_name?.toLowerCase().includes(searchTerm);
+    }
+    return c.participant.username.toLowerCase().includes(searchTerm);
+  });
 
   if (!user) {
     return (
@@ -187,20 +204,37 @@ export default function MessagesPage() {
                 className="flex items-center gap-3 p-4 hover:bg-secondary/50 transition-colors"
               >
                 <div className="relative">
-                  <Avatar className="h-14 w-14">
-                    <AvatarImage src={conversation.participant.avatar_url || undefined} />
-                    <AvatarFallback className="bg-primary/10 text-primary text-lg">
-                      {conversation.participant.username.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  {isUserOnline(conversation.participant.id) && (
-                    <OnlineIndicator isOnline={true} size="md" className="absolute bottom-0 right-0" />
+                  {conversation.is_group ? (
+                    <div className="h-14 w-14 bg-primary/10 rounded-full flex items-center justify-center">
+                      {conversation.group_avatar_url ? (
+                        <Avatar className="h-14 w-14">
+                          <AvatarImage src={conversation.group_avatar_url} />
+                          <AvatarFallback className="bg-primary/10 text-primary text-lg">
+                            <Users className="h-6 w-6" />
+                          </AvatarFallback>
+                        </Avatar>
+                      ) : (
+                        <Users className="h-6 w-6 text-primary" />
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      <Avatar className="h-14 w-14">
+                        <AvatarImage src={conversation.participant.avatar_url || undefined} />
+                        <AvatarFallback className="bg-primary/10 text-primary text-lg">
+                          {conversation.participant.username.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      {isUserOnline(conversation.participant.id) && (
+                        <OnlineIndicator isOnline={true} size="md" className="absolute bottom-0 right-0" />
+                      )}
+                    </>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
                     <span className={`font-semibold ${conversation.unread_count > 0 ? 'text-foreground' : ''}`}>
-                      {conversation.participant.username}
+                      {conversation.is_group ? conversation.group_name : conversation.participant.username}
                     </span>
                     <span className="text-xs text-muted-foreground">
                       {formatDistanceToNow(new Date(conversation.updated_at), { addSuffix: false })}
