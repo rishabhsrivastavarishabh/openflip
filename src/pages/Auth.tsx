@@ -4,17 +4,49 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, Mail, Lock, User, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, ArrowRight, ArrowLeft, Phone, Hash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import openflipLogo from '@/assets/openflip-logo.png';
 
+const countryCodes = [
+  { code: '+1', country: 'US' },
+  { code: '+44', country: 'UK' },
+  { code: '+91', country: 'IN' },
+  { code: '+86', country: 'CN' },
+  { code: '+81', country: 'JP' },
+  { code: '+49', country: 'DE' },
+  { code: '+33', country: 'FR' },
+  { code: '+39', country: 'IT' },
+  { code: '+55', country: 'BR' },
+  { code: '+7', country: 'RU' },
+  { code: '+82', country: 'KR' },
+  { code: '+61', country: 'AU' },
+  { code: '+34', country: 'ES' },
+  { code: '+52', country: 'MX' },
+  { code: '+971', country: 'AE' },
+  { code: '+966', country: 'SA' },
+  { code: '+65', country: 'SG' },
+  { code: '+60', country: 'MY' },
+  { code: '+62', country: 'ID' },
+  { code: '+63', country: 'PH' },
+  { code: '+84', country: 'VN' },
+  { code: '+66', country: 'TH' },
+  { code: '+27', country: 'ZA' },
+  { code: '+234', country: 'NG' },
+  { code: '+20', country: 'EG' },
+  { code: '+254', country: 'KE' },
+  { code: '+92', country: 'PK' },
+  { code: '+880', country: 'BD' },
+];
+
 const signInSchema = z.object({
-  email: z.string().email('Please enter a valid email'),
+  identifier: z.string().min(1, 'Please enter email, username, or phone number'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
@@ -23,6 +55,8 @@ const signUpSchema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters'),
   username: z.string().min(3, 'Username must be at least 3 characters').regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores'),
   fullName: z.string().optional(),
+  phoneNumber: z.string().optional(),
+  countryCode: z.string().optional(),
 });
 
 const forgotPasswordSchema = z.object({
@@ -69,7 +103,37 @@ export default function AuthPage() {
 
   const handleSignIn = async (data: SignInForm) => {
     setLoading(true);
-    const { error } = await signIn(data.email, data.password);
+    
+    let email = data.identifier;
+    
+    // Check if identifier is a username or phone number
+    if (!data.identifier.includes('@')) {
+      // Try to find user by username or phone
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('id')
+        .or(`username.eq.${data.identifier},phone_number.eq.${data.identifier}`)
+        .maybeSingle();
+      
+      if (profileData) {
+        // Get email from auth.users via edge function or profile lookup
+        // For now, we'll use a workaround - get email from profile
+        const { data: userData } = await supabase.auth.admin?.getUserById?.(profileData.id) || { data: null };
+        if (userData?.user?.email) {
+          email = userData.user.email;
+        } else {
+          // Fallback: treat as email
+          toast.error('User not found. Please use your email to sign in.');
+          setLoading(false);
+          return;
+        }
+      } else {
+        // If not found, treat the identifier as an email for the standard flow
+        email = data.identifier;
+      }
+    }
+
+    const { error } = await signIn(email, data.password);
     setLoading(false);
 
     if (error) {
@@ -83,6 +147,18 @@ export default function AuthPage() {
   const handleSignUp = async (data: SignUpForm) => {
     setLoading(true);
     const { error } = await signUp(data.email, data.password, data.username, data.fullName);
+    
+    if (!error && data.phoneNumber && data.countryCode) {
+      // Update profile with phone number after signup
+      const { data: { user: newUser } } = await supabase.auth.getUser();
+      if (newUser) {
+        await supabase.from('profiles').update({
+          phone_number: data.phoneNumber,
+          country_code: data.countryCode,
+        }).eq('id', newUser.id);
+      }
+    }
+    
     setLoading(false);
 
     if (error) {
@@ -247,9 +323,40 @@ export default function AuthPage() {
                       {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                     </button>
                   </div>
-                  {signUpForm.formState.errors.password && (
+                {signUpForm.formState.errors.password && (
                     <p className="text-sm text-destructive">{signUpForm.formState.errors.password.message}</p>
                   )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone Number (optional)</Label>
+                  <div className="flex gap-2">
+                    <Select 
+                      onValueChange={(value) => signUpForm.setValue('countryCode', value)}
+                      defaultValue="+1"
+                    >
+                      <SelectTrigger className="w-24">
+                        <SelectValue placeholder="+1" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background border">
+                        {countryCodes.map((c) => (
+                          <SelectItem key={c.code} value={c.code}>
+                            {c.code} {c.country}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <div className="relative flex-1">
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                      <Input
+                        id="phone"
+                        type="tel"
+                        placeholder="1234567890"
+                        className="pl-10"
+                        {...signUpForm.register('phoneNumber')}
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <Button type="submit" variant="gradient" size="lg" className="w-full" disabled={loading}>
@@ -260,19 +367,19 @@ export default function AuthPage() {
             ) : (
               <form onSubmit={signInForm.handleSubmit(handleSignIn)} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="identifier">Email, Username, or Phone</Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input
-                      id="email"
-                      type="email"
-                      placeholder="you@example.com"
+                      id="identifier"
+                      type="text"
+                      placeholder="Email, @username, or phone"
                       className="pl-10"
-                      {...signInForm.register('email')}
+                      {...signInForm.register('identifier')}
                     />
                   </div>
-                  {signInForm.formState.errors.email && (
-                    <p className="text-sm text-destructive">{signInForm.formState.errors.email.message}</p>
+                  {signInForm.formState.errors.identifier && (
+                    <p className="text-sm text-destructive">{signInForm.formState.errors.identifier.message}</p>
                   )}
                 </div>
 

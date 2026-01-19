@@ -593,6 +593,7 @@ export type Database = {
           business_category: string | null
           business_email: string | null
           business_website: string | null
+          country_code: string | null
           created_at: string | null
           date_of_birth: string | null
           full_name: string | null
@@ -600,6 +601,7 @@ export type Database = {
           id: string
           is_private: boolean | null
           is_verified: boolean | null
+          phone_number: string | null
           updated_at: string | null
           username: string
           verification_requested_at: string | null
@@ -613,6 +615,7 @@ export type Database = {
           business_category?: string | null
           business_email?: string | null
           business_website?: string | null
+          country_code?: string | null
           created_at?: string | null
           date_of_birth?: string | null
           full_name?: string | null
@@ -620,6 +623,7 @@ export type Database = {
           id: string
           is_private?: boolean | null
           is_verified?: boolean | null
+          phone_number?: string | null
           updated_at?: string | null
           username: string
           verification_requested_at?: string | null
@@ -633,6 +637,7 @@ export type Database = {
           business_category?: string | null
           business_email?: string | null
           business_website?: string | null
+          country_code?: string | null
           created_at?: string | null
           date_of_birth?: string | null
           full_name?: string | null
@@ -640,6 +645,7 @@ export type Database = {
           id?: string
           is_private?: boolean | null
           is_verified?: boolean | null
+          phone_number?: string | null
           updated_at?: string | null
           username?: string
           verification_requested_at?: string | null
@@ -702,6 +708,35 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "reel_likes_reel_id_fkey"
+            columns: ["reel_id"]
+            isOneToOne: false
+            referencedRelation: "reels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reel_saves: {
+        Row: {
+          created_at: string | null
+          id: string
+          reel_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          reel_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          reel_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reel_saves_reel_id_fkey"
             columns: ["reel_id"]
             isOneToOne: false
             referencedRelation: "reels"
@@ -940,6 +975,7 @@ export type Database = {
           created_at: string
           id: string
           notes: string | null
+          request_id: string | null
           reviewed_at: string | null
           reviewed_by: string | null
           status: string
@@ -953,6 +989,7 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
+          request_id?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
@@ -966,6 +1003,7 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
+          request_id?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
