@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, TrendingUp, Hash, User } from 'lucide-react';
+import { Search, TrendingUp, Hash, User, Film, Grid3X3 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Input } from '@/components/ui/input';
@@ -17,6 +17,14 @@ interface ExplorePost {
   comments_count: number;
 }
 
+interface ExploreReel {
+  id: string;
+  video_url: string;
+  thumbnail_url: string | null;
+  view_count: number;
+  likes_count: number;
+}
+
 interface SearchUser {
   id: string;
   username: string;
@@ -28,6 +36,7 @@ interface SearchUser {
 export default function ExplorePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [posts, setPosts] = useState<ExplorePost[]>([]);
+  const [reels, setReels] = useState<ExploreReel[]>([]);
   const [users, setUsers] = useState<SearchUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -35,6 +44,7 @@ export default function ExplorePage() {
 
   useEffect(() => {
     fetchExplorePosts();
+    fetchExploreReels();
   }, []);
 
   // Sanitize search query by escaping special SQL ILIKE characters
@@ -109,6 +119,38 @@ export default function ExplorePage() {
     }
 
     setLoading(false);
+  };
+
+  const fetchExploreReels = async () => {
+    const { data: reelsData, error } = await supabase
+      .from('reels')
+      .select('id, video_url, thumbnail_url, view_count')
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (error) {
+      console.error('Error fetching reels:', error);
+      return;
+    }
+
+    if (reelsData) {
+      const reelIds = reelsData.map(r => r.id);
+
+      const { data: likesData } = await supabase
+        .from('reel_likes')
+        .select('reel_id')
+        .in('reel_id', reelIds);
+
+      const likesCounts: Record<string, number> = {};
+      likesData?.forEach(like => {
+        likesCounts[like.reel_id] = (likesCounts[like.reel_id] || 0) + 1;
+      });
+
+      setReels(reelsData.map(reel => ({
+        ...reel,
+        likes_count: likesCounts[reel.id] || 0,
+      })) as ExploreReel[]);
+    }
   };
 
   const searchUsers = async () => {
@@ -205,12 +247,16 @@ export default function ExplorePage() {
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="w-full mb-4">
                 <TabsTrigger value="posts" className="flex-1">
+                  <Grid3X3 className="h-4 w-4 mr-2" />
+                  Posts
+                </TabsTrigger>
+                <TabsTrigger value="reels" className="flex-1">
+                  <Film className="h-4 w-4 mr-2" />
+                  Reels
+                </TabsTrigger>
+                <TabsTrigger value="trending" className="flex-1">
                   <TrendingUp className="h-4 w-4 mr-2" />
                   Trending
-                </TabsTrigger>
-                <TabsTrigger value="hashtags" className="flex-1">
-                  <Hash className="h-4 w-4 mr-2" />
-                  Tags
                 </TabsTrigger>
               </TabsList>
 
@@ -254,10 +300,45 @@ export default function ExplorePage() {
                 )}
               </TabsContent>
 
-              <TabsContent value="hashtags">
+              <TabsContent value="reels">
+                {reels.length > 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-1">
+                    {reels.map(reel => (
+                      <Link
+                        key={reel.id}
+                        to={`/reels?id=${reel.id}`}
+                        className="aspect-[9/16] relative group overflow-hidden rounded-sm"
+                      >
+                        <ProtectedMedia
+                          src={reel.thumbnail_url || reel.video_url}
+                          type={reel.thumbnail_url ? 'image' : 'video'}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/30 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                          <div className="flex items-center gap-2 text-primary-foreground font-semibold text-xs">
+                            <span>▶️ {reel.view_count || 0}</span>
+                            <span>❤️ {reel.likes_count}</span>
+                          </div>
+                        </div>
+                        <div className="absolute bottom-2 left-2 flex items-center gap-1 text-white text-xs">
+                          <Film className="w-3 h-3" />
+                          <span>{reel.view_count || 0}</span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Film className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">No reels to explore yet</p>
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="trending">
                 <div className="text-center py-12">
-                  <Hash className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">Hashtags will appear here as users create posts</p>
+                  <TrendingUp className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">Trending content will appear here</p>
                 </div>
               </TabsContent>
             </Tabs>

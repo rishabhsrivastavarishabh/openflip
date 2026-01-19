@@ -20,6 +20,8 @@ interface VerificationRequest {
   status: string;
   notes: string | null;
   created_at: string;
+  request_id: string | null;
+  reviewed_at: string | null;
   profile?: {
     id: string;
     username: string;
@@ -266,12 +268,29 @@ export function VerificationPanel({ open, onOpenChange }: VerificationPanelProps
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-semibold">{request.profile?.username}</span>
                           <Badge variant="outline" className="text-xs flex items-center gap-1">
                             {getCategoryIcon(request.category)}
                             {request.category}
                           </Badge>
+                          {request.request_id && (
+                            <Badge variant="secondary" className="text-xs font-mono">
+                              {request.request_id}
+                            </Badge>
+                          )}
+                          {request.status === 'approved' && (
+                            <Badge className="text-xs bg-green-500/20 text-green-500 border-green-500/30">
+                              <Check className="w-3 h-3 mr-1" />
+                              Approved
+                            </Badge>
+                          )}
+                          {request.status === 'rejected' && (
+                            <Badge variant="destructive" className="text-xs">
+                              <X className="w-3 h-3 mr-1" />
+                              Rejected
+                            </Badge>
+                          )}
                         </div>
                         {request.profile?.full_name && (
                           <p className="text-sm text-muted-foreground">{request.profile.full_name}</p>
@@ -280,9 +299,14 @@ export function VerificationPanel({ open, onOpenChange }: VerificationPanelProps
                           <p className="text-sm mt-1 line-clamp-2">{request.profile.bio}</p>
                         )}
                       </div>
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(request.created_at).toLocaleDateString()}
-                      </span>
+                      <div className="text-right text-xs text-muted-foreground">
+                        <p>{new Date(request.created_at).toLocaleDateString()}</p>
+                        {request.reviewed_at && (
+                          <p className="text-green-500">
+                            Reviewed: {new Date(request.reviewed_at).toLocaleDateString()}
+                          </p>
+                        )}
+                      </div>
                     </div>
 
                     {/* Business Details */}

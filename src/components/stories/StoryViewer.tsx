@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { ProtectedMedia } from '@/components/media/ProtectedMedia';
 import { MobileAppFrame } from '@/components/layout/MobileAppFrame';
 import { ShareSheet } from '@/components/share/ShareSheet';
+import { ProfileViewDialog } from '@/components/messages/ProfileViewDialog';
 interface StoryViewerProps {
   storyGroups: StoryGroup[];
   initialGroupIndex: number;
@@ -42,6 +43,7 @@ export function StoryViewer({
   const [isDragging, setIsDragging] = useState(false);
   const [showShareSheet, setShowShareSheet] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [showProfileDialog, setShowProfileDialog] = useState(false);
   const progressInterval = useRef<NodeJS.Timeout | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const currentGroup = storyGroups[currentGroupIndex];
@@ -247,7 +249,13 @@ export function StoryViewer({
 
           {/* Header */}
           <div className="absolute top-6 left-2 right-2 z-20 flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <button 
+              className="flex items-center gap-3"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowProfileDialog(true);
+              }}
+            >
               <Avatar className="w-10 h-10 ring-2 ring-white/20">
                 <AvatarImage src={currentGroup.avatar_url || undefined} />
                 <AvatarFallback>{currentGroup.username.charAt(0).toUpperCase()}</AvatarFallback>
@@ -260,7 +268,7 @@ export function StoryViewer({
                 })}
                 </p>
               </div>
-            </div>
+            </button>
             <div className="flex items-center gap-2">
               <button onClick={e => {
               e.stopPropagation();
@@ -349,6 +357,24 @@ export function StoryViewer({
               {viewers.length === 0 && <p className="text-muted-foreground text-center py-4">No viewers yet</p>}
             </div>
           </motion.div>}
+
+        {/* Profile View Dialog */}
+        <ProfileViewDialog
+          open={showProfileDialog}
+          onOpenChange={setShowProfileDialog}
+          profile={{
+            id: currentGroup.user_id,
+            username: currentGroup.username,
+            full_name: null,
+            avatar_url: currentGroup.avatar_url,
+            bio: null,
+            website: null,
+            is_private: false,
+            is_verified: currentGroup.is_verified,
+            created_at: '',
+            updated_at: '',
+          }}
+        />
       </motion.div>
     </AnimatePresence>;
 }

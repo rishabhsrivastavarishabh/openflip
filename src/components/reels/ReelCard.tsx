@@ -1,18 +1,36 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, MessageCircle, Share2, Bookmark, Music2, MoreHorizontal, Volume2, VolumeX, Play, Eye, UserPlus } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Bookmark, Music2, MoreHorizontal, Volume2, VolumeX, Play, Eye, UserPlus, Trash2 } from 'lucide-react';
 import { Reel } from '@/types/database';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { ShareSheet } from '@/components/share/ShareSheet';
 import { BlockReportSheet } from '@/components/moderation/BlockReportSheet';
 import { ReelProgress } from './ReelProgress';
 import { ReelComments } from './ReelComments';
 import { VerifiedBadge } from '@/components/common/VerifiedBadge';
+import { ProfileViewDialog } from '@/components/messages/ProfileViewDialog';
+import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface ReelCardProps {
   reel: Reel;
@@ -20,10 +38,12 @@ interface ReelCardProps {
   onLike: () => void;
   globalMuted?: boolean;
   onMuteToggle?: () => void;
+  onDeleted?: () => void;
 }
 
-export function ReelCard({ reel, isActive, onLike, globalMuted = false, onMuteToggle }: ReelCardProps) {
+export function ReelCard({ reel, isActive, onLike, globalMuted = false, onMuteToggle, onDeleted }: ReelCardProps) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(globalMuted);
@@ -36,6 +56,11 @@ export function ReelCard({ reel, isActive, onLike, globalMuted = false, onMuteTo
   const [showComments, setShowComments] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
+  const [showProfileDialog, setShowProfileDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const isOwnReel = user?.id === reel.user_id;
 
   // Check follow status
   useEffect(() => {
@@ -81,8 +106,67 @@ export function ReelCard({ reel, isActive, onLike, globalMuted = false, onMuteTo
 
   const handleSave = async () => {
     if (!user) return;
-    setIsSaved(!isSaved);
-    // Note: Would need a reel_saves table for full implementation
+    
+    try {
+      if (isSaved) {
+        await supabase.from('reel_saves').delete()
+          .eq('reel_id', reel.id)
+          .eq('user_id', user.id);
+        setIsSaved(false);
+        toast.success('Removed from saved');
+      } else {
+        await supabase.from('reel_saves').insert({
+          reel_id: reel.id,
+          user_id: user.id,
+        });
+        setIsSaved(true);
+        toast.success('Saved to collection');
+      }
+    } catch (error) {
+      console.error('Error saving reel:', error);
+    }
+  };
+
+  const handleDeleteReel = async () => {
+    if (!user || !isOwnReel || deleting) return;
+    
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('reels')
+        .delete()
+        .eq('id', reel.id)
+        .eq('user_id', user.id);
+      
+      if (error) throw error;
+      
+      toast.success('Reel deleted');
+      onDeleted?.();
+    } catch (error) {
+      console.error('Error deleting reel:', error);
+      toast.error('Failed to delete reel');
+    } finally {
+      setDeleting(false);
+      setShowDeleteDialog(false);
+    }
+  };
+
+  // Check saved status
+  useEffect(() => {
+    if (user) {
+      checkSavedStatus();
+    }
+  }, [user, reel.id]);
+
+  const checkSavedStatus = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('reel_saves')
+      .select('id')
+      .eq('reel_id', reel.id)
+      .eq('user_id', user.id)
+      .maybeSingle();
+    setIsSaved(!!data);
   };
 
   // Sync with global mute state
@@ -218,12 +302,12 @@ export function ReelCard({ reel, isActive, onLike, globalMuted = false, onMuteTo
       <div className="absolute right-3 bottom-32 flex flex-col items-center gap-4">
         {/* Profile with follow */}
         <div className="relative">
-          <Link to={`/profile/${reel.user_id}`}>
+          <button onClick={() => setShowProfileDialog(true)}>
             <Avatar className="w-12 h-12 ring-2 ring-white shadow-lg">
               <AvatarImage src={reel.profiles?.avatar_url || undefined} />
               <AvatarFallback>{reel.profiles?.username?.charAt(0).toUpperCase()}</AvatarFallback>
             </Avatar>
-          </Link>
+          </button>
           {user && user.id !== reel.user_id && !isFollowing && (
             <button
               onClick={handleFollow}
@@ -284,13 +368,30 @@ export function ReelCard({ reel, isActive, onLike, globalMuted = false, onMuteTo
           <span className="text-white text-xs font-medium">Share</span>
         </button>
 
-        {/* More */}
-        <button 
-          onClick={() => setShowBlockReport(true)}
-          className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center active:scale-90 transition-transform"
-        >
-          <MoreHorizontal className="w-6 h-6 text-white" />
-        </button>
+        {/* More Options */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center active:scale-90 transition-transform">
+              <MoreHorizontal className="w-6 h-6 text-white" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="bg-background border">
+            {isOwnReel && (
+              <DropdownMenuItem 
+                className="text-destructive focus:text-destructive cursor-pointer"
+                onClick={() => setShowDeleteDialog(true)}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete Reel
+              </DropdownMenuItem>
+            )}
+            {!isOwnReel && (
+              <DropdownMenuItem onClick={() => setShowBlockReport(true)} className="cursor-pointer">
+                Report
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         {/* Audio disc */}
         {reel.audio_name && (
@@ -393,6 +494,48 @@ export function ReelCard({ reel, isActive, onLike, globalMuted = false, onMuteTo
           context={{ reelId: reel.id }}
         />
       )}
+
+      {/* Profile View Dialog */}
+      {reel.profiles && (
+        <ProfileViewDialog
+          open={showProfileDialog}
+          onOpenChange={setShowProfileDialog}
+          profile={{
+            id: reel.user_id,
+            username: reel.profiles.username,
+            full_name: reel.profiles.full_name || null,
+            avatar_url: reel.profiles.avatar_url || null,
+            bio: null,
+            website: null,
+            is_private: false,
+            is_verified: reel.profiles.is_verified,
+            created_at: '',
+            updated_at: '',
+          }}
+        />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Reel?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete your reel.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteReel}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleting}
+            >
+              {deleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
