@@ -49,6 +49,7 @@ export default function CreatePage() {
   const [mediaMode, setMediaMode] = useState<MediaMode>('photo');
   const [audioName, setAudioName] = useState('');
   const [audioArtist, setAudioArtist] = useState('');
+  const [alsoPostToStory, setAlsoPostToStory] = useState(false);
   
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -350,17 +351,26 @@ export default function CreatePage() {
               location: location.trim() || null,
             });
 
-          if (postError) throw postError;
+              if (postError) throw postError;
 
-          if (currentDraftId) {
-            await supabase.from('drafts').delete().eq('id', currentDraftId);
+              // Also post to story if option selected
+              if (alsoPostToStory && mediaUrl) {
+                await supabase.from('stories').insert({
+                  user_id: user.id,
+                  media_url: mediaUrl,
+                  media_type: mediaType || 'image',
+                });
+              }
+
+              if (currentDraftId) {
+                await supabase.from('drafts').delete().eq('id', currentDraftId);
+              }
+
+              toast.success(alsoPostToStory ? 'Post and story created!' : 'Post created!');
+            }
+            navigate('/');
           }
-
-          toast.success('Post created!');
-        }
-        navigate('/');
-      }
-    } catch (error: any) {
+        } catch (error: any) {
       console.error('Error creating content:', error);
       toast.error(error.message || 'Failed to create');
     } finally {
@@ -556,15 +566,33 @@ export default function CreatePage() {
 
             {/* Location (only for photos) */}
             {!isVideo && (
-              <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                  placeholder="Add location"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+              <>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    placeholder="Add location"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+
+                {/* Also post to story option */}
+                {!isEditing && (
+                  <label className="flex items-center gap-3 p-4 bg-secondary/50 rounded-xl cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={alsoPostToStory}
+                      onChange={(e) => setAlsoPostToStory(e.target.checked)}
+                      className="w-5 h-5 rounded border-2 border-primary accent-primary"
+                    />
+                    <div className="flex-1">
+                      <p className="font-medium">Also post to your story</p>
+                      <p className="text-sm text-muted-foreground">Share this content as a story too</p>
+                    </div>
+                  </label>
+                )}
+              </>
             )}
 
             {/* Audio info (only for videos/reels) */}
