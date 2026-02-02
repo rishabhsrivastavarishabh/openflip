@@ -22,6 +22,7 @@ import Following from "./pages/Following";
 import Search from "./pages/Search";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
+import HowItWorks from "./pages/HowItWorks";
 import { CreateReel } from "./components/reels/CreateReel";
 import NotFound from "./pages/NotFound";
 
@@ -54,6 +55,7 @@ const App = () => (
               <Route path="/settings" element={<Settings />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
               <Route path="/terms" element={<TermsOfService />} />
+              <Route path="/how-it-works" element={<HowItWorks />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

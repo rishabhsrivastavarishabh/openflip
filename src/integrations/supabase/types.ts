@@ -358,22 +358,60 @@ export type Database = {
           },
         ]
       }
+      message_reactions: {
+        Row: {
+          created_at: string | null
+          emoji: string
+          id: string
+          message_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          emoji: string
+          id?: string
+          message_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          emoji?: string
+          id?: string
+          message_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_reactions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string
           conversation_id: string
           created_at: string | null
+          delivered_at: string | null
           expires_at: string | null
+          file_name: string | null
+          file_size: number | null
           id: string
           is_read: boolean | null
           is_view_once: boolean | null
           media_type: string | null
           media_url: string | null
           message_type: string | null
+          read_at: string | null
+          reply_to_id: string | null
           sender_id: string
           shared_post_id: string | null
           shared_profile_id: string | null
           shared_reel_id: string | null
+          status: string | null
           story_id: string | null
           story_reply_preview_url: string | null
           viewed_at: string | null
@@ -383,17 +421,23 @@ export type Database = {
           content: string
           conversation_id: string
           created_at?: string | null
+          delivered_at?: string | null
           expires_at?: string | null
+          file_name?: string | null
+          file_size?: number | null
           id?: string
           is_read?: boolean | null
           is_view_once?: boolean | null
           media_type?: string | null
           media_url?: string | null
           message_type?: string | null
+          read_at?: string | null
+          reply_to_id?: string | null
           sender_id: string
           shared_post_id?: string | null
           shared_profile_id?: string | null
           shared_reel_id?: string | null
+          status?: string | null
           story_id?: string | null
           story_reply_preview_url?: string | null
           viewed_at?: string | null
@@ -403,17 +447,23 @@ export type Database = {
           content?: string
           conversation_id?: string
           created_at?: string | null
+          delivered_at?: string | null
           expires_at?: string | null
+          file_name?: string | null
+          file_size?: number | null
           id?: string
           is_read?: boolean | null
           is_view_once?: boolean | null
           media_type?: string | null
           media_url?: string | null
           message_type?: string | null
+          read_at?: string | null
+          reply_to_id?: string | null
           sender_id?: string
           shared_post_id?: string | null
           shared_profile_id?: string | null
           shared_reel_id?: string | null
+          status?: string | null
           story_id?: string | null
           story_reply_preview_url?: string | null
           viewed_at?: string | null
@@ -425,6 +475,13 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
             referencedColumns: ["id"]
           },
         ]

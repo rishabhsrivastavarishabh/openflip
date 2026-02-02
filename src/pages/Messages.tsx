@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
-import { PenSquare, Search, Users } from 'lucide-react';
+import { PenSquare, Search, Users, HelpCircle } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { OnlineIndicator } from '@/components/messages/OnlineIndicator';
 import { NewMessageModal } from '@/components/messages/NewMessageModal';
+import { MessageSearch } from '@/components/messages/MessageSearch';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 
 interface ConversationItem {
@@ -35,6 +36,7 @@ export default function MessagesPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showNewMessage, setShowNewMessage] = useState(false);
+  const [showMessageSearch, setShowMessageSearch] = useState(false);
   const { fetchOnlineStatus, subscribeToOnlineStatus, isUserOnline } = useOnlineStatus();
 
   const fetchConversations = useCallback(async () => {
@@ -170,9 +172,19 @@ export default function MessagesPage() {
         <header className="sticky top-0 z-40 glass-strong border-b px-4 py-3">
           <div className="flex items-center justify-between mb-3">
             <h1 className="font-semibold text-lg">Messages</h1>
-            <Button variant="ghost" size="icon" onClick={() => setShowNewMessage(true)}>
-              <PenSquare className="h-5 w-5" />
-            </Button>
+            <div className="flex items-center gap-1">
+              <Link to="/how-it-works">
+                <Button variant="ghost" size="icon">
+                  <HelpCircle className="h-5 w-5" />
+                </Button>
+              </Link>
+              <Button variant="ghost" size="icon" onClick={() => setShowMessageSearch(true)}>
+                <Search className="h-5 w-5" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={() => setShowNewMessage(true)}>
+                <PenSquare className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -270,6 +282,7 @@ export default function MessagesPage() {
       </div>
 
       <NewMessageModal open={showNewMessage} onOpenChange={setShowNewMessage} />
+      <MessageSearch open={showMessageSearch} onOpenChange={setShowMessageSearch} />
     </MainLayout>
   );
 }
