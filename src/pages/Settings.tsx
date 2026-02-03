@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, User, Lock, Bell, HelpCircle, LogOut, Camera, ChevronRight, Shield, Ban, Trash2, Briefcase, Settings2 } from 'lucide-react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, User, Lock, Bell, HelpCircle, LogOut, Camera, ChevronRight, Shield, Ban, Trash2, Briefcase, Settings2, Crown } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { BusinessAccountSettings } from '@/components/settings/BusinessAccountSettings';
 import { AccountSettings } from '@/components/settings/AccountSettings';
 import { NotificationSettings } from '@/components/settings/NotificationSettings';
 import { VerificationPanel } from '@/components/admin/VerificationPanel';
+import { SubscriptionSettings } from '@/components/subscription/SubscriptionSettings';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -20,6 +21,7 @@ import { toast } from 'sonner';
 export default function SettingsPage() {
   const { user, profile, signOut, updateProfile } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showBlockedUsers, setShowBlockedUsers] = useState(false);
@@ -27,6 +29,7 @@ export default function SettingsPage() {
   const [showAccountSettings, setShowAccountSettings] = useState(false);
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
   const [showVerificationPanel, setShowVerificationPanel] = useState(false);
+  const [showSubscriptionSettings, setShowSubscriptionSettings] = useState(false);
   const [blockedUsers, setBlockedUsers] = useState<any[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isPrivate, setIsPrivate] = useState(profile?.is_private || false);
@@ -60,6 +63,17 @@ export default function SettingsPage() {
         .then(({ data }) => setIsAdmin(!!data));
     }
   }, [user]);
+
+  // Handle subscription success/cancelled params
+  useEffect(() => {
+    const subscriptionStatus = searchParams.get('subscription');
+    if (subscriptionStatus === 'success') {
+      toast.success('Subscription activated! Welcome to Openflip Verified.');
+      setShowSubscriptionSettings(true);
+    } else if (subscriptionStatus === 'cancelled') {
+      toast.info('Checkout cancelled');
+    }
+  }, [searchParams]);
 
   if (!user) {
     navigate('/auth');
@@ -282,6 +296,16 @@ export default function SettingsPage() {
     );
   }
 
+  if (showSubscriptionSettings) {
+    return (
+      <MainLayout>
+        <div className="max-w-lg mx-auto p-4">
+          <SubscriptionSettings onBack={() => setShowSubscriptionSettings(false)} />
+        </div>
+      </MainLayout>
+    );
+  }
+
   if (showPrivacy) {
     return (
       <MainLayout>
@@ -455,6 +479,21 @@ export default function SettingsPage() {
 
           {/* Other Settings */}
           <div className="space-y-2">
+            <button
+              onClick={() => setShowSubscriptionSettings(true)}
+              className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-secondary transition-colors text-left bg-gradient-to-r from-primary/5 to-purple-500/5 border border-primary/20"
+            >
+              <div className="flex items-center gap-3">
+                <Crown className="h-5 w-5 text-primary" />
+                <div>
+                  <span className="font-medium">Verification & Subscription</span>
+                  {profile?.is_verified && (
+                    <span className="ml-2 text-xs text-primary">✓ Verified</span>
+                  )}
+                </div>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </button>
             <button
               onClick={() => setShowNotificationSettings(true)}
               className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-secondary transition-colors text-left"
