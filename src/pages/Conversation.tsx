@@ -35,6 +35,12 @@ interface ChatMessage extends Message {
   shared_profile_id?: string;
   is_view_once?: boolean;
   viewed_at?: string;
+  status?: string;
+  delivered_at?: string;
+  read_at?: string;
+  reply_to_id?: string;
+  file_name?: string;
+  file_size?: number;
 }
 
 interface ConversationData {
@@ -141,12 +147,26 @@ export default function ConversationPage() {
   const fetchMessages = async () => {
     if (!conversationId || !user) return;
     try {
-      const { data, error } = await supabase.from('messages').select('*').eq('conversation_id', conversationId).order('created_at', { ascending: true });
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true });
       if (error) throw error;
       setMessages((data || []).map(msg => ({ ...msg, isMine: msg.sender_id === user.id })) as ChatMessage[]);
-      await supabase.from('messages').update({ is_read: true }).eq('conversation_id', conversationId).neq('sender_id', user.id);
-    } catch (error) { console.error('Error fetching messages:', error); } 
-    finally { setLoading(false); }
+      
+      // Mark messages as read and update read_at timestamp
+      await supabase
+        .from('messages')
+        .update({ is_read: true, read_at: new Date().toISOString() })
+        .eq('conversation_id', conversationId)
+        .neq('sender_id', user.id)
+        .is('read_at', null);
+    } catch (error) { 
+      console.error('Error fetching messages:', error); 
+    } finally { 
+      setLoading(false); 
+    }
   };
 
   const subscribeToMessages = () => {
@@ -155,7 +175,16 @@ export default function ConversationPage() {
         (payload) => {
           const newMsg = payload.new as any;
           setMessages(prev => [...prev, { ...newMsg, isMine: newMsg.sender_id === user?.id }]);
-          if (newMsg.sender_id !== user?.id) supabase.from('messages').update({ is_read: true }).eq('id', newMsg.id);
+          if (newMsg.sender_id !== user?.id) {
+            supabase.from('messages').update({ is_read: true, read_at: new Date().toISOString() }).eq('id', newMsg.id);
+          }
+        })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` },
+        (payload) => {
+          const updated = payload.new as any;
+          setMessages(prev => prev.map(msg => 
+            msg.id === updated.id ? { ...msg, ...updated, isMine: msg.isMine } : msg
+          ));
         })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conversation_participants', filter: `conversation_id=eq.${conversationId}` },
         (payload) => {
@@ -280,7 +309,17 @@ export default function ConversationPage() {
           : message.shared_post_id || message.shared_reel_id || message.shared_profile_id ? <SharedPostPreview postId={message.shared_post_id} reelId={message.shared_reel_id} profileId={message.shared_profile_id} isMine={message.isMine} />
           : <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>}
         </div>
-        {message.isMine && <div className="w-4 flex items-center justify-center">{message.is_read ? <CheckCheck className="w-3.5 h-3.5 text-primary" /> : <Check className="w-3.5 h-3.5 text-muted-foreground" />}</div>}
+        {message.isMine && (
+          <div className="w-4 flex items-center justify-center">
+            {message.read_at || message.is_read ? (
+              <CheckCheck className="w-3.5 h-3.5 text-blue-500" />
+            ) : message.delivered_at ? (
+              <CheckCheck className="w-3.5 h-3.5 text-muted-foreground" />
+            ) : (
+              <Check className="w-3.5 h-3.5 text-muted-foreground" />
+            )}
+          </div>
+        )}
       </div>
     );
   };

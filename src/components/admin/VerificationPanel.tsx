@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Check, X, Clock, Users, Building2, User, Loader2 } from 'lucide-react';
+import { Shield, Check, X, Clock, Users, Building2, User, Loader2, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AdminSubscribersPanel } from './AdminSubscribersPanel';
 
 interface VerificationRequest {
   id: string;
@@ -41,7 +42,7 @@ export function VerificationPanel({ open, onOpenChange }: VerificationPanelProps
   const [requests, setRequests] = useState<VerificationRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('pending');
+  const [activeTab, setActiveTab] = useState('subscribers');
   const [isAdmin, setIsAdmin] = useState(false);
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
 
@@ -214,12 +215,16 @@ export function VerificationPanel({ open, onOpenChange }: VerificationPanelProps
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Shield className="w-5 h-5 text-primary" />
-            Verification Requests
+            Admin Panel
           </DialogTitle>
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-          <TabsList className="grid grid-cols-3">
+          <TabsList className="grid grid-cols-4">
+            <TabsTrigger value="subscribers" className="flex items-center gap-1">
+              <Crown className="w-3 h-3" />
+              Subscribers
+            </TabsTrigger>
             <TabsTrigger value="pending" className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
               Pending
@@ -238,6 +243,10 @@ export function VerificationPanel({ open, onOpenChange }: VerificationPanelProps
               Rejected
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="subscribers" className="flex-1 overflow-y-auto mt-4">
+            <AdminSubscribersPanel />
+          </TabsContent>
 
           <div className="flex-1 overflow-y-auto mt-4 space-y-4">
             {loading ? (
