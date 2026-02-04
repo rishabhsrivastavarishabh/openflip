@@ -14,6 +14,99 @@ export type Database = {
   }
   public: {
     Tables: {
+      audience_insights: {
+        Row: {
+          age_range: string | null
+          created_at: string
+          follower_count: number
+          gender: string | null
+          id: string
+          location: string | null
+          recorded_at: string
+          user_id: string
+        }
+        Insert: {
+          age_range?: string | null
+          created_at?: string
+          follower_count?: number
+          gender?: string | null
+          id?: string
+          location?: string | null
+          recorded_at?: string
+          user_id: string
+        }
+        Update: {
+          age_range?: string | null
+          created_at?: string
+          follower_count?: number
+          gender?: string | null
+          id?: string
+          location?: string | null
+          recorded_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      boost_campaigns: {
+        Row: {
+          actual_reach: number | null
+          budget: number
+          clicks: number | null
+          content_id: string
+          content_type: string
+          created_at: string
+          currency: string
+          duration_days: number
+          ends_at: string | null
+          id: string
+          impressions: number | null
+          reach_estimate: number | null
+          starts_at: string | null
+          status: string
+          target_audience: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          actual_reach?: number | null
+          budget: number
+          clicks?: number | null
+          content_id: string
+          content_type: string
+          created_at?: string
+          currency?: string
+          duration_days?: number
+          ends_at?: string | null
+          id?: string
+          impressions?: number | null
+          reach_estimate?: number | null
+          starts_at?: string | null
+          status?: string
+          target_audience?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          actual_reach?: number | null
+          budget?: number
+          clicks?: number | null
+          content_id?: string
+          content_type?: string
+          created_at?: string
+          currency?: string
+          duration_days?: number
+          ends_at?: string | null
+          id?: string
+          impressions?: number | null
+          reach_estimate?: number | null
+          starts_at?: string | null
+          status?: string
+          target_audience?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       broadcast_followers: {
         Row: {
           channel_id: string
@@ -117,6 +210,63 @@ export type Database = {
           },
         ]
       }
+      content_analytics: {
+        Row: {
+          comments: number
+          content_id: string
+          content_type: string
+          created_at: string
+          follows_gained: number
+          id: string
+          likes: number
+          profile_visits: number
+          reach: number
+          recorded_at: string
+          saves: number
+          shares: number
+          unique_views: number
+          updated_at: string
+          user_id: string
+          views: number
+        }
+        Insert: {
+          comments?: number
+          content_id: string
+          content_type: string
+          created_at?: string
+          follows_gained?: number
+          id?: string
+          likes?: number
+          profile_visits?: number
+          reach?: number
+          recorded_at?: string
+          saves?: number
+          shares?: number
+          unique_views?: number
+          updated_at?: string
+          user_id: string
+          views?: number
+        }
+        Update: {
+          comments?: number
+          content_id?: string
+          content_type?: string
+          created_at?: string
+          follows_gained?: number
+          id?: string
+          likes?: number
+          profile_visits?: number
+          reach?: number
+          recorded_at?: string
+          saves?: number
+          shares?: number
+          unique_views?: number
+          updated_at?: string
+          user_id?: string
+          views?: number
+        }
+        Relationships: []
+      }
       conversation_participants: {
         Row: {
           can_post: boolean | null
@@ -191,6 +341,45 @@ export type Database = {
           is_broadcast?: boolean | null
           is_group?: boolean | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      creator_earnings: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          description: string | null
+          earning_type: string
+          id: string
+          reference_id: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          description?: string | null
+          earning_type: string
+          id?: string
+          reference_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          description?: string | null
+          earning_type?: string
+          id?: string
+          reference_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -617,6 +806,45 @@ export type Database = {
           },
         ]
       }
+      payout_requests: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          id: string
+          payment_details: Json | null
+          payment_method: string | null
+          processed_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          id?: string
+          payment_details?: Json | null
+          payment_method?: string | null
+          processed_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          payment_details?: Json | null
+          payment_method?: string | null
+          processed_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       post_hashtags: {
         Row: {
           hashtag_id: string
@@ -752,6 +980,96 @@ export type Database = {
           verification_requested_at?: string | null
           verification_status?: string | null
           website?: string | null
+        }
+        Relationships: []
+      }
+      promo_code_usage: {
+        Row: {
+          discount_applied: number
+          id: string
+          promo_code_id: string
+          subscription_id: string | null
+          used_at: string
+          user_id: string
+        }
+        Insert: {
+          discount_applied: number
+          id?: string
+          promo_code_id: string
+          subscription_id?: string | null
+          used_at?: string
+          user_id: string
+        }
+        Update: {
+          discount_applied?: number
+          id?: string
+          promo_code_id?: string
+          subscription_id?: string | null
+          used_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promo_code_usage_promo_code_id_fkey"
+            columns: ["promo_code_id"]
+            isOneToOne: false
+            referencedRelation: "promo_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promo_code_usage_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "user_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      promo_codes: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          current_uses: number
+          discount_type: string
+          discount_value: number
+          expires_at: string | null
+          first_time_only: boolean
+          id: string
+          is_active: boolean
+          max_uses: number | null
+          min_purchase_amount: number | null
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by?: string | null
+          current_uses?: number
+          discount_type: string
+          discount_value: number
+          expires_at?: string | null
+          first_time_only?: boolean
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          min_purchase_amount?: number | null
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          current_uses?: number
+          discount_type?: string
+          discount_value?: number
+          expires_at?: string | null
+          first_time_only?: boolean
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          min_purchase_amount?: number | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1221,6 +1539,15 @@ export type Database = {
       is_conversation_participant: {
         Args: { _conversation_id: string; _user_id: string }
         Returns: boolean
+      }
+      validate_promo_code: {
+        Args: { code_input: string; user_id_input: string }
+        Returns: {
+          discount_type: string
+          discount_value: number
+          error_message: string
+          is_valid: boolean
+        }[]
       }
     }
     Enums: {
