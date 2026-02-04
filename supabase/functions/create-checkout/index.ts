@@ -12,6 +12,20 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CREATE-CHECKOUT] ${step}${detailsStr}`);
 };
 
+// INR Pricing - Stripe price IDs
+const SUBSCRIPTION_PLANS = {
+  monthly: {
+    priceId: 'price_1SwxVBQUKes0XsxYJ9N882wn',
+    productId: 'prod_Tun5w14Dic9AQf',
+    price: 99, // ₹99
+  },
+  yearly: {
+    priceId: 'price_1SwxVnQUKes0XsxYWJbL5R01',
+    productId: 'prod_Tun5ROkSxQZKRK',
+    price: 799, // ₹799
+  },
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -19,7 +33,7 @@ serve(async (req) => {
 
   const supabaseClient = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
   );
 
   try {
@@ -32,9 +46,9 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const { priceId, billingCycle } = await req.json();
+    const { priceId, billingCycle, promoCode } = await req.json();
     if (!priceId) throw new Error("Price ID is required");
-    logStep("Request body parsed", { priceId, billingCycle });
+    logStep("Request body parsed", { priceId, billingCycle, promoCode });
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2025-08-27.basil" });
     
@@ -48,7 +62,8 @@ serve(async (req) => {
 
     const origin = req.headers.get("origin") || "https://openflip.lovable.app";
     
-    const session = await stripe.checkout.sessions.create({
+    // Build checkout session params
+    const sessionParams: Stripe.Checkout.SessionCreateParams = {
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
       line_items: [
@@ -64,7 +79,78 @@ serve(async (req) => {
         user_id: user.id,
         billing_cycle: billingCycle || 'monthly',
       },
-    });
+      // Enable UPI and other Indian payment methods
+      payment_method_types: ['card'],
+      // Allow promotion codes in Stripe checkout
+      allow_promotion_codes: true,
+      // Billing address collection for GST
+      billing_address_collection: 'required',
+      // Phone number for UPI
+      phone_number_collection: {
+        enabled: true,
+      },
+      // Tax ID collection for GST
+      tax_id_collection: {
+        enabled: true,
+      },
+      currency: 'inr',
+    };
+
+    // If promo code provided, validate and apply
+    if (promoCode) {
+      logStep("Validating promo code", { promoCode });
+      
+      const { data: promoData, error: promoError } = await supabaseClient
+        .rpc('validate_promo_code', { 
+          code_input: promoCode, 
+          user_id_input: user.id 
+        });
+      
+      if (promoError) {
+        logStep("Promo validation error", { error: promoError.message });
+      } else if (promoData && promoData.length > 0 && promoData[0].is_valid) {
+        const promo = promoData[0];
+        logStep("Promo code valid", { discount_type: promo.discount_type, discount_value: promo.discount_value });
+        
+        // Create a Stripe coupon for this promo
+        let stripeCoupon;
+        if (promo.discount_type === 'percentage') {
+          stripeCoupon = await stripe.coupons.create({
+            percent_off: promo.discount_value,
+            duration: 'once',
+            metadata: { openflip_promo: promoCode }
+          });
+        } else {
+          stripeCoupon = await stripe.coupons.create({
+            amount_off: promo.discount_value * 100, // Convert to paise
+            currency: 'inr',
+            duration: 'once',
+            metadata: { openflip_promo: promoCode }
+          });
+        }
+        
+        sessionParams.discounts = [{ coupon: stripeCoupon.id }];
+        sessionParams.allow_promotion_codes = false;
+        
+        // Store promo code info in metadata
+        sessionParams.metadata = {
+          ...sessionParams.metadata,
+          promo_code: promoCode,
+          discount_type: promo.discount_type,
+          discount_value: promo.discount_value.toString(),
+        };
+      } else if (promoData && promoData.length > 0) {
+        logStep("Promo code invalid", { error: promoData[0].error_message });
+        return new Response(JSON.stringify({ 
+          error: promoData[0].error_message || 'Invalid promo code' 
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        });
+      }
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
 
     logStep("Checkout session created", { sessionId: session.id, url: session.url });
 

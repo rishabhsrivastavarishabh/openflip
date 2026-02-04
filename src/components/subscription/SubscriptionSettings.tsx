@@ -191,7 +191,7 @@ export function SubscriptionSettings({ onBack }: SubscriptionSettingsProps) {
             <p className="text-sm text-muted-foreground">
               {subscription?.subscribed 
                 ? `Your badge is active until ${format(new Date(subscription.subscription_end!), 'MMM d, yyyy')}`
-                : 'Subscribe to get verified and unlock premium features'
+                : 'Subscribe for ₹99/month to get verified and unlock premium features'
               }
             </p>
           </div>
@@ -319,7 +319,7 @@ export function SubscriptionSettings({ onBack }: SubscriptionSettingsProps) {
                   </div>
                   <div className="text-right">
                     <p className="font-medium">
-                      ${(payment.amount / 100).toFixed(2)} {payment.currency.toUpperCase()}
+                      ₹{(payment.amount / 100).toFixed(2)} {payment.currency.toUpperCase()}
                     </p>
                     <Badge 
                       variant={payment.status === 'succeeded' ? 'default' : 'destructive'}

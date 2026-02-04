@@ -1,12 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, User, Lock, Bell, HelpCircle, LogOut, Camera, ChevronRight, Shield, Ban, Trash2, Briefcase, Settings2, Crown } from 'lucide-react';
+import { ArrowLeft, User, Lock, Bell, HelpCircle, LogOut, Camera, ChevronRight, Shield, Ban, Trash2, Briefcase, Settings2, Crown, BarChart3, Tag } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { BusinessAccountSettings } from '@/components/settings/BusinessAccountSettings';
 import { AccountSettings } from '@/components/settings/AccountSettings';
 import { NotificationSettings } from '@/components/settings/NotificationSettings';
 import { VerificationPanel } from '@/components/admin/VerificationPanel';
 import { SubscriptionSettings } from '@/components/subscription/SubscriptionSettings';
+import { CreatorDashboard } from '@/components/creator/CreatorDashboard';
+import { CreatorEarnings } from '@/components/creator/CreatorEarnings';
+import { ContentManager } from '@/components/creator/ContentManager';
+import { AudienceInsights } from '@/components/creator/AudienceInsights';
+import { BoostCampaign } from '@/components/creator/BoostCampaign';
+import { AdminPromoManager } from '@/components/admin/AdminPromoManager';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -30,6 +36,9 @@ export default function SettingsPage() {
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
   const [showVerificationPanel, setShowVerificationPanel] = useState(false);
   const [showSubscriptionSettings, setShowSubscriptionSettings] = useState(false);
+  const [showCreatorTools, setShowCreatorTools] = useState(false);
+  const [creatorSection, setCreatorSection] = useState<string | null>(null);
+  const [showPromoManager, setShowPromoManager] = useState(false);
   const [blockedUsers, setBlockedUsers] = useState<any[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isPrivate, setIsPrivate] = useState(profile?.is_private || false);
@@ -306,6 +315,75 @@ export default function SettingsPage() {
     );
   }
 
+  // Creator Tools sections
+  if (showCreatorTools && creatorSection === 'earnings') {
+    return (
+      <MainLayout>
+        <div className="max-w-lg mx-auto p-4">
+          <CreatorEarnings onBack={() => setCreatorSection(null)} />
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (showCreatorTools && creatorSection === 'audience') {
+    return (
+      <MainLayout>
+        <div className="max-w-lg mx-auto p-4">
+          <AudienceInsights onBack={() => setCreatorSection(null)} />
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (showCreatorTools && creatorSection === 'manager') {
+    return (
+      <MainLayout>
+        <div className="max-w-lg mx-auto p-4">
+          <ContentManager 
+            onBack={() => setCreatorSection(null)} 
+            onBoost={(type, id) => {
+              setCreatorSection('boost');
+            }}
+          />
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (showCreatorTools && creatorSection === 'boost') {
+    return (
+      <MainLayout>
+        <div className="max-w-lg mx-auto p-4">
+          <BoostCampaign onBack={() => setCreatorSection(null)} />
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (showCreatorTools) {
+    return (
+      <MainLayout>
+        <div className="max-w-lg mx-auto p-4">
+          <CreatorDashboard 
+            onBack={() => setShowCreatorTools(false)} 
+            onOpenSection={(section) => setCreatorSection(section)}
+          />
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (showPromoManager) {
+    return (
+      <MainLayout>
+        <div className="max-w-lg mx-auto p-4">
+          <AdminPromoManager onBack={() => setShowPromoManager(false)} />
+        </div>
+      </MainLayout>
+    );
+  }
+
   if (showPrivacy) {
     return (
       <MainLayout>
@@ -494,6 +572,39 @@ export default function SettingsPage() {
               </div>
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </button>
+            
+            {/* Creator Tools - show for all verified users */}
+            <button
+              onClick={() => setShowCreatorTools(true)}
+              className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-secondary transition-colors text-left bg-gradient-to-r from-blue-500/5 to-green-500/5 border border-blue-500/20"
+            >
+              <div className="flex items-center gap-3">
+                <BarChart3 className="h-5 w-5 text-blue-500" />
+                <div>
+                  <span className="font-medium">Creator Tools</span>
+                  <p className="text-xs text-muted-foreground">Analytics & Insights</p>
+                </div>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </button>
+            
+            {/* Admin: Promo Code Manager */}
+            {isAdmin && (
+              <button
+                onClick={() => setShowPromoManager(true)}
+                className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-secondary transition-colors text-left bg-gradient-to-r from-yellow-500/5 to-orange-500/5 border border-yellow-500/20"
+              >
+                <div className="flex items-center gap-3">
+                  <Tag className="h-5 w-5 text-yellow-600" />
+                  <div>
+                    <span className="font-medium">Promo Codes</span>
+                    <p className="text-xs text-muted-foreground">Manage discount codes</p>
+                  </div>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </button>
+            )}
+            
             <button
               onClick={() => setShowNotificationSettings(true)}
               className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-secondary transition-colors text-left"
