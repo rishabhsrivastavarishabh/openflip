@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
-  ArrowLeft, Rocket, Target, Users, Eye, IndianRupee,
-  Calendar, Loader2, Play, Image, CheckCircle2, Clock
+  ArrowLeft, Rocket, Target, Users, Eye,
+  Calendar, Play, Image, CheckCircle2, Clock,
+  CreditCard
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
+import { Progress } from '@/components/ui/progress';
 import {
   Select,
   SelectContent,
@@ -16,10 +17,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { differenceInDays, addDays } from 'date-fns';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { PaymentCheckout } from '@/components/payment/PaymentCheckout';
 
 interface BoostCampaignProps {
   onBack: () => void;
@@ -35,9 +39,9 @@ interface Campaign {
   duration_days: number;
   status: string;
   reach_estimate: number | null;
-  actual_reach: number;
-  impressions: number;
-  clicks: number;
+  actual_reach: number | null;
+  impressions: number | null;
+  clicks: number | null;
   created_at: string;
   starts_at: string | null;
   ends_at: string | null;
@@ -57,6 +61,8 @@ export function BoostCampaign({ onBack, initialContentType, initialContentId }: 
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [contentOptions, setContentOptions] = useState<ContentOption[]>([]);
   const [showCreate, setShowCreate] = useState(!!initialContentId);
+  const [showPayment, setShowPayment] = useState(false);
+  const [pendingCampaign, setPendingCampaign] = useState<Campaign | null>(null);
   
   const [formData, setFormData] = useState({
     contentId: initialContentId || '',
@@ -64,6 +70,7 @@ export function BoostCampaign({ onBack, initialContentType, initialContentId }: 
     duration: 7,
     targetAge: 'all',
     targetLocation: 'all',
+    targetAudience: 'auto',
   });
 
   useEffect(() => {
@@ -77,7 +84,6 @@ export function BoostCampaign({ onBack, initialContentType, initialContentId }: 
     setLoading(true);
 
     try {
-      // Fetch existing campaigns
       const { data: campaignsData, error: campaignsError } = await supabase
         .from('boost_campaigns')
         .select('*')
@@ -87,7 +93,6 @@ export function BoostCampaign({ onBack, initialContentType, initialContentId }: 
       if (campaignsError) throw campaignsError;
       setCampaigns(campaignsData || []);
 
-      // Fetch user's content for selection
       const { data: posts } = await supabase
         .from('posts')
         .select('id, media_url, caption')
@@ -117,10 +122,23 @@ export function BoostCampaign({ onBack, initialContentType, initialContentId }: 
   };
 
   const calculateReachEstimate = () => {
-    // Simplified reach estimation based on budget and duration
-    const baseReach = formData.budget * 10; // ₹1 = ~10 impressions
+    const baseReach = formData.budget * 10;
     const durationMultiplier = Math.log2(formData.duration + 1);
     return Math.round(baseReach * durationMultiplier);
+  };
+
+  const getBudgetSpent = (campaign: Campaign) => {
+    if (campaign.status !== 'active' && campaign.status !== 'completed') return 0;
+    const startDate = campaign.starts_at ? new Date(campaign.starts_at) : new Date(campaign.created_at);
+    const endDate = campaign.ends_at ? new Date(campaign.ends_at) : addDays(startDate, campaign.duration_days);
+    const now = new Date();
+    
+    if (campaign.status === 'completed' || now > endDate) return campaign.budget;
+    
+    const totalDays = differenceInDays(endDate, startDate) || 1;
+    const daysElapsed = differenceInDays(now, startDate);
+    const progress = Math.min(1, daysElapsed / totalDays);
+    return Math.round(campaign.budget * progress);
   };
 
   const handleCreateCampaign = async () => {
@@ -133,7 +151,7 @@ export function BoostCampaign({ onBack, initialContentType, initialContentId }: 
     try {
       const selectedContent = contentOptions.find(c => c.id === formData.contentId);
       
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('boost_campaigns')
         .insert({
           user_id: user.id,
@@ -145,16 +163,18 @@ export function BoostCampaign({ onBack, initialContentType, initialContentId }: 
           target_audience: {
             age: formData.targetAge,
             location: formData.targetLocation,
+            type: formData.targetAudience,
           },
           reach_estimate: calculateReachEstimate(),
-          status: 'pending',
-        });
+          status: 'pending_payment',
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
-      toast.success('Boost campaign created! Pending payment.');
-      setShowCreate(false);
-      fetchData();
+      setPendingCampaign(data);
+      setShowPayment(true);
     } catch (error) {
       console.error('Error creating campaign:', error);
       toast.error('Failed to create campaign');
@@ -163,8 +183,45 @@ export function BoostCampaign({ onBack, initialContentType, initialContentId }: 
     }
   };
 
+  const handlePaymentSuccess = async () => {
+    if (!pendingCampaign) return;
+    
+    try {
+      await supabase
+        .from('boost_campaigns')
+        .update({
+          status: 'active',
+          starts_at: new Date().toISOString(),
+          ends_at: addDays(new Date(), pendingCampaign.duration_days).toISOString(),
+        })
+        .eq('id', pendingCampaign.id);
+      
+      toast.success('🚀 Boost campaign activated!');
+      setShowPayment(false);
+      setShowCreate(false);
+      setPendingCampaign(null);
+      fetchData();
+    } catch (error) {
+      console.error('Error activating campaign:', error);
+      toast.error('Failed to activate campaign');
+    }
+  };
+
+  const handlePaymentCancel = async () => {
+    if (pendingCampaign) {
+      await supabase
+        .from('boost_campaigns')
+        .delete()
+        .eq('id', pendingCampaign.id);
+    }
+    setShowPayment(false);
+    setPendingCampaign(null);
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
+      case 'pending_payment':
+        return <Badge variant="secondary"><Clock className="w-3 h-3 mr-1" /> Pending Payment</Badge>;
       case 'pending':
         return <Badge variant="secondary"><Clock className="w-3 h-3 mr-1" /> Pending</Badge>;
       case 'active':
@@ -188,7 +245,7 @@ export function BoostCampaign({ onBack, initialContentType, initialContentId }: 
           <h1 className="font-semibold text-lg">Boost & Promote</h1>
         </header>
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <LoadingSpinner size="lg" text="Loading campaigns..." />
         </div>
       </div>
     );
@@ -196,157 +253,180 @@ export function BoostCampaign({ onBack, initialContentType, initialContentId }: 
 
   if (showCreate) {
     return (
-      <div className="space-y-6">
-        <header className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => setShowCreate(false)}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="font-semibold text-lg">Create Boost Campaign</h1>
-        </header>
+      <>
+        <div className="space-y-6">
+          <header className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => setShowCreate(false)}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <h1 className="font-semibold text-lg">Create Boost Campaign</h1>
+          </header>
 
-        {/* Content Selection */}
-        <div className="space-y-2">
-          <Label>Select Content to Boost</Label>
-          <Select
-            value={formData.contentId}
-            onValueChange={(v) => setFormData({ ...formData, contentId: v })}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Choose a post or reel" />
-            </SelectTrigger>
-            <SelectContent>
-              {contentOptions.map((option) => (
-                <SelectItem key={option.id} value={option.id}>
-                  <div className="flex items-center gap-2">
-                    {option.type === 'post' ? (
-                      <Image className="w-4 h-4" />
-                    ) : (
-                      <Play className="w-4 h-4" />
-                    )}
-                    <span className="truncate max-w-[200px]">
-                      {option.caption || `${option.type} - ${option.id.slice(0, 8)}`}
-                    </span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Budget */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Label>Budget</Label>
-            <span className="text-lg font-bold text-primary">₹{formData.budget}</span>
-          </div>
-          <Slider
-            value={[formData.budget]}
-            onValueChange={(v) => setFormData({ ...formData, budget: v[0] })}
-            min={100}
-            max={10000}
-            step={100}
-          />
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>₹100</span>
-            <span>₹10,000</span>
-          </div>
-        </div>
-
-        {/* Duration */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Label>Duration</Label>
-            <span className="font-medium">{formData.duration} days</span>
-          </div>
-          <Slider
-            value={[formData.duration]}
-            onValueChange={(v) => setFormData({ ...formData, duration: v[0] })}
-            min={1}
-            max={30}
-            step={1}
-          />
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>1 day</span>
-            <span>30 days</span>
-          </div>
-        </div>
-
-        {/* Target Audience */}
-        <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label>Target Age</Label>
+            <Label>Select Content to Boost</Label>
             <Select
-              value={formData.targetAge}
-              onValueChange={(v) => setFormData({ ...formData, targetAge: v })}
+              value={formData.contentId}
+              onValueChange={(v) => setFormData({ ...formData, contentId: v })}
             >
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue placeholder="Choose a post or reel" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Ages</SelectItem>
-                <SelectItem value="18-24">18-24</SelectItem>
-                <SelectItem value="25-34">25-34</SelectItem>
-                <SelectItem value="35-44">35-44</SelectItem>
-                <SelectItem value="45+">45+</SelectItem>
+                {contentOptions.map((option) => (
+                  <SelectItem key={option.id} value={option.id}>
+                    <div className="flex items-center gap-2">
+                      {option.type === 'post' ? <Image className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                      <span className="truncate max-w-[200px]">
+                        {option.caption || `${option.type} - ${option.id.slice(0, 8)}`}
+                      </span>
+                    </div>
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
-            <Label>Target Location</Label>
-            <Select
-              value={formData.targetLocation}
-              onValueChange={(v) => setFormData({ ...formData, targetLocation: v })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All India</SelectItem>
-                <SelectItem value="metros">Metro Cities</SelectItem>
-                <SelectItem value="north">North India</SelectItem>
-                <SelectItem value="south">South India</SelectItem>
-                <SelectItem value="east">East India</SelectItem>
-                <SelectItem value="west">West India</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
 
-        {/* Reach Estimate */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="p-4 rounded-xl bg-primary/10 border border-primary/20"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Eye className="w-5 h-5 text-primary" />
-              <span className="font-medium">Estimated Reach</span>
+          <div className="space-y-2">
+            <Label>Audience Targeting</Label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setFormData({ ...formData, targetAudience: 'auto' })}
+                className={`p-4 rounded-xl border-2 transition-colors ${
+                  formData.targetAudience === 'auto' ? 'border-primary bg-primary/10' : 'border-border'
+                }`}
+              >
+                <Target className="w-5 h-5 mx-auto mb-2 text-primary" />
+                <p className="font-medium text-sm">Auto</p>
+                <p className="text-xs text-muted-foreground">AI optimized</p>
+              </button>
+              <button
+                onClick={() => setFormData({ ...formData, targetAudience: 'manual' })}
+                className={`p-4 rounded-xl border-2 transition-colors ${
+                  formData.targetAudience === 'manual' ? 'border-primary bg-primary/10' : 'border-border'
+                }`}
+              >
+                <Users className="w-5 h-5 mx-auto mb-2 text-primary" />
+                <p className="font-medium text-sm">Manual</p>
+                <p className="text-xs text-muted-foreground">Custom targeting</p>
+              </button>
             </div>
-            <span className="text-2xl font-bold text-primary">
-              {calculateReachEstimate().toLocaleString()}
-            </span>
           </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            Based on your budget and targeting options
-          </p>
-        </motion.div>
 
-        {/* Create Button */}
-        <Button
-          onClick={handleCreateCampaign}
-          disabled={creating || !formData.contentId}
-          className="w-full"
-          size="lg"
-        >
-          {creating ? (
-            <Loader2 className="w-4 h-4 animate-spin mr-2" />
-          ) : (
-            <Rocket className="w-4 h-4 mr-2" />
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label>Budget</Label>
+              <span className="text-lg font-bold text-primary">₹{formData.budget}</span>
+            </div>
+            <Slider
+              value={[formData.budget]}
+              onValueChange={(v) => setFormData({ ...formData, budget: v[0] })}
+              min={100}
+              max={10000}
+              step={100}
+            />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>₹100</span>
+              <span>₹10,000</span>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label>Duration</Label>
+              <span className="font-medium">{formData.duration} days</span>
+            </div>
+            <Slider
+              value={[formData.duration]}
+              onValueChange={(v) => setFormData({ ...formData, duration: v[0] })}
+              min={1}
+              max={30}
+              step={1}
+            />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>1 day</span>
+              <span>30 days</span>
+            </div>
+          </div>
+
+          {formData.targetAudience === 'manual' && (
+            <div className="grid grid-cols-2 gap-4 p-4 rounded-xl bg-secondary/50">
+              <div className="space-y-2">
+                <Label>Target Age</Label>
+                <Select value={formData.targetAge} onValueChange={(v) => setFormData({ ...formData, targetAge: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Ages</SelectItem>
+                    <SelectItem value="18-24">18-24</SelectItem>
+                    <SelectItem value="25-34">25-34</SelectItem>
+                    <SelectItem value="35-44">35-44</SelectItem>
+                    <SelectItem value="45+">45+</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Target Location</Label>
+                <Select value={formData.targetLocation} onValueChange={(v) => setFormData({ ...formData, targetLocation: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All India</SelectItem>
+                    <SelectItem value="metros">Metro Cities</SelectItem>
+                    <SelectItem value="north">North India</SelectItem>
+                    <SelectItem value="south">South India</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           )}
-          Create Campaign • ₹{formData.budget}
-        </Button>
-      </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-4 rounded-xl bg-primary/10 border border-primary/20"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Eye className="w-5 h-5 text-primary" />
+                <span className="font-medium">Estimated Reach</span>
+              </div>
+              <span className="text-2xl font-bold text-primary">
+                {calculateReachEstimate().toLocaleString()}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Based on your budget and targeting options
+            </p>
+          </motion.div>
+
+          <Button onClick={handleCreateCampaign} disabled={creating || !formData.contentId} className="w-full" size="lg">
+            {creating ? <LoadingSpinner size="sm" /> : (
+              <>
+                <CreditCard className="w-4 h-4 mr-2" />
+                Pay & Launch • ₹{formData.budget}
+              </>
+            )}
+          </Button>
+        </div>
+
+        <Dialog open={showPayment} onOpenChange={(open) => !open && handlePaymentCancel()}>
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Complete Payment</DialogTitle>
+            </DialogHeader>
+            <PaymentCheckout
+              amount={formData.budget}
+              description={`Boost campaign for ${formData.duration} days`}
+              type="boost"
+              metadata={{
+                campaign_id: pendingCampaign?.id || '',
+                content_type: contentOptions.find(c => c.id === formData.contentId)?.type || 'post',
+                duration_days: formData.duration.toString(),
+              }}
+              onSuccess={handlePaymentSuccess}
+              onCancel={handlePaymentCancel}
+            />
+          </DialogContent>
+        </Dialog>
+      </>
     );
   }
 
@@ -363,7 +443,6 @@ export function BoostCampaign({ onBack, initialContentType, initialContentId }: 
         </Button>
       </header>
 
-      {/* Info Card */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -380,7 +459,6 @@ export function BoostCampaign({ onBack, initialContentType, initialContentId }: 
         </div>
       </motion.div>
 
-      {/* Campaigns List */}
       <div className="space-y-3">
         <h3 className="font-semibold">Your Campaigns</h3>
         
@@ -394,11 +472,7 @@ export function BoostCampaign({ onBack, initialContentType, initialContentId }: 
           >
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-2">
-                {campaign.content_type === 'post' ? (
-                  <Image className="w-5 h-5 text-primary" />
-                ) : (
-                  <Play className="w-5 h-5 text-primary" />
-                )}
+                {campaign.content_type === 'post' ? <Image className="w-5 h-5 text-primary" /> : <Play className="w-5 h-5 text-primary" />}
                 <span className="font-medium capitalize">{campaign.content_type} Boost</span>
               </div>
               {getStatusBadge(campaign.status)}
@@ -416,25 +490,39 @@ export function BoostCampaign({ onBack, initialContentType, initialContentId }: 
               <div>
                 <p className="text-muted-foreground">Reach</p>
                 <p className="font-medium">
-                  {campaign.actual_reach > 0 
-                    ? campaign.actual_reach.toLocaleString()
-                    : `~${(campaign.reach_estimate || 0).toLocaleString()}`
-                  }
+                  {(campaign.actual_reach || 0) > 0 ? (campaign.actual_reach || 0).toLocaleString() : `~${(campaign.reach_estimate || 0).toLocaleString()}`}
                 </p>
               </div>
             </div>
 
-            {campaign.status === 'active' && (
-              <div className="grid grid-cols-2 gap-4 pt-2 border-t text-sm">
-                <div>
-                  <p className="text-muted-foreground">Impressions</p>
-                  <p className="font-medium">{campaign.impressions.toLocaleString()}</p>
+            {(campaign.status === 'active' || campaign.status === 'completed') && (
+              <>
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Budget spent</span>
+                    <span>₹{getBudgetSpent(campaign)} / ₹{campaign.budget}</span>
+                  </div>
+                  <Progress value={(getBudgetSpent(campaign) / campaign.budget) * 100} className="h-2" />
                 </div>
-                <div>
-                  <p className="text-muted-foreground">Clicks</p>
-                  <p className="font-medium">{campaign.clicks.toLocaleString()}</p>
+                
+                <div className="grid grid-cols-2 gap-4 pt-2 border-t text-sm">
+                  <div>
+                    <p className="text-muted-foreground">Impressions</p>
+                    <p className="font-medium">{(campaign.impressions || 0).toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Clicks</p>
+                    <p className="font-medium">{(campaign.clicks || 0).toLocaleString()}</p>
+                  </div>
                 </div>
-              </div>
+              </>
+            )}
+
+            {campaign.status === 'pending_payment' && (
+              <Button className="w-full" onClick={() => { setPendingCampaign(campaign); setShowPayment(true); }}>
+                <CreditCard className="w-4 h-4 mr-2" />
+                Complete Payment
+              </Button>
             )}
           </motion.div>
         ))}
@@ -443,16 +531,34 @@ export function BoostCampaign({ onBack, initialContentType, initialContentId }: 
           <div className="text-center py-12">
             <Rocket className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
             <p className="text-muted-foreground">No campaigns yet</p>
-            <Button
-              variant="outline"
-              className="mt-4"
-              onClick={() => setShowCreate(true)}
-            >
+            <Button variant="outline" className="mt-4" onClick={() => setShowCreate(true)}>
               Create your first campaign
             </Button>
           </div>
         )}
       </div>
+
+      <Dialog open={showPayment} onOpenChange={(open) => !open && handlePaymentCancel()}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Complete Payment</DialogTitle>
+          </DialogHeader>
+          {pendingCampaign && (
+            <PaymentCheckout
+              amount={pendingCampaign.budget}
+              description={`Boost campaign for ${pendingCampaign.duration_days} days`}
+              type="boost"
+              metadata={{
+                campaign_id: pendingCampaign.id,
+                content_type: pendingCampaign.content_type,
+                duration_days: pendingCampaign.duration_days.toString(),
+              }}
+              onSuccess={handlePaymentSuccess}
+              onCancel={handlePaymentCancel}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
