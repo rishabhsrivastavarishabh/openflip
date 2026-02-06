@@ -3,23 +3,14 @@ import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import { 
   ArrowLeft, Crown, CreditCard, Calendar, RefreshCw, Download,
-  ExternalLink, AlertCircle, CheckCircle2, Loader2, History, ArrowUp
+  AlertCircle, CheckCircle2, Loader2, History, ArrowUp
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { 
-  AlertDialog, 
-  AlertDialogCancel, 
-  AlertDialogContent, 
-  AlertDialogDescription, 
-  AlertDialogFooter, 
-  AlertDialogHeader, 
-  AlertDialogTitle 
-} from '@/components/ui/alert-dialog';
 import { SubscriptionPlans, SUBSCRIPTION_PLANS } from './SubscriptionPlans';
+import { PaymentCheckout } from '@/components/payment/PaymentCheckout';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -31,7 +22,6 @@ interface SubscriptionSettingsProps {
 
 interface SubscriptionStatus {
   subscribed: boolean;
-  product_id?: string;
   subscription_end?: string;
   billing_cycle?: 'monthly' | 'yearly';
   cancel_at_period_end?: boolean;
@@ -47,16 +37,13 @@ interface PaymentRecord {
 }
 
 export function SubscriptionSettings({ onBack }: SubscriptionSettingsProps) {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [portalLoading, setPortalLoading] = useState(false);
-  const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [paymentHistory, setPaymentHistory] = useState<PaymentRecord[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
-  const [upgradeLoading, setUpgradeLoading] = useState(false);
 
   const checkSubscription = async () => {
     try {
@@ -99,60 +86,26 @@ export function SubscriptionSettings({ onBack }: SubscriptionSettingsProps) {
   const handleRefresh = () => {
     setRefreshing(true);
     checkSubscription();
+    fetchPaymentHistory();
   };
 
-  const handleManageSubscription = async () => {
-    setPortalLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('customer-portal');
-      if (error) throw error;
-      if (data?.url) {
-        window.open(data.url, '_blank');
-      }
-    } catch (error: any) {
-      console.error('Portal error:', error);
-      toast.error(error.message || 'Failed to open subscription management');
-    } finally {
-      setPortalLoading(false);
-    }
-  };
-
-  const handleUpgrade = async () => {
-    if (!subscription?.subscribed || subscription.billing_cycle === 'yearly') {
-      return;
-    }
-    
-    setUpgradeLoading(true);
-    try {
-      // Open Stripe portal for plan upgrade (proration handled by Stripe)
-      const { data, error } = await supabase.functions.invoke('customer-portal');
-      if (error) throw error;
-      if (data?.url) {
-        window.open(data.url, '_blank');
-        toast.success('Opening subscription management...');
-      }
-    } catch (error: any) {
-      console.error('Upgrade error:', error);
-      toast.error(error.message || 'Failed to initiate upgrade');
-    } finally {
-      setUpgradeLoading(false);
-      setShowUpgrade(false);
-    }
+  const handleUpgradeSuccess = () => {
+    setShowUpgrade(false);
+    toast.success('🎉 Upgraded to yearly plan!');
+    handleRefresh();
   };
 
   const downloadInvoice = async (payment: PaymentRecord) => {
     try {
-      // Generate invoice data
       const invoiceData = {
         invoiceNumber: `INV-${payment.id.slice(0, 8).toUpperCase()}`,
         date: format(new Date(payment.created_at), 'dd MMM yyyy'),
-        amount: payment.amount / 100,
-        currency: payment.currency.toUpperCase(),
+        amount: payment.amount,
+        currency: payment.currency?.toUpperCase() || 'INR',
         description: payment.description || 'Openflip Verified Subscription',
         status: payment.status,
       };
       
-      // Create a downloadable invoice (simple text for now)
       const invoiceContent = `
 OPENFLIP INVOICE
 ================
@@ -295,21 +248,6 @@ For any queries, contact support@openflip.app
           </h3>
           
           <div className="space-y-2">
-            <Button
-              variant="outline"
-              className="w-full justify-start gap-3"
-              onClick={handleManageSubscription}
-              disabled={portalLoading}
-            >
-              {portalLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <CreditCard className="w-4 h-4" />
-              )}
-              Manage Billing & Payment
-              <ExternalLink className="w-3 h-3 ml-auto" />
-            </Button>
-
             {/* Upgrade Option */}
             {currentPlan === 'monthly' && (
               <Button
@@ -402,16 +340,16 @@ For any queries, contact support@openflip.app
                   <div className="flex items-center gap-3">
                     <div className="text-right">
                       <p className="font-medium">
-                        ₹{(payment.amount / 100).toFixed(2)}
+                        ₹{payment.amount.toFixed(2)}
                       </p>
                       <Badge 
-                        variant={payment.status === 'succeeded' ? 'default' : 'destructive'}
+                        variant={payment.status === 'completed' ? 'default' : 'destructive'}
                         className="text-xs"
                       >
                         {payment.status}
                       </Badge>
                     </div>
-                    {payment.status === 'succeeded' && (
+                    {payment.status === 'completed' && (
                       <Button
                         variant="ghost"
                         size="icon"
@@ -430,8 +368,9 @@ For any queries, contact support@openflip.app
       )}
     </div>
 
+    {/* Upgrade Dialog */}
     <Dialog open={showUpgrade} onOpenChange={setShowUpgrade}>
-      <DialogContent>
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Upgrade to Yearly Plan</DialogTitle>
         </DialogHeader>
@@ -452,22 +391,15 @@ For any queries, contact support@openflip.app
               💰 Save ₹{(99 * 12) - 799} per year (33% off)
             </div>
           </div>
-          <div className="text-sm text-muted-foreground">
-            <p>When you upgrade:</p>
-            <ul className="list-disc list-inside mt-2 space-y-1">
-              <li>You will only pay the prorated difference</li>
-              <li>Your billing cycle restarts from today</li>
-              <li>All features remain active during transition</li>
-            </ul>
-          </div>
-          <div className="flex gap-3">
-            <Button variant="outline" className="flex-1" onClick={() => setShowUpgrade(false)}>
-              Cancel
-            </Button>
-            <Button className="flex-1" onClick={handleUpgrade} disabled={upgradeLoading}>
-              {upgradeLoading ? <LoadingSpinner size="sm" /> : 'Upgrade Now'}
-            </Button>
-          </div>
+          
+          <PaymentCheckout
+            amount={799 - 99} // Prorated amount (difference)
+            description="Upgrade to Yearly Plan (Prorated)"
+            type="subscription"
+            billingCycle="yearly"
+            onSuccess={handleUpgradeSuccess}
+            onCancel={() => setShowUpgrade(false)}
+          />
         </div>
       </DialogContent>
     </Dialog>
