@@ -79,24 +79,18 @@ serve(async (req) => {
         user_id: user.id,
         billing_cycle: billingCycle || 'monthly',
       },
-      // Enable UPI and other Indian payment methods
       payment_method_types: ['card'],
-      // Allow promotion codes in Stripe checkout
-      allow_promotion_codes: true,
-      // Billing address collection for GST
       billing_address_collection: 'required',
-      // Phone number for UPI
       phone_number_collection: {
         enabled: true,
       },
-      // Tax ID collection for GST
       tax_id_collection: {
         enabled: true,
       },
       currency: 'inr',
     };
 
-    // If promo code provided, validate and apply
+    // If promo code provided, validate and apply discount
     if (promoCode) {
       logStep("Validating promo code", { promoCode });
       
@@ -129,8 +123,8 @@ serve(async (req) => {
           });
         }
         
+        // Use discounts instead of allow_promotion_codes
         sessionParams.discounts = [{ coupon: stripeCoupon.id }];
-        sessionParams.allow_promotion_codes = false;
         
         // Store promo code info in metadata
         sessionParams.metadata = {
@@ -148,6 +142,9 @@ serve(async (req) => {
           status: 400,
         });
       }
+    } else {
+      // No promo code provided, allow user to enter one in Stripe checkout
+      sessionParams.allow_promotion_codes = true;
     }
 
     const session = await stripe.checkout.sessions.create(sessionParams);
