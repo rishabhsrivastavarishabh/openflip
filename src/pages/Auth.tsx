@@ -57,6 +57,7 @@ const signUpSchema = z.object({
   fullName: z.string().optional(),
   phoneNumber: z.string().optional(),
   countryCode: z.string().optional(),
+  agreeTerms: z.literal(true, { errorMap: () => ({ message: 'You must agree to the Privacy Policy & Terms' }) }),
 });
 
 const forgotPasswordSchema = z.object({
@@ -358,6 +359,24 @@ export default function AuthPage() {
                     </div>
                   </div>
                 </div>
+
+                <div className="flex items-start gap-2">
+                  <input
+                    type="checkbox"
+                    id="agreeTerms"
+                    className="mt-1 rounded border-border"
+                    {...signUpForm.register('agreeTerms')}
+                  />
+                  <label htmlFor="agreeTerms" className="text-sm text-muted-foreground">
+                    I agree to the{' '}
+                    <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link>
+                    {' & '}
+                    <Link to="/terms" className="text-primary hover:underline">Terms of Service</Link>
+                  </label>
+                </div>
+                {signUpForm.formState.errors.agreeTerms && (
+                  <p className="text-sm text-destructive">{signUpForm.formState.errors.agreeTerms.message}</p>
+                )}
 
                 <Button type="submit" variant="gradient" size="lg" className="w-full" disabled={loading}>
                   {loading ? 'Creating account...' : 'Create account'}

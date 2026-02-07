@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Camera, RefreshCw, Search, Bell, Play, Heart, MessageCircle } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { StoriesBar } from '@/components/stories/StoriesBar';
@@ -473,7 +474,7 @@ export default function FeedPage() {
                   <div ref={loadMoreRef} className="p-4 text-center">
                     {loadingMore && (
                       <div className="flex justify-center">
-                        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                        <LoadingSpinner size="sm" />
                       </div>
                     )}
                   </div>

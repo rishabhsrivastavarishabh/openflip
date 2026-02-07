@@ -3,8 +3,9 @@ import { motion } from 'framer-motion';
 import { format, subDays, startOfDay, endOfDay } from 'date-fns';
 import {
   ArrowLeft, BarChart3, TrendingUp, Users, Eye, Heart, MessageCircle,
-  Share2, Bookmark, UserPlus, ChevronRight, Loader2, Play, Image, Clock
+  Share2, Bookmark, UserPlus, ChevronRight, Play, Image, Clock
 } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -199,7 +200,7 @@ export function CreatorDashboard({ onBack, onOpenSection }: CreatorDashboardProp
           <h1 className="font-semibold text-lg">Creator Tools</h1>
         </header>
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <LoadingSpinner size="lg" text="Loading analytics..." />
         </div>
       </div>
     );

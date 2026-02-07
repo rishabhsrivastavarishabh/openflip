@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, User, Lock, Bell, HelpCircle, LogOut, Camera, ChevronRight, Shield, Ban, Trash2, Briefcase, Settings2, Crown, BarChart3, Tag } from 'lucide-react';
+import { ArrowLeft, User, Lock, Bell, HelpCircle, LogOut, Camera, ChevronRight, Shield, Ban, Trash2, Briefcase, Settings2, Crown, BarChart3, Tag, Moon, Sun, Monitor, Users } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { BusinessAccountSettings } from '@/components/settings/BusinessAccountSettings';
+import { AccountSwitcher } from '@/components/account/AccountSwitcher';
 import { AccountSettings } from '@/components/settings/AccountSettings';
 import { NotificationSettings } from '@/components/settings/NotificationSettings';
 import { VerificationPanel } from '@/components/admin/VerificationPanel';
@@ -23,11 +24,14 @@ import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useTheme } from '@/hooks/useTheme';
 
 export default function SettingsPage() {
   const { user, profile, signOut, updateProfile } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { theme, setTheme } = useTheme();
+  const [showAccountSwitcher, setShowAccountSwitcher] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showBlockedUsers, setShowBlockedUsers] = useState(false);
@@ -555,6 +559,31 @@ export default function SettingsPage() {
 
           <Separator />
 
+          {/* Theme / Dark Mode */}
+          <div className="space-y-2">
+            <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Appearance</h2>
+            <div className="flex gap-2">
+              {([
+                { value: 'light' as const, icon: Sun, label: 'Light' },
+                { value: 'dark' as const, icon: Moon, label: 'Dark' },
+                { value: 'system' as const, icon: Monitor, label: 'Auto' },
+              ]).map(({ value, icon: Icon, label }) => (
+                <button
+                  key={value}
+                  onClick={() => setTheme(value)}
+                  className={`flex-1 flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-colors ${
+                    theme === value ? 'bg-primary/10 border-primary text-primary' : 'hover:bg-secondary border-border'
+                  }`}
+                >
+                  <Icon className="w-5 h-5" />
+                  <span className="text-xs font-medium">{label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <Separator />
+
           {/* Other Settings */}
           <div className="space-y-2">
             <button
@@ -656,6 +685,22 @@ export default function SettingsPage() {
 
           <Separator />
 
+          {/* Account Switching */}
+          <div className="space-y-2">
+            <button
+              onClick={() => setShowAccountSwitcher(true)}
+              className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-secondary transition-colors text-left"
+            >
+              <div className="flex items-center gap-3">
+                <Users className="h-5 w-5 text-muted-foreground" />
+                <span>Switch Account</span>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </button>
+          </div>
+
+          <Separator />
+
           <Button
             variant="ghost"
             className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
@@ -666,6 +711,8 @@ export default function SettingsPage() {
           </Button>
         </div>
       </div>
+
+      <AccountSwitcher open={showAccountSwitcher} onOpenChange={setShowAccountSwitcher} />
     </MainLayout>
   );
 }
