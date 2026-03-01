@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, User, Lock, Bell, HelpCircle, LogOut, Camera, ChevronRight, Shield, Ban, Trash2, Briefcase, Settings2, Crown, BarChart3, Tag, Moon, Sun, Monitor, Users } from 'lucide-react';
+import { AvatarCropDialog } from '@/components/settings/AvatarCropDialog';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { BusinessAccountSettings } from '@/components/settings/BusinessAccountSettings';
 import { AccountSwitcher } from '@/components/account/AccountSwitcher';
@@ -33,6 +34,9 @@ export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const [showAccountSwitcher, setShowAccountSwitcher] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [cropFile, setCropFile] = useState<File | null>(null);
+  const [showCropDialog, setShowCropDialog] = useState(false);
+  const [savingAvatar, setSavingAvatar] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showBlockedUsers, setShowBlockedUsers] = useState(false);
   const [showBusinessSettings, setShowBusinessSettings] = useState(false);
@@ -102,15 +106,20 @@ export default function SettingsPage() {
       return;
     }
 
-    setLoading(true);
+    setCropFile(file);
+    setShowCropDialog(true);
+    // Reset input so re-selecting the same file works
+    e.target.value = '';
+  };
 
+  const handleCroppedAvatar = async (blob: Blob) => {
+    setSavingAvatar(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/avatar.${fileExt}`;
+      const fileName = `${user.id}/avatar.png`;
 
       const { error: uploadError } = await supabase.storage
         .from('media')
-        .upload(fileName, file, { upsert: true });
+        .upload(fileName, blob, { upsert: true, contentType: 'image/png' });
 
       if (uploadError) throw uploadError;
 
@@ -118,12 +127,13 @@ export default function SettingsPage() {
         .from('media')
         .getPublicUrl(fileName);
 
-      await updateProfile({ avatar_url: publicUrl });
+      await updateProfile({ avatar_url: `${publicUrl}?t=${Date.now()}` });
       toast.success('Avatar updated!');
+      setShowCropDialog(false);
     } catch (error: any) {
       toast.error(error.message || 'Failed to update avatar');
     } finally {
-      setLoading(false);
+      setSavingAvatar(false);
     }
   };
 
@@ -713,6 +723,13 @@ export default function SettingsPage() {
       </div>
 
       <AccountSwitcher open={showAccountSwitcher} onOpenChange={setShowAccountSwitcher} />
+      <AvatarCropDialog
+        open={showCropDialog}
+        onOpenChange={setShowCropDialog}
+        imageFile={cropFile}
+        onCropComplete={handleCroppedAvatar}
+        saving={savingAvatar}
+      />
     </MainLayout>
   );
 }
