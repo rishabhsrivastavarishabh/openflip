@@ -12,6 +12,7 @@ import { SubscriptionSettings } from '@/components/subscription/SubscriptionSett
 import { CreatorDashboard } from '@/components/creator/CreatorDashboard';
 import { CreatorEarnings } from '@/components/creator/CreatorEarnings';
 import { ContentManager } from '@/components/creator/ContentManager';
+import { AIGrowthAssistant } from '@/components/creator/AIGrowthAssistant';
 import { AudienceInsights } from '@/components/creator/AudienceInsights';
 import { BoostCampaign } from '@/components/creator/BoostCampaign';
 import { AdminPromoManager } from '@/components/admin/AdminPromoManager';
@@ -340,6 +341,16 @@ export default function SettingsPage() {
     );
   }
 
+  if (showCreatorTools && creatorSection === 'ai-assistant') {
+    return (
+      <MainLayout>
+        <div className="max-w-lg mx-auto p-4">
+          <AIGrowthAssistant onBack={() => setCreatorSection(null)} />
+        </div>
+      </MainLayout>
+    );
+  }
+
   if (showCreatorTools && creatorSection === 'audience') {
     return (
       <MainLayout>
@@ -661,6 +672,19 @@ export default function SettingsPage() {
               <div className="flex items-center gap-3">
                 <Settings2 className="h-5 w-5 text-muted-foreground" />
                 <span>Account</span>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </button>
+            <button
+              onClick={() => navigate('/account-center')}
+              className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-secondary transition-colors text-left bg-gradient-to-r from-primary/5 to-accent/5 border border-primary/10"
+            >
+              <div className="flex items-center gap-3">
+                <User className="h-5 w-5 text-primary" />
+                <div>
+                  <span className="font-medium">Account Center</span>
+                  <p className="text-xs text-muted-foreground">Profile, security, payments, privacy</p>
+                </div>
               </div>
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </button>
