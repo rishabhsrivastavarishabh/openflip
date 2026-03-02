@@ -183,6 +183,7 @@ export function CreatorDashboard({ onBack, onOpenSection }: CreatorDashboardProp
   ];
 
   const menuItems = [
+    { label: 'AI Growth Assistant', description: 'Personalized tips & strategy', section: 'ai-assistant' },
     { label: 'Content Performance', description: 'View insights for each post', section: 'content' },
     { label: 'Audience Insights', description: 'Demographics & active hours', section: 'audience' },
     { label: 'Earnings', description: 'Revenue & payouts', section: 'earnings' },
