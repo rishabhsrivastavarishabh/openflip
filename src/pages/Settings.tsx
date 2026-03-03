@@ -15,6 +15,7 @@ import { ContentManager } from '@/components/creator/ContentManager';
 import { AIGrowthAssistant } from '@/components/creator/AIGrowthAssistant';
 import { AudienceInsights } from '@/components/creator/AudienceInsights';
 import { BoostCampaign } from '@/components/creator/BoostCampaign';
+import { ContentCalendar } from '@/components/creator/ContentCalendar';
 import { AdminPromoManager } from '@/components/admin/AdminPromoManager';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -381,6 +382,16 @@ export default function SettingsPage() {
       <MainLayout>
         <div className="max-w-lg mx-auto p-4">
           <BoostCampaign onBack={() => setCreatorSection(null)} />
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (showCreatorTools && creatorSection === 'calendar') {
+    return (
+      <MainLayout>
+        <div className="max-w-lg mx-auto p-4">
+          <ContentCalendar onBack={() => setCreatorSection(null)} />
         </div>
       </MainLayout>
     );
