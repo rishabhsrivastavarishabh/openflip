@@ -28,9 +28,8 @@ export function Sidebar() {
 
   const navItems = [
     { icon: Home, href: '/', label: 'Home', badge: 0 },
-    { icon: Search, href: '/search', label: 'Search', badge: 0 },
+    { icon: Search, href: '/explore', label: 'Explore', badge: 0 },
     { icon: Film, href: '/reels', label: 'Reels', badge: 0 },
-    { icon: PlusSquare, href: '/create', label: 'Create', badge: 0 },
     { icon: MessageCircle, href: '/messages', label: 'Messages', badge: unreadMessages },
     { icon: Heart, href: '/notifications', label: 'Notifications', badge: unreadNotifications },
     { icon: User, href: user ? `/profile/${user.id}` : '/auth', label: 'Profile', badge: 0 },

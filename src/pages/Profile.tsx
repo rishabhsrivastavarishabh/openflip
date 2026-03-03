@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Grid3X3, Bookmark, Settings, UserPlus, UserMinus, MessageCircle, Plus, Film, Lock, Clock, Share2, MoreHorizontal, Pin } from 'lucide-react';
+import { Grid3X3, Bookmark, Settings, UserPlus, UserMinus, MessageCircle, Plus, Film, Lock, Clock, Share2, MoreHorizontal, Pin, PlusSquare } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -458,6 +458,11 @@ export default function ProfilePage() {
                     <>
                       <Button asChild variant="secondary" size="sm">
                         <Link to="/settings">Edit profile</Link>
+                      </Button>
+                      <Button asChild variant="ghost" size="icon-sm">
+                        <Link to="/create">
+                          <PlusSquare className="h-5 w-5" />
+                        </Link>
                       </Button>
                       <Button asChild variant="ghost" size="icon-sm">
                         <Link to="/settings">
