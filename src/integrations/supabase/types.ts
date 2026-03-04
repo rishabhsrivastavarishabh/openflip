@@ -165,6 +165,27 @@ export type Database = {
           },
         ]
       }
+      close_friends: {
+        Row: {
+          created_at: string | null
+          friend_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          friend_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          friend_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       comments: {
         Row: {
           content: string
@@ -878,37 +899,52 @@ export type Database = {
       posts: {
         Row: {
           caption: string | null
+          collaboration_status: string | null
+          collaborator_id: string | null
+          comments_enabled: boolean | null
           created_at: string | null
           id: string
           is_pinned: boolean | null
+          likes_enabled: boolean | null
           location: string | null
           media_type: string
           media_url: string
           pinned_at: string | null
+          sharing_enabled: boolean | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
           caption?: string | null
+          collaboration_status?: string | null
+          collaborator_id?: string | null
+          comments_enabled?: boolean | null
           created_at?: string | null
           id?: string
           is_pinned?: boolean | null
+          likes_enabled?: boolean | null
           location?: string | null
           media_type: string
           media_url: string
           pinned_at?: string | null
+          sharing_enabled?: boolean | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
           caption?: string | null
+          collaboration_status?: string | null
+          collaborator_id?: string | null
+          comments_enabled?: boolean | null
           created_at?: string | null
           id?: string
           is_pinned?: boolean | null
+          likes_enabled?: boolean | null
           location?: string | null
           media_type?: string
           media_url?: string
           pinned_at?: string | null
+          sharing_enabled?: boolean | null
           updated_at?: string | null
           user_id?: string
         }
@@ -1260,6 +1296,8 @@ export type Database = {
       }
       stories: {
         Row: {
+          allow_reactions: boolean | null
+          allow_replies: boolean | null
           created_at: string | null
           duration: number | null
           expires_at: string | null
@@ -1267,8 +1305,11 @@ export type Database = {
           media_type: string
           media_url: string
           user_id: string
+          visibility: string
         }
         Insert: {
+          allow_reactions?: boolean | null
+          allow_replies?: boolean | null
           created_at?: string | null
           duration?: number | null
           expires_at?: string | null
@@ -1276,8 +1317,11 @@ export type Database = {
           media_type: string
           media_url: string
           user_id: string
+          visibility?: string
         }
         Update: {
+          allow_reactions?: boolean | null
+          allow_replies?: boolean | null
           created_at?: string | null
           duration?: number | null
           expires_at?: string | null
@@ -1285,6 +1329,7 @@ export type Database = {
           media_type?: string
           media_url?: string
           user_id?: string
+          visibility?: string
         }
         Relationships: []
       }
@@ -1481,6 +1526,9 @@ export type Database = {
           business_name: string | null
           category: string
           created_at: string
+          document_type: string | null
+          document_url: string | null
+          government_id_url: string | null
           id: string
           notes: string | null
           request_id: string | null
@@ -1495,6 +1543,9 @@ export type Database = {
           business_name?: string | null
           category: string
           created_at?: string
+          document_type?: string | null
+          document_url?: string | null
+          government_id_url?: string | null
           id?: string
           notes?: string | null
           request_id?: string | null
@@ -1509,6 +1560,9 @@ export type Database = {
           business_name?: string | null
           category?: string
           created_at?: string
+          document_type?: string | null
+          document_url?: string | null
+          government_id_url?: string | null
           id?: string
           notes?: string | null
           request_id?: string | null
