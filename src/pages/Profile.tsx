@@ -16,6 +16,8 @@ import { BlockReportSheet } from '@/components/moderation/BlockReportSheet';
 import { ProtectedMedia } from '@/components/media/ProtectedMedia';
 import { PostActions } from '@/components/post/PostActions';
 import { VerifiedBadge } from '@/components/common/VerifiedBadge';
+import { ProfilePhotoViewer } from '@/components/profile/ProfilePhotoViewer';
+
 interface ProfileData {
   id: string;
   username: string;
@@ -63,6 +65,8 @@ export default function ProfilePage() {
   const [canViewContent, setCanViewContent] = useState(true);
   const [showShareSheet, setShowShareSheet] = useState(false);
   const [showBlockReport, setShowBlockReport] = useState(false);
+  const [showPhotoViewer, setShowPhotoViewer] = useState(false);
+  const [isFollowBack, setIsFollowBack] = useState(false);
 
   const isOwnProfile = user?.id === userId;
 
@@ -73,6 +77,7 @@ export default function ProfilePage() {
       if (user) {
         checkIsFollowing();
         checkPendingRequest();
+        checkFollowBack();
       }
     }
   }, [userId, user]);
@@ -241,6 +246,17 @@ export default function ProfilePage() {
       .maybeSingle();
 
     setIsPending(!!data);
+  };
+
+  const checkFollowBack = async () => {
+    if (!user || isOwnProfile) return;
+    const { data } = await supabase
+      .from('follows')
+      .select('id')
+      .eq('follower_id', userId)
+      .eq('following_id', user.id)
+      .maybeSingle();
+    setIsFollowBack(!!data);
   };
 
   const handleFollow = async () => {
@@ -430,12 +446,14 @@ export default function ProfilePage() {
         <div className="p-4 md:py-8">
           <div className="flex items-start gap-6 md:gap-12">
             <div className="relative">
-              <Avatar className="w-20 h-20 md:w-36 md:h-36 ring-2 ring-border">
-                <AvatarImage src={profile.avatar_url || undefined} />
-                <AvatarFallback className="text-2xl md:text-4xl bg-primary/10 text-primary">
-                  {profile.username.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
+              <button onClick={() => setShowPhotoViewer(true)}>
+                <Avatar className="w-20 h-20 md:w-36 md:h-36 ring-2 ring-border cursor-pointer hover:opacity-90 transition-opacity">
+                  <AvatarImage src={profile.avatar_url || undefined} />
+                  <AvatarFallback className="text-2xl md:text-4xl bg-primary/10 text-primary">
+                    {profile.username.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              </button>
               {isOwnProfile && (
                 <button
                   onClick={() => setShowCreateStory(true)}
@@ -459,6 +477,9 @@ export default function ProfilePage() {
                       <Button asChild variant="secondary" size="sm">
                         <Link to="/settings">Edit profile</Link>
                       </Button>
+                      <Button variant="ghost" size="icon-sm" onClick={() => setShowShareSheet(true)}>
+                        <Share2 className="h-5 w-5" />
+                      </Button>
                       <Button asChild variant="ghost" size="icon-sm">
                         <Link to="/create">
                           <PlusSquare className="h-5 w-5" />
@@ -480,6 +501,9 @@ export default function ProfilePage() {
                       >
                         {getFollowButtonContent()}
                       </Button>
+                      {!isFollowing && !isPending && isFollowBack && (
+                        <span className="text-xs text-muted-foreground">Follows you</span>
+                      )}
                       {(isFollowing || user) && (
                         <Button variant="secondary" size="sm" onClick={handleMessage}>
                           <MessageCircle className="h-4 w-4 mr-1" />
@@ -732,6 +756,14 @@ export default function ProfilePage() {
             onBlocked={() => navigate('/')}
           />
         )}
+
+        {/* Full-screen Profile Photo Viewer */}
+        <ProfilePhotoViewer
+          open={showPhotoViewer}
+          onOpenChange={setShowPhotoViewer}
+          imageUrl={profile.avatar_url}
+          username={profile.username}
+        />
       </div>
     </MainLayout>
   );
