@@ -404,6 +404,90 @@ export type Database = {
         }
         Relationships: []
       }
+      creator_subscription_settings: {
+        Row: {
+          benefits: Json | null
+          created_at: string
+          currency: string
+          id: string
+          is_enabled: boolean
+          monthly_price: number
+          updated_at: string
+          user_id: string
+          yearly_price: number
+        }
+        Insert: {
+          benefits?: Json | null
+          created_at?: string
+          currency?: string
+          id?: string
+          is_enabled?: boolean
+          monthly_price?: number
+          updated_at?: string
+          user_id: string
+          yearly_price?: number
+        }
+        Update: {
+          benefits?: Json | null
+          created_at?: string
+          currency?: string
+          id?: string
+          is_enabled?: boolean
+          monthly_price?: number
+          updated_at?: string
+          user_id?: string
+          yearly_price?: number
+        }
+        Relationships: []
+      }
+      creator_subscriptions: {
+        Row: {
+          amount: number
+          billing_cycle: string
+          cancelled_at: string | null
+          created_at: string
+          creator_id: string
+          currency: string
+          expires_at: string | null
+          id: string
+          started_at: string
+          status: string
+          subscriber_id: string
+          tier: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          billing_cycle?: string
+          cancelled_at?: string | null
+          created_at?: string
+          creator_id: string
+          currency?: string
+          expires_at?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          subscriber_id: string
+          tier?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          billing_cycle?: string
+          cancelled_at?: string | null
+          created_at?: string
+          creator_id?: string
+          currency?: string
+          expires_at?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          subscriber_id?: string
+          tier?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       drafts: {
         Row: {
           caption: string | null

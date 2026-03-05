@@ -183,6 +183,7 @@ export function CreatorDashboard({ onBack, onOpenSection }: CreatorDashboardProp
   ];
 
   const menuItems = [
+    { label: 'Fan Subscriptions', description: 'Manage subscriber plans & earnings', section: 'fan-subs' },
     { label: 'AI Growth Assistant', description: 'Personalized tips & strategy', section: 'ai-assistant' },
     { label: 'Content Calendar', description: 'Schedule & plan your posts', section: 'calendar' },
     { label: 'Content Performance', description: 'View insights for each post', section: 'content' },

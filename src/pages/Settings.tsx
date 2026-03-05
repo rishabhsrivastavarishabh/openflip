@@ -13,6 +13,7 @@ import { AccountSwitcher } from '@/components/account/AccountSwitcher';
 import { AccountSettings } from '@/components/settings/AccountSettings';
 import { NotificationSettings } from '@/components/settings/NotificationSettings';
 import { VerificationPanel } from '@/components/admin/VerificationPanel';
+import { BusinessVerificationFlow } from '@/components/verification/BusinessVerificationFlow';
 import { SubscriptionSettings } from '@/components/subscription/SubscriptionSettings';
 import { CreatorDashboard } from '@/components/creator/CreatorDashboard';
 import { CreatorEarnings } from '@/components/creator/CreatorEarnings';
@@ -21,6 +22,7 @@ import { AIGrowthAssistant } from '@/components/creator/AIGrowthAssistant';
 import { AudienceInsights } from '@/components/creator/AudienceInsights';
 import { BoostCampaign } from '@/components/creator/BoostCampaign';
 import { ContentCalendar } from '@/components/creator/ContentCalendar';
+import { FanSubscriptions } from '@/components/creator/FanSubscriptions';
 import { AdminPromoManager } from '@/components/admin/AdminPromoManager';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -70,6 +72,7 @@ export default function SettingsPage() {
   const [showAppearance, setShowAppearance] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [showFamilyCentre, setShowFamilyCentre] = useState(false);
+  const [showVerificationFlow, setShowVerificationFlow] = useState(false);
   const [blockedUsers, setBlockedUsers] = useState<any[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isPrivate, setIsPrivate] = useState(profile?.is_private || false);
@@ -327,11 +330,17 @@ export default function SettingsPage() {
   if (showCreatorTools && creatorSection === 'calendar') {
     return <MainLayout><div className="max-w-lg mx-auto p-4"><ContentCalendar onBack={() => setCreatorSection(null)} /></div></MainLayout>;
   }
+  if (showCreatorTools && creatorSection === 'fan-subs') {
+    return <MainLayout><div className="max-w-lg mx-auto p-4"><FanSubscriptions onBack={() => setCreatorSection(null)} /></div></MainLayout>;
+  }
   if (showCreatorTools) {
     return <MainLayout><div className="max-w-lg mx-auto p-4"><CreatorDashboard onBack={() => setShowCreatorTools(false)} onOpenSection={(section) => setCreatorSection(section)} /></div></MainLayout>;
   }
   if (showPromoManager) {
     return <MainLayout><div className="max-w-lg mx-auto p-4"><AdminPromoManager onBack={() => setShowPromoManager(false)} /></div></MainLayout>;
+  }
+  if (showVerificationFlow) {
+    return <MainLayout><div className="max-w-lg mx-auto p-4"><BusinessVerificationFlow onBack={() => setShowVerificationFlow(false)} /></div></MainLayout>;
   }
 
   // Privacy page
@@ -594,6 +603,7 @@ export default function SettingsPage() {
       items: [
         { icon: BarChart3, label: 'Creator Tools', description: 'Analytics, insights & growth', action: () => setShowCreatorTools(true), highlight: true },
         { icon: Crown, label: 'Verification & Subscription', description: profile?.is_verified ? '✓ Verified' : 'Get verified', action: () => setShowSubscriptionSettings(true), highlight: true },
+        { icon: Shield, label: 'Business Verification', description: 'Verify with government ID', action: () => setShowVerificationFlow(true) },
         { icon: Briefcase, label: 'Business Account', description: 'Switch to business or creator', action: () => setShowBusinessSettings(true) },
         ...(isAdmin ? [{ icon: Tag, label: 'Promo Codes', description: 'Manage discount codes', action: () => setShowPromoManager(true) }] : []),
       ],
