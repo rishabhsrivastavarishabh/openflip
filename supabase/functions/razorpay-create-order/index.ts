@@ -55,6 +55,10 @@ serve(async (req) => {
     const { amount, type, billingCycle, promoCode, metadata } = await req.json();
     logStep("Request body parsed", { amount, type, billingCycle, promoCode });
 
+    if (!amount || amount < 1) {
+      throw new Error("Invalid amount. Minimum order amount is ₹1.");
+    }
+
     // Validate promo code if provided
     let finalAmount = amount;
     let discountAmount = 0;
