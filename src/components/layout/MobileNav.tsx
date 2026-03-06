@@ -1,4 +1,4 @@
-import { Home, Search, MessageCircle, Film } from 'lucide-react';
+import { Home, Film, MessageCircle, PlusSquare } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,7 +14,7 @@ export function MobileNav() {
 
   const navItems = [
     { icon: Home, href: '/', label: 'Home', badge: 0, isProfile: false },
-    { icon: Search, href: '/explore', label: 'Explore', badge: 0, isProfile: false },
+    { icon: PlusSquare, href: '/create', label: 'Create', badge: 0, isProfile: false },
     { icon: Film, href: '/reels', label: 'Reels', badge: 0, isProfile: false },
     { icon: MessageCircle, href: '/messages', label: 'Messages', badge: unreadMessages, isProfile: false },
     { icon: null, href: profileHref, label: 'Profile', badge: 0, isProfile: true },
