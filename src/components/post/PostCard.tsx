@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal } from 'lucide-react';
+import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -41,6 +41,11 @@ export function PostCard({ post, onUpdate }: PostCardProps) {
   const [showHeart, setShowHeart] = useState(false);
   const [showShareSheet, setShowShareSheet] = useState(false);
   const [showBlockReport, setShowBlockReport] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Support multi-photo posts (comma-separated URLs)
+  const mediaUrls = post.media_url.includes(',') ? post.media_url.split(',') : [post.media_url];
+  const isMultiPhoto = mediaUrls.length > 1;
 
   const handleLike = async () => {
     if (!user) {
@@ -167,13 +172,39 @@ export function PostCard({ post, onUpdate }: PostCardProps) {
         onDoubleClick={handleDoubleTap}
       >
         <ProtectedMedia
-          src={post.media_url}
+          src={mediaUrls[currentImageIndex]}
           type={post.media_type}
           alt={post.caption || 'Post media'}
           className="w-full h-full object-cover"
           controls={post.media_type === 'video'}
         />
         
+        {/* Multi-photo navigation */}
+        {isMultiPhoto && (
+          <>
+            {currentImageIndex > 0 && (
+              <button onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(i => i - 1); }}
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 flex items-center justify-center text-white z-10">
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+            )}
+            {currentImageIndex < mediaUrls.length - 1 && (
+              <button onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(i => i + 1); }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 flex items-center justify-center text-white z-10">
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            )}
+            <div className="absolute top-3 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full z-10">
+              {currentImageIndex + 1}/{mediaUrls.length}
+            </div>
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+              {mediaUrls.map((_, i) => (
+                <div key={i} className={cn("w-1.5 h-1.5 rounded-full transition-all", i === currentImageIndex ? "bg-white w-3" : "bg-white/50")} />
+              ))}
+            </div>
+          </>
+        )}
+
         <AnimatePresence>
           {showHeart && (
             <motion.div

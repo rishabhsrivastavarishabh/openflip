@@ -375,7 +375,7 @@ export default function FeedPage() {
     <MainLayout>
       <div
         ref={containerRef}
-        className="max-w-lg mx-auto relative"
+        className="w-full max-w-lg mx-auto relative"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
