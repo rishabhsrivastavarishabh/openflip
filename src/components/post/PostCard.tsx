@@ -48,6 +48,20 @@ export function PostCard({ post, onUpdate }: PostCardProps) {
   const mediaUrls = post.media_url.includes(',') ? post.media_url.split(',') : [post.media_url];
   const isMultiPhoto = mediaUrls.length > 1;
 
+  const goNext = useCallback(() => {
+    setCurrentImageIndex(i => Math.min(i + 1, mediaUrls.length - 1));
+  }, [mediaUrls.length]);
+
+  const goPrev = useCallback(() => {
+    setCurrentImageIndex(i => Math.max(i - 1, 0));
+  }, []);
+
+  const { handlers: swipeHandlers } = useSwipeGesture({
+    onSwipeLeft: goNext,
+    onSwipeRight: goPrev,
+    threshold: 50,
+  });
+
   const handleLike = async () => {
     if (!user) {
       toast.error('Please sign in to like posts');
