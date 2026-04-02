@@ -183,8 +183,9 @@ export function PostCard({ post, onUpdate }: PostCardProps) {
 
       {/* Media */}
       <div 
-        className="relative aspect-square bg-muted cursor-pointer"
+        className="relative aspect-square bg-muted cursor-pointer overflow-hidden touch-pan-y"
         onDoubleClick={handleDoubleTap}
+        {...(isMultiPhoto ? swipeHandlers : {})}
       >
         <ProtectedMedia
           src={mediaUrls[currentImageIndex]}
