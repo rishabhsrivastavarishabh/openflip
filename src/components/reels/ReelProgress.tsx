@@ -8,7 +8,7 @@ interface ReelProgressProps {
 
 export function ReelProgress({ duration, isPlaying, onComplete }: ReelProgressProps) {
   const [progress, setProgress] = useState(0);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (isPlaying) {
