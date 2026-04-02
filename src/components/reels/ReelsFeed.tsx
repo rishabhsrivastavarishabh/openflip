@@ -46,7 +46,7 @@ export function ReelsFeed({ initialReels }: ReelsFeedProps) {
     const container = containerRef.current;
     if (!container) return;
 
-    let scrollTimeout: NodeJS.Timeout;
+    let scrollTimeout: ReturnType<typeof setTimeout>;
     let isScrolling = false;
 
     const handleWheel = (e: WheelEvent) => {

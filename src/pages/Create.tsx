@@ -64,7 +64,7 @@ export default function CreatePage() {
   const [alsoPostToStory, setAlsoPostToStory] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   
-  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isVideo = file?.type.startsWith('video/') || existingMediaType === 'video';
   const hasMedia = photos.length > 0 || file || existingMediaUrl;

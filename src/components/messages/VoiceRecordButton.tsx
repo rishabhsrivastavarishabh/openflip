@@ -22,7 +22,7 @@ export function VoiceRecordButton({ onSend, disabled }: VoiceRecordButtonProps) 
   } = useVoiceRecorder();
 
   const [isHolding, setIsHolding] = useState(false);
-  const holdTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressRef = useRef(false);
 
   const formatDuration = (seconds: number) => {
