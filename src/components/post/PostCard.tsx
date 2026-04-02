@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import { useSwipeGesture } from '@/hooks/useSwipeGesture';
 import { Link } from 'react-router-dom';
 import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -46,6 +47,20 @@ export function PostCard({ post, onUpdate }: PostCardProps) {
   // Support multi-photo posts (comma-separated URLs)
   const mediaUrls = post.media_url.includes(',') ? post.media_url.split(',') : [post.media_url];
   const isMultiPhoto = mediaUrls.length > 1;
+
+  const goNext = useCallback(() => {
+    setCurrentImageIndex(i => Math.min(i + 1, mediaUrls.length - 1));
+  }, [mediaUrls.length]);
+
+  const goPrev = useCallback(() => {
+    setCurrentImageIndex(i => Math.max(i - 1, 0));
+  }, []);
+
+  const { handlers: swipeHandlers } = useSwipeGesture({
+    onSwipeLeft: goNext,
+    onSwipeRight: goPrev,
+    threshold: 50,
+  });
 
   const handleLike = async () => {
     if (!user) {
@@ -168,8 +183,9 @@ export function PostCard({ post, onUpdate }: PostCardProps) {
 
       {/* Media */}
       <div 
-        className="relative aspect-square bg-muted cursor-pointer"
+        className="relative aspect-square bg-muted cursor-pointer overflow-hidden touch-pan-y"
         onDoubleClick={handleDoubleTap}
+        {...(isMultiPhoto ? swipeHandlers : {})}
       >
         <ProtectedMedia
           src={mediaUrls[currentImageIndex]}
