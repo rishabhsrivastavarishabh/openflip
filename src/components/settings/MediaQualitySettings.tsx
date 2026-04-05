@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ArrowLeft, Upload, Download, Wifi, Image, Film, Volume2 } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { ArrowLeft, Upload, Download, Wifi, Film, HardDrive, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
