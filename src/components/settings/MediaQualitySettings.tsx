@@ -103,6 +103,9 @@ export function MediaQualitySettings({ onBack }: MediaQualitySettingsProps) {
       setClearing(false);
     }
   };
+  const savePreference = (key: string, value: string) => {
+    localStorage.setItem(key, value);
+  };
 
   const handleUploadQuality = (q: Quality) => {
     setUploadQuality(q);
