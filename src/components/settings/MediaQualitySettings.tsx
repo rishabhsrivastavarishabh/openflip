@@ -3,6 +3,7 @@ import { ArrowLeft, Upload, Download, Wifi, Film, HardDrive, Trash2, Loader2 } f
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
+import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 
 interface MediaQualitySettingsProps {
