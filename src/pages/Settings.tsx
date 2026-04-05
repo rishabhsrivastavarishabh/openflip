@@ -24,6 +24,8 @@ import { BoostCampaign } from '@/components/creator/BoostCampaign';
 import { ContentCalendar } from '@/components/creator/ContentCalendar';
 import { FanSubscriptions } from '@/components/creator/FanSubscriptions';
 import { AdminPromoManager } from '@/components/admin/AdminPromoManager';
+import { DevicePermissions } from '@/components/settings/DevicePermissions';
+import { MediaQualitySettings } from '@/components/settings/MediaQualitySettings';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
