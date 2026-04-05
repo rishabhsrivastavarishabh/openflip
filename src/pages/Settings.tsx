@@ -346,6 +346,12 @@ export default function SettingsPage() {
   if (showVerificationFlow) {
     return <MainLayout><div className="max-w-lg mx-auto p-4"><BusinessVerificationFlow onBack={() => setShowVerificationFlow(false)} /></div></MainLayout>;
   }
+  if (showDevicePermissions) {
+    return <MainLayout><DevicePermissions onBack={() => setShowDevicePermissions(false)} /></MainLayout>;
+  }
+  if (showMediaQuality) {
+    return <MainLayout><MediaQualitySettings onBack={() => setShowMediaQuality(false)} /></MainLayout>;
+  }
 
   // Privacy page
   if (showPrivacy) {
