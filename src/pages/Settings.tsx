@@ -24,6 +24,8 @@ import { BoostCampaign } from '@/components/creator/BoostCampaign';
 import { ContentCalendar } from '@/components/creator/ContentCalendar';
 import { FanSubscriptions } from '@/components/creator/FanSubscriptions';
 import { AdminPromoManager } from '@/components/admin/AdminPromoManager';
+import { DevicePermissions } from '@/components/settings/DevicePermissions';
+import { MediaQualitySettings } from '@/components/settings/MediaQualitySettings';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -73,6 +75,8 @@ export default function SettingsPage() {
   const [showHelp, setShowHelp] = useState(false);
   const [showFamilyCentre, setShowFamilyCentre] = useState(false);
   const [showVerificationFlow, setShowVerificationFlow] = useState(false);
+  const [showDevicePermissions, setShowDevicePermissions] = useState(false);
+  const [showMediaQuality, setShowMediaQuality] = useState(false);
   const [blockedUsers, setBlockedUsers] = useState<any[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isPrivate, setIsPrivate] = useState(profile?.is_private || false);
@@ -341,6 +345,12 @@ export default function SettingsPage() {
   }
   if (showVerificationFlow) {
     return <MainLayout><div className="max-w-lg mx-auto p-4"><BusinessVerificationFlow onBack={() => setShowVerificationFlow(false)} /></div></MainLayout>;
+  }
+  if (showDevicePermissions) {
+    return <MainLayout><DevicePermissions onBack={() => setShowDevicePermissions(false)} /></MainLayout>;
+  }
+  if (showMediaQuality) {
+    return <MainLayout><MediaQualitySettings onBack={() => setShowMediaQuality(false)} /></MainLayout>;
   }
 
   // Privacy page
@@ -625,8 +635,8 @@ export default function SettingsPage() {
     {
       title: 'Your app & media',
       items: [
-        { icon: Smartphone, label: 'Device Permissions', description: 'Camera, microphone, storage', action: () => {} },
-        { icon: Image, label: 'Media Quality', description: 'Upload & download quality', action: () => {} },
+        { icon: Smartphone, label: 'Device Permissions', description: 'Camera, microphone, storage', action: () => setShowDevicePermissions(true) },
+        { icon: Image, label: 'Media Quality', description: 'Upload & download quality', action: () => setShowMediaQuality(true) },
       ],
     },
     {
