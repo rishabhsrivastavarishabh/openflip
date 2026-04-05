@@ -264,6 +264,43 @@ export function MediaQualitySettings({ onBack }: MediaQualitySettingsProps) {
             </p>
           </div>
         )}
+
+        <Separator />
+
+        {/* Storage Usage */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 px-1">
+            <HardDrive className="h-4 w-4 text-muted-foreground" />
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Storage Usage</h3>
+          </div>
+
+          <div className="p-4 rounded-xl bg-secondary/50 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-sm">Local Cache</p>
+                <p className="text-xs text-muted-foreground">
+                  {formatBytes(storageUsage.used)} of {formatBytes(storageUsage.total)} used
+                </p>
+              </div>
+              <span className="text-xs font-medium text-primary">{storageUsage.percentage}%</span>
+            </div>
+            <Progress value={storageUsage.percentage} className="h-2" />
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full gap-2"
+              onClick={handleClearCache}
+              disabled={clearing}
+            >
+              {clearing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4" />
+              )}
+              {clearing ? 'Clearing...' : 'Clear Cache & Reset Preferences'}
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );
