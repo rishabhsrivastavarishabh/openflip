@@ -635,8 +635,8 @@ export default function SettingsPage() {
     {
       title: 'Your app & media',
       items: [
-        { icon: Smartphone, label: 'Device Permissions', description: 'Camera, microphone, storage', action: () => {} },
-        { icon: Image, label: 'Media Quality', description: 'Upload & download quality', action: () => {} },
+        { icon: Smartphone, label: 'Device Permissions', description: 'Camera, microphone, storage', action: () => setShowDevicePermissions(true) },
+        { icon: Image, label: 'Media Quality', description: 'Upload & download quality', action: () => setShowMediaQuality(true) },
       ],
     },
     {
