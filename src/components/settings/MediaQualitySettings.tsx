@@ -35,9 +35,73 @@ export function MediaQualitySettings({ onBack }: MediaQualitySettingsProps) {
   const [hdReels, setHdReels] = useState(() =>
     localStorage.getItem('of_hd_reels') !== 'false'
   );
+  const [storageUsage, setStorageUsage] = useState({ used: 0, total: 0, percentage: 0 });
+  const [clearing, setClearing] = useState(false);
 
-  const savePreference = (key: string, value: string) => {
-    localStorage.setItem(key, value);
+  const estimateStorage = useCallback(async () => {
+    try {
+      if ('storage' in navigator && 'estimate' in navigator.storage) {
+        const estimate = await navigator.storage.estimate();
+        const used = estimate.usage || 0;
+        const total = estimate.quota || 0;
+        setStorageUsage({
+          used,
+          total,
+          percentage: total > 0 ? Math.round((used / total) * 100) : 0,
+        });
+      } else {
+        let localSize = 0;
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key) localSize += (localStorage.getItem(key) || '').length * 2;
+        }
+        setStorageUsage({ used: localSize, total: 10 * 1024 * 1024, percentage: Math.round((localSize / (10 * 1024 * 1024)) * 100) });
+      }
+    } catch {
+      setStorageUsage({ used: 0, total: 0, percentage: 0 });
+    }
+  }, []);
+
+  useEffect(() => {
+    estimateStorage();
+  }, [estimateStorage]);
+
+  const formatBytes = (bytes: number) => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  };
+
+  const handleClearCache = async () => {
+    setClearing(true);
+    try {
+      const ofKeys = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('of_')) ofKeys.push(key);
+      }
+      ofKeys.forEach(key => localStorage.removeItem(key));
+
+      if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
+      }
+
+      setUploadQuality('high');
+      setDownloadQuality('high');
+      setDataSaver(false);
+      setAutoPlay(true);
+      setHdReels(true);
+
+      await estimateStorage();
+      toast.success('Cache cleared successfully');
+    } catch {
+      toast.error('Failed to clear cache');
+    } finally {
+      setClearing(false);
+    }
   };
 
   const handleUploadQuality = (q: Quality) => {
