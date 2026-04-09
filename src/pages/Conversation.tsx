@@ -503,6 +503,14 @@ export default function ConversationPage() {
       )}
 
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        {/* E2EE banner */}
+        {!isGroupChat && encryptionReady && (
+          <div className="flex items-center justify-center gap-2 py-2 px-4 mx-auto max-w-xs rounded-full bg-accent/50 text-xs text-muted-foreground">
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>Messages are end-to-end encrypted</span>
+          </div>
+        )}
+
         {/* Disappearing messages indicator */}
         {conversation?.disappearing_messages_timer && (
           <DisappearingMessagesIndicator timer={conversation.disappearing_messages_timer} />
@@ -517,7 +525,7 @@ export default function ConversationPage() {
       <div className="sticky bottom-0 bg-background border-t border-border p-3">
         <div className="flex items-center gap-2">
           <ChatMediaInput onSend={handleMediaSend} disabled={sending} />
-          <Input ref={inputRef} placeholder="Message..." value={newMessage} onChange={(e) => { setNewMessage(e.target.value); handleTyping(); }} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }}} className="flex-1" />
+          <Input ref={inputRef} placeholder={encryptionReady ? "🔒 Encrypted message..." : "Message..."} value={newMessage} onChange={(e) => { setNewMessage(e.target.value); handleTyping(); }} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }}} className="flex-1" />
           {newMessage.trim() ? <Button size="icon" onClick={() => handleSendMessage()} disabled={sending}><Send className="w-5 h-5" /></Button> : <VoiceRecordButton onSend={handleVoiceSend} disabled={sending} />}
         </div>
       </div>
