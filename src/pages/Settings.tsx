@@ -78,6 +78,7 @@ export default function SettingsPage() {
   const [showVerificationFlow, setShowVerificationFlow] = useState(false);
   const [showDevicePermissions, setShowDevicePermissions] = useState(false);
   const [showMediaQuality, setShowMediaQuality] = useState(false);
+  const [showDeviceManagement, setShowDeviceManagement] = useState(false);
   const [blockedUsers, setBlockedUsers] = useState<any[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isPrivate, setIsPrivate] = useState(profile?.is_private || false);
