@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Send, MoreVertical, Phone, Video, Check, CheckCheck, Users } from 'lucide-react';
+import { ArrowLeft, Send, MoreVertical, Phone, Video, Check, CheckCheck, Users, Lock, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Profile, Message } from '@/types/database';
 import { BlockReportSheet } from '@/components/moderation/BlockReportSheet';
@@ -22,6 +22,9 @@ import { GroupChatSettings } from '@/components/messages/GroupChatSettings';
 import { VerifiedBadge } from '@/components/common/VerifiedBadge';
 import { ProfileViewDialog } from '@/components/messages/ProfileViewDialog';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { useSendEncryptedMessage } from '@/hooks/useSendEncryptedMessage';
+import { useDecryptMessage } from '@/hooks/useDecryptMessage';
+import { useDeviceKeys } from '@/hooks/useDeviceKeys';
 import { toast } from 'sonner';
 
 interface ChatMessage extends Message {
