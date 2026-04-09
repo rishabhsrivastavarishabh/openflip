@@ -215,9 +215,16 @@ export default function ConversationPage() {
   const subscribeToMessages = () => {
     const channel = supabase.channel(`conversation-${conversationId}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` },
-        (payload) => {
+        async (payload) => {
           const newMsg = payload.new as any;
-          setMessages(prev => [...prev, { ...newMsg, isMine: newMsg.sender_id === user?.id }]);
+          const chatMsg = { ...newMsg, isMine: newMsg.sender_id === user?.id } as ChatMessage;
+          setMessages(prev => [...prev, chatMsg]);
+          
+          // Decrypt if encrypted
+          if (newMsg.is_encrypted && newMsg.ciphertext) {
+            await decryptMessages([chatMsg]);
+          }
+          
           if (newMsg.sender_id !== user?.id) {
             supabase.from('messages').update({ is_read: true, read_at: new Date().toISOString() }).eq('id', newMsg.id);
           }
@@ -259,22 +266,49 @@ export default function ConversationPage() {
     setSending(true);
     setNewMessage('');
     try {
-      const insertData: any = { conversation_id: conversationId, sender_id: user.id, content: messageContent || (messageType === 'voice' ? '🎤 Voice message' : '📷 Media') };
-      if (messageType !== 'text') insertData.message_type = messageType;
-      if (mediaUrl) insertData.media_url = mediaUrl;
-      if (voiceDuration) insertData.voice_duration = voiceDuration;
-      if (isViewOnce) insertData.is_view_once = true;
+      // For text messages in 1-on-1 chats, use E2EE
+      const isGroupChat = conversation?.is_group;
+      const recipientId = !isGroupChat && participant?.id;
+      
+      if (messageType === 'text' && recipientId && encryptionReady) {
+        let expiresAt: string | undefined;
+        if (conversation?.disappearing_messages_timer) {
+          const d = new Date();
+          d.setHours(d.getHours() + conversation.disappearing_messages_timer);
+          expiresAt = d.toISOString();
+        }
+        
+        const success = await sendEncrypted(conversationId, messageContent, recipientId, {
+          messageType: messageType !== 'text' ? messageType : undefined,
+          mediaUrl,
+          voiceDuration,
+          isViewOnce,
+          expiresAt,
+        });
+        
+        if (success) {
+          // Cache decrypted content for our own message
+          // (we know what we sent)
+          await supabase.from('conversation_participants').update({ typing_at: null }).eq('conversation_id', conversationId).eq('user_id', user.id);
+        }
+      } else {
+        // Fallback: unencrypted (group chats, media, etc.)
+        const insertData: any = { conversation_id: conversationId, sender_id: user.id, content: messageContent || (messageType === 'voice' ? '🎤 Voice message' : '📷 Media'), is_encrypted: false };
+        if (messageType !== 'text') insertData.message_type = messageType;
+        if (mediaUrl) insertData.media_url = mediaUrl;
+        if (voiceDuration) insertData.voice_duration = voiceDuration;
+        if (isViewOnce) insertData.is_view_once = true;
 
-      // Set expiration for disappearing messages
-      if (conversation?.disappearing_messages_timer) {
-        const expiresAt = new Date();
-        expiresAt.setHours(expiresAt.getHours() + conversation.disappearing_messages_timer);
-        insertData.expires_at = expiresAt.toISOString();
+        if (conversation?.disappearing_messages_timer) {
+          const expiresAt = new Date();
+          expiresAt.setHours(expiresAt.getHours() + conversation.disappearing_messages_timer);
+          insertData.expires_at = expiresAt.toISOString();
+        }
+
+        await supabase.from('messages').insert(insertData);
+        await supabase.from('conversation_participants').update({ typing_at: null }).eq('conversation_id', conversationId).eq('user_id', user.id);
+        await supabase.from('conversations').update({ updated_at: new Date().toISOString() }).eq('id', conversationId);
       }
-
-      await supabase.from('messages').insert(insertData);
-      await supabase.from('conversation_participants').update({ typing_at: null }).eq('conversation_id', conversationId).eq('user_id', user.id);
-      await supabase.from('conversations').update({ updated_at: new Date().toISOString() }).eq('id', conversationId);
     } catch (error) { console.error('Error sending message:', error); setNewMessage(messageContent); } 
     finally { setSending(false); }
   };
