@@ -69,10 +69,17 @@ export default function ConversationPage() {
   const [showBlockReport, setShowBlockReport] = useState(false);
   const [showProfileView, setShowProfileView] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [decryptedContents, setDecryptedContents] = useState<Record<string, string>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { fetchOnlineStatus, isUserOnline, getLastSeenText } = useOnlineStatus();
+  const { sendEncrypted, isReady: encryptionReady } = useSendEncryptedMessage();
+  const { decrypt } = useDecryptMessage();
+  const { getRecipientPublicKey } = useDeviceKeys();
+
+  // Device public key cache for decryption
+  const senderKeyCache = useRef<Record<string, string>>({});
 
   // Validate conversationId is a valid UUID
   const isValidUUID = (id: string | undefined): boolean => {
