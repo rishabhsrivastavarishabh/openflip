@@ -378,18 +378,33 @@ export default function ConversationPage() {
       );
     }
 
+    const isEncrypted = (message as any).is_encrypted;
+    const displayContent = isEncrypted && decryptedContents[message.id] 
+      ? decryptedContents[message.id]
+      : isEncrypted ? '🔒 Encrypted message' : message.content;
+
     return (
       <div key={message.id} className={cn("flex items-end gap-2", message.isMine ? "justify-end" : "justify-start")}>
         {!message.isMine && <div className="w-8">{showAvatar && senderProfile && <Avatar className="w-8 h-8"><AvatarImage src={senderProfile.avatar_url || undefined} /><AvatarFallback>{senderProfile.username.charAt(0).toUpperCase()}</AvatarFallback></Avatar>}</div>}
         <div className={cn("max-w-[70%] px-4 py-2 rounded-2xl", message.isMine ? "bg-primary text-primary-foreground rounded-br-md" : "bg-muted rounded-bl-md")}>
           {messageType === 'voice' && message.media_url ? <VoiceMessage audioUrl={message.media_url} duration={message.voice_duration} isMine={message.isMine} />
           : message.shared_post_id || message.shared_reel_id || message.shared_profile_id ? <SharedPostPreview postId={message.shared_post_id} reelId={message.shared_reel_id} profileId={message.shared_profile_id} isMine={message.isMine} />
-          : <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>}
+          : (
+            <div>
+              <p className="text-sm whitespace-pre-wrap break-words">{displayContent}</p>
+              {isEncrypted && (
+                <div className="flex items-center gap-1 mt-1 opacity-60">
+                  <Lock className="w-3 h-3" />
+                  <span className="text-[10px]">end-to-end encrypted</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
         {message.isMine && (
           <div className="w-4 flex items-center justify-center">
             {message.read_at || message.is_read ? (
-              <CheckCheck className="w-3.5 h-3.5 text-blue-500" />
+              <CheckCheck className="w-3.5 h-3.5 text-primary" />
             ) : message.delivered_at ? (
               <CheckCheck className="w-3.5 h-3.5 text-muted-foreground" />
             ) : (
