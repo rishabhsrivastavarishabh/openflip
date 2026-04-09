@@ -488,6 +488,39 @@ export type Database = {
         }
         Relationships: []
       }
+      devices: {
+        Row: {
+          created_at: string
+          device_name: string
+          device_public_key: string
+          id: string
+          last_seen_at: string
+          prekey_bundle: Json | null
+          signed_prekey_public: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_name?: string
+          device_public_key: string
+          id?: string
+          last_seen_at?: string
+          prekey_bundle?: Json | null
+          signed_prekey_public?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_name?: string
+          device_public_key?: string
+          id?: string
+          last_seen_at?: string
+          prekey_bundle?: Json | null
+          signed_prekey_public?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       drafts: {
         Row: {
           caption: string | null
@@ -684,8 +717,42 @@ export type Database = {
           },
         ]
       }
+      message_receipts: {
+        Row: {
+          delivered_at: string | null
+          id: string
+          message_id: string
+          seen_at: string | null
+          user_id: string
+        }
+        Insert: {
+          delivered_at?: string | null
+          id?: string
+          message_id: string
+          seen_at?: string | null
+          user_id: string
+        }
+        Update: {
+          delivered_at?: string | null
+          id?: string
+          message_id?: string
+          seen_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_receipts_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
+          aad: string | null
+          ciphertext: string | null
           content: string
           conversation_id: string
           created_at: string | null
@@ -694,13 +761,16 @@ export type Database = {
           file_name: string | null
           file_size: number | null
           id: string
+          is_encrypted: boolean | null
           is_read: boolean | null
           is_view_once: boolean | null
           media_type: string | null
           media_url: string | null
           message_type: string | null
+          nonce: string | null
           read_at: string | null
           reply_to_id: string | null
+          sender_device_id: string | null
           sender_id: string
           shared_post_id: string | null
           shared_profile_id: string | null
@@ -712,6 +782,8 @@ export type Database = {
           voice_duration: number | null
         }
         Insert: {
+          aad?: string | null
+          ciphertext?: string | null
           content: string
           conversation_id: string
           created_at?: string | null
@@ -720,13 +792,16 @@ export type Database = {
           file_name?: string | null
           file_size?: number | null
           id?: string
+          is_encrypted?: boolean | null
           is_read?: boolean | null
           is_view_once?: boolean | null
           media_type?: string | null
           media_url?: string | null
           message_type?: string | null
+          nonce?: string | null
           read_at?: string | null
           reply_to_id?: string | null
+          sender_device_id?: string | null
           sender_id: string
           shared_post_id?: string | null
           shared_profile_id?: string | null
@@ -738,6 +813,8 @@ export type Database = {
           voice_duration?: number | null
         }
         Update: {
+          aad?: string | null
+          ciphertext?: string | null
           content?: string
           conversation_id?: string
           created_at?: string | null
@@ -746,13 +823,16 @@ export type Database = {
           file_name?: string | null
           file_size?: number | null
           id?: string
+          is_encrypted?: boolean | null
           is_read?: boolean | null
           is_view_once?: boolean | null
           media_type?: string | null
           media_url?: string | null
           message_type?: string | null
+          nonce?: string | null
           read_at?: string | null
           reply_to_id?: string | null
+          sender_device_id?: string | null
           sender_id?: string
           shared_post_id?: string | null
           shared_profile_id?: string | null
@@ -776,6 +856,13 @@ export type Database = {
             columns: ["reply_to_id"]
             isOneToOne: false
             referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_device_id_fkey"
+            columns: ["sender_device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
             referencedColumns: ["id"]
           },
         ]

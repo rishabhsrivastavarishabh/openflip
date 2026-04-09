@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Send, MoreVertical, Phone, Video, Check, CheckCheck, Users } from 'lucide-react';
+import { ArrowLeft, Send, MoreVertical, Phone, Video, Check, CheckCheck, Users, Lock, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Profile, Message } from '@/types/database';
 import { BlockReportSheet } from '@/components/moderation/BlockReportSheet';
@@ -22,6 +22,9 @@ import { GroupChatSettings } from '@/components/messages/GroupChatSettings';
 import { VerifiedBadge } from '@/components/common/VerifiedBadge';
 import { ProfileViewDialog } from '@/components/messages/ProfileViewDialog';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { useSendEncryptedMessage } from '@/hooks/useSendEncryptedMessage';
+import { useDecryptMessage } from '@/hooks/useDecryptMessage';
+import { useDeviceKeys } from '@/hooks/useDeviceKeys';
 import { toast } from 'sonner';
 
 interface ChatMessage extends Message {
@@ -66,10 +69,17 @@ export default function ConversationPage() {
   const [showBlockReport, setShowBlockReport] = useState(false);
   const [showProfileView, setShowProfileView] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [decryptedContents, setDecryptedContents] = useState<Record<string, string>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { fetchOnlineStatus, isUserOnline, getLastSeenText } = useOnlineStatus();
+  const { sendEncrypted, isReady: encryptionReady } = useSendEncryptedMessage();
+  const { decrypt } = useDecryptMessage();
+  const { getRecipientPublicKey } = useDeviceKeys();
+
+  // Device public key cache for decryption
+  const senderKeyCache = useRef<Record<string, string>>({});
 
   // Validate conversationId is a valid UUID
   const isValidUUID = (id: string | undefined): boolean => {
@@ -144,6 +154,35 @@ export default function ConversationPage() {
     }
   };
 
+  // Decrypt encrypted messages after fetching
+  const decryptMessages = useCallback(async (msgs: ChatMessage[]) => {
+    const newDecrypted: Record<string, string> = {};
+    
+    for (const msg of msgs) {
+      if ((msg as any).is_encrypted && (msg as any).ciphertext) {
+        const senderId = msg.sender_id;
+        // Get sender's device public key (cached)
+        if (!senderKeyCache.current[senderId]) {
+          const pk = await getRecipientPublicKey(senderId);
+          if (pk) senderKeyCache.current[senderId] = pk;
+        }
+        
+        const senderPk = senderKeyCache.current[senderId] || null;
+        const plaintext = await decrypt(
+          msg.id,
+          (msg as any).ciphertext,
+          (msg as any).nonce,
+          (msg as any).aad,
+          senderPk,
+          true
+        );
+        newDecrypted[msg.id] = plaintext;
+      }
+    }
+    
+    setDecryptedContents(prev => ({ ...prev, ...newDecrypted }));
+  }, [decrypt, getRecipientPublicKey]);
+
   const fetchMessages = async () => {
     if (!conversationId || !user) return;
     try {
@@ -153,7 +192,11 @@ export default function ConversationPage() {
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true });
       if (error) throw error;
-      setMessages((data || []).map(msg => ({ ...msg, isMine: msg.sender_id === user.id })) as ChatMessage[]);
+      const mapped = (data || []).map(msg => ({ ...msg, isMine: msg.sender_id === user.id })) as ChatMessage[];
+      setMessages(mapped);
+      
+      // Decrypt any encrypted messages
+      await decryptMessages(mapped);
       
       // Mark messages as read and update read_at timestamp
       await supabase
@@ -172,9 +215,16 @@ export default function ConversationPage() {
   const subscribeToMessages = () => {
     const channel = supabase.channel(`conversation-${conversationId}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` },
-        (payload) => {
+        async (payload) => {
           const newMsg = payload.new as any;
-          setMessages(prev => [...prev, { ...newMsg, isMine: newMsg.sender_id === user?.id }]);
+          const chatMsg = { ...newMsg, isMine: newMsg.sender_id === user?.id } as ChatMessage;
+          setMessages(prev => [...prev, chatMsg]);
+          
+          // Decrypt if encrypted
+          if (newMsg.is_encrypted && newMsg.ciphertext) {
+            await decryptMessages([chatMsg]);
+          }
+          
           if (newMsg.sender_id !== user?.id) {
             supabase.from('messages').update({ is_read: true, read_at: new Date().toISOString() }).eq('id', newMsg.id);
           }
@@ -216,22 +266,49 @@ export default function ConversationPage() {
     setSending(true);
     setNewMessage('');
     try {
-      const insertData: any = { conversation_id: conversationId, sender_id: user.id, content: messageContent || (messageType === 'voice' ? '🎤 Voice message' : '📷 Media') };
-      if (messageType !== 'text') insertData.message_type = messageType;
-      if (mediaUrl) insertData.media_url = mediaUrl;
-      if (voiceDuration) insertData.voice_duration = voiceDuration;
-      if (isViewOnce) insertData.is_view_once = true;
+      // For text messages in 1-on-1 chats, use E2EE
+      const isGroupChat = conversation?.is_group;
+      const recipientId = !isGroupChat && participant?.id;
+      
+      if (messageType === 'text' && recipientId && encryptionReady) {
+        let expiresAt: string | undefined;
+        if (conversation?.disappearing_messages_timer) {
+          const d = new Date();
+          d.setHours(d.getHours() + conversation.disappearing_messages_timer);
+          expiresAt = d.toISOString();
+        }
+        
+        const success = await sendEncrypted(conversationId, messageContent, recipientId, {
+          messageType: messageType !== 'text' ? messageType : undefined,
+          mediaUrl,
+          voiceDuration,
+          isViewOnce,
+          expiresAt,
+        });
+        
+        if (success) {
+          // Cache decrypted content for our own message
+          // (we know what we sent)
+          await supabase.from('conversation_participants').update({ typing_at: null }).eq('conversation_id', conversationId).eq('user_id', user.id);
+        }
+      } else {
+        // Fallback: unencrypted (group chats, media, etc.)
+        const insertData: any = { conversation_id: conversationId, sender_id: user.id, content: messageContent || (messageType === 'voice' ? '🎤 Voice message' : '📷 Media'), is_encrypted: false };
+        if (messageType !== 'text') insertData.message_type = messageType;
+        if (mediaUrl) insertData.media_url = mediaUrl;
+        if (voiceDuration) insertData.voice_duration = voiceDuration;
+        if (isViewOnce) insertData.is_view_once = true;
 
-      // Set expiration for disappearing messages
-      if (conversation?.disappearing_messages_timer) {
-        const expiresAt = new Date();
-        expiresAt.setHours(expiresAt.getHours() + conversation.disappearing_messages_timer);
-        insertData.expires_at = expiresAt.toISOString();
+        if (conversation?.disappearing_messages_timer) {
+          const expiresAt = new Date();
+          expiresAt.setHours(expiresAt.getHours() + conversation.disappearing_messages_timer);
+          insertData.expires_at = expiresAt.toISOString();
+        }
+
+        await supabase.from('messages').insert(insertData);
+        await supabase.from('conversation_participants').update({ typing_at: null }).eq('conversation_id', conversationId).eq('user_id', user.id);
+        await supabase.from('conversations').update({ updated_at: new Date().toISOString() }).eq('id', conversationId);
       }
-
-      await supabase.from('messages').insert(insertData);
-      await supabase.from('conversation_participants').update({ typing_at: null }).eq('conversation_id', conversationId).eq('user_id', user.id);
-      await supabase.from('conversations').update({ updated_at: new Date().toISOString() }).eq('id', conversationId);
     } catch (error) { console.error('Error sending message:', error); setNewMessage(messageContent); } 
     finally { setSending(false); }
   };
@@ -301,18 +378,33 @@ export default function ConversationPage() {
       );
     }
 
+    const isEncrypted = (message as any).is_encrypted;
+    const displayContent = isEncrypted && decryptedContents[message.id] 
+      ? decryptedContents[message.id]
+      : isEncrypted ? '🔒 Encrypted message' : message.content;
+
     return (
       <div key={message.id} className={cn("flex items-end gap-2", message.isMine ? "justify-end" : "justify-start")}>
         {!message.isMine && <div className="w-8">{showAvatar && senderProfile && <Avatar className="w-8 h-8"><AvatarImage src={senderProfile.avatar_url || undefined} /><AvatarFallback>{senderProfile.username.charAt(0).toUpperCase()}</AvatarFallback></Avatar>}</div>}
         <div className={cn("max-w-[70%] px-4 py-2 rounded-2xl", message.isMine ? "bg-primary text-primary-foreground rounded-br-md" : "bg-muted rounded-bl-md")}>
           {messageType === 'voice' && message.media_url ? <VoiceMessage audioUrl={message.media_url} duration={message.voice_duration} isMine={message.isMine} />
           : message.shared_post_id || message.shared_reel_id || message.shared_profile_id ? <SharedPostPreview postId={message.shared_post_id} reelId={message.shared_reel_id} profileId={message.shared_profile_id} isMine={message.isMine} />
-          : <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>}
+          : (
+            <div>
+              <p className="text-sm whitespace-pre-wrap break-words">{displayContent}</p>
+              {isEncrypted && (
+                <div className="flex items-center gap-1 mt-1 opacity-60">
+                  <Lock className="w-3 h-3" />
+                  <span className="text-[10px]">end-to-end encrypted</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
         {message.isMine && (
           <div className="w-4 flex items-center justify-center">
             {message.read_at || message.is_read ? (
-              <CheckCheck className="w-3.5 h-3.5 text-blue-500" />
+              <CheckCheck className="w-3.5 h-3.5 text-primary" />
             ) : message.delivered_at ? (
               <CheckCheck className="w-3.5 h-3.5 text-muted-foreground" />
             ) : (
@@ -411,6 +503,14 @@ export default function ConversationPage() {
       )}
 
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        {/* E2EE banner */}
+        {!isGroupChat && encryptionReady && (
+          <div className="flex items-center justify-center gap-2 py-2 px-4 mx-auto max-w-xs rounded-full bg-accent/50 text-xs text-muted-foreground">
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>Messages are end-to-end encrypted</span>
+          </div>
+        )}
+
         {/* Disappearing messages indicator */}
         {conversation?.disappearing_messages_timer && (
           <DisappearingMessagesIndicator timer={conversation.disappearing_messages_timer} />
@@ -425,7 +525,7 @@ export default function ConversationPage() {
       <div className="sticky bottom-0 bg-background border-t border-border p-3">
         <div className="flex items-center gap-2">
           <ChatMediaInput onSend={handleMediaSend} disabled={sending} />
-          <Input ref={inputRef} placeholder="Message..." value={newMessage} onChange={(e) => { setNewMessage(e.target.value); handleTyping(); }} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }}} className="flex-1" />
+          <Input ref={inputRef} placeholder={encryptionReady ? "🔒 Encrypted message..." : "Message..."} value={newMessage} onChange={(e) => { setNewMessage(e.target.value); handleTyping(); }} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }}} className="flex-1" />
           {newMessage.trim() ? <Button size="icon" onClick={() => handleSendMessage()} disabled={sending}><Send className="w-5 h-5" /></Button> : <VoiceRecordButton onSend={handleVoiceSend} disabled={sending} />}
         </div>
       </div>

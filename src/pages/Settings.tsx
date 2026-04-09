@@ -4,7 +4,7 @@ import {
   ArrowLeft, User, Lock, Bell, HelpCircle, LogOut, Camera, ChevronRight,
   Shield, Ban, Trash2, Briefcase, Settings2, Crown, BarChart3, Tag, Moon,
   Sun, Monitor, Users, Eye, Heart, MessageCircle, Smartphone, Image,
-  Globe, UserCheck, Volume2, Palette, Info, FileText, Phone
+  Globe, UserCheck, Volume2, Palette, Info, FileText, Phone, Fingerprint
 } from 'lucide-react';
 import { AvatarCropDialog } from '@/components/settings/AvatarCropDialog';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -26,6 +26,7 @@ import { FanSubscriptions } from '@/components/creator/FanSubscriptions';
 import { AdminPromoManager } from '@/components/admin/AdminPromoManager';
 import { DevicePermissions } from '@/components/settings/DevicePermissions';
 import { MediaQualitySettings } from '@/components/settings/MediaQualitySettings';
+import { DeviceManagement } from '@/components/settings/DeviceManagement';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -77,6 +78,7 @@ export default function SettingsPage() {
   const [showVerificationFlow, setShowVerificationFlow] = useState(false);
   const [showDevicePermissions, setShowDevicePermissions] = useState(false);
   const [showMediaQuality, setShowMediaQuality] = useState(false);
+  const [showDeviceManagement, setShowDeviceManagement] = useState(false);
   const [blockedUsers, setBlockedUsers] = useState<any[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isPrivate, setIsPrivate] = useState(profile?.is_private || false);
@@ -352,8 +354,10 @@ export default function SettingsPage() {
   if (showMediaQuality) {
     return <MainLayout><MediaQualitySettings onBack={() => setShowMediaQuality(false)} /></MainLayout>;
   }
+  if (showDeviceManagement) {
+    return <MainLayout><div className="max-w-lg mx-auto p-4"><DeviceManagement onBack={() => setShowDeviceManagement(false)} /></div></MainLayout>;
+  }
 
-  // Privacy page
   if (showPrivacy) {
     return (
       <MainLayout>
@@ -637,6 +641,7 @@ export default function SettingsPage() {
       items: [
         { icon: Smartphone, label: 'Device Permissions', description: 'Camera, microphone, storage', action: () => setShowDevicePermissions(true) },
         { icon: Image, label: 'Media Quality', description: 'Upload & download quality', action: () => setShowMediaQuality(true) },
+        { icon: Fingerprint, label: 'Encryption & Devices', description: 'Manage E2EE device keys', action: () => setShowDeviceManagement(true) },
       ],
     },
     {
