@@ -354,8 +354,10 @@ export default function SettingsPage() {
   if (showMediaQuality) {
     return <MainLayout><MediaQualitySettings onBack={() => setShowMediaQuality(false)} /></MainLayout>;
   }
+  if (showDeviceManagement) {
+    return <MainLayout><div className="max-w-lg mx-auto p-4"><DeviceManagement onBack={() => setShowDeviceManagement(false)} /></div></MainLayout>;
+  }
 
-  // Privacy page
   if (showPrivacy) {
     return (
       <MainLayout>
