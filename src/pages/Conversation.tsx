@@ -154,6 +154,35 @@ export default function ConversationPage() {
     }
   };
 
+  // Decrypt encrypted messages after fetching
+  const decryptMessages = useCallback(async (msgs: ChatMessage[]) => {
+    const newDecrypted: Record<string, string> = {};
+    
+    for (const msg of msgs) {
+      if ((msg as any).is_encrypted && (msg as any).ciphertext) {
+        const senderId = msg.sender_id;
+        // Get sender's device public key (cached)
+        if (!senderKeyCache.current[senderId]) {
+          const pk = await getRecipientPublicKey(senderId);
+          if (pk) senderKeyCache.current[senderId] = pk;
+        }
+        
+        const senderPk = senderKeyCache.current[senderId] || null;
+        const plaintext = await decrypt(
+          msg.id,
+          (msg as any).ciphertext,
+          (msg as any).nonce,
+          (msg as any).aad,
+          senderPk,
+          true
+        );
+        newDecrypted[msg.id] = plaintext;
+      }
+    }
+    
+    setDecryptedContents(prev => ({ ...prev, ...newDecrypted }));
+  }, [decrypt, getRecipientPublicKey]);
+
   const fetchMessages = async () => {
     if (!conversationId || !user) return;
     try {
@@ -163,7 +192,11 @@ export default function ConversationPage() {
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true });
       if (error) throw error;
-      setMessages((data || []).map(msg => ({ ...msg, isMine: msg.sender_id === user.id })) as ChatMessage[]);
+      const mapped = (data || []).map(msg => ({ ...msg, isMine: msg.sender_id === user.id })) as ChatMessage[];
+      setMessages(mapped);
+      
+      // Decrypt any encrypted messages
+      await decryptMessages(mapped);
       
       // Mark messages as read and update read_at timestamp
       await supabase
