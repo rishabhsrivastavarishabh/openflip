@@ -641,6 +641,7 @@ export default function SettingsPage() {
       items: [
         { icon: Smartphone, label: 'Device Permissions', description: 'Camera, microphone, storage', action: () => setShowDevicePermissions(true) },
         { icon: Image, label: 'Media Quality', description: 'Upload & download quality', action: () => setShowMediaQuality(true) },
+        { icon: Fingerprint, label: 'Encryption & Devices', description: 'Manage E2EE device keys', action: () => setShowDeviceManagement(true) },
       ],
     },
     {
