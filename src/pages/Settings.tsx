@@ -4,7 +4,7 @@ import {
   ArrowLeft, User, Lock, Bell, HelpCircle, LogOut, Camera, ChevronRight,
   Shield, Ban, Trash2, Briefcase, Settings2, Crown, BarChart3, Tag, Moon,
   Sun, Monitor, Users, Eye, Heart, MessageCircle, Smartphone, Image,
-  Globe, UserCheck, Volume2, Palette, Info, FileText, Phone
+  Globe, UserCheck, Volume2, Palette, Info, FileText, Phone, Fingerprint
 } from 'lucide-react';
 import { AvatarCropDialog } from '@/components/settings/AvatarCropDialog';
 import { MainLayout } from '@/components/layout/MainLayout';
