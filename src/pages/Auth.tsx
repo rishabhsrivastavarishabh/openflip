@@ -86,13 +86,11 @@ export default function AuthPage() {
     setLoading(true);
     let email = data.identifier;
     if (!data.identifier.includes('@')) {
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('id')
-        .or(`username.eq.${data.identifier},phone_number.eq.${data.identifier}`)
-        .maybeSingle();
-      if (profileData) {
-        const { data: userData } = await supabase.auth.admin?.getUserById?.(profileData.id) || { data: null };
+      const { data: lookupId } = await supabase.rpc('lookup_user_id_by_identifier' as any, {
+        _identifier: data.identifier,
+      });
+      if (lookupId) {
+        const { data: userData } = await supabase.auth.admin?.getUserById?.(lookupId as string) || { data: null };
         if (userData?.user?.email) {
           email = userData.user.email;
         } else {

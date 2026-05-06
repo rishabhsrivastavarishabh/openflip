@@ -1750,6 +1750,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_my_private_profile: {
+        Args: never
+        Returns: {
+          business_email: string
+          country_code: string
+          date_of_birth: string
+          gender: string
+          phone_number: string
+        }[]
+      }
+      get_recipient_device_public_key: {
+        Args: { _user_id: string }
+        Returns: {
+          device_public_key: string
+          id: string
+        }[]
+      }
       has_active_subscription: {
         Args: { check_user_id: string }
         Returns: boolean
@@ -1764,6 +1781,10 @@ export type Database = {
       is_conversation_participant: {
         Args: { _conversation_id: string; _user_id: string }
         Returns: boolean
+      }
+      lookup_user_id_by_identifier: {
+        Args: { _identifier: string }
+        Returns: string
       }
       validate_promo_code: {
         Args: { code_input: string; user_id_input: string }
