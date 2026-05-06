@@ -90,9 +90,7 @@ export default function AuthPage() {
         _identifier: data.identifier,
       });
       if (lookupId) {
-        const profileData = { id: lookupId as string };
-        {
-        const { data: userData } = await supabase.auth.admin?.getUserById?.(profileData.id) || { data: null };
+        const { data: userData } = await supabase.auth.admin?.getUserById?.(lookupId as string) || { data: null };
         if (userData?.user?.email) {
           email = userData.user.email;
         } else {
