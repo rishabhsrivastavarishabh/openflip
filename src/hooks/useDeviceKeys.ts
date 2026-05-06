@@ -111,17 +111,13 @@ export function useDeviceKeys() {
     initializeDeviceKeys();
   }, [initializeDeviceKeys]);
 
-  // Get another user's device public key
+  // Get another user's device public key (via SECURITY DEFINER RPC — no enumeration)
   const getRecipientPublicKey = useCallback(async (userId: string): Promise<string | null> => {
-    const { data } = await (supabase as any)
-      .from('devices')
-      .select('device_public_key')
-      .eq('user_id', userId)
-      .order('last_seen_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    return data?.device_public_key || null;
+    const { data } = await (supabase as any).rpc('get_recipient_device_public_key', {
+      _user_id: userId,
+    });
+    const row = Array.isArray(data) ? data[0] : data;
+    return row?.device_public_key || null;
   }, []);
 
   // List user's devices
