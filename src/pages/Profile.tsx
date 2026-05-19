@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Grid3X3, Bookmark, Settings, UserPlus, UserMinus, MessageCircle, Plus, Film, Lock, Clock, Share2, MoreHorizontal, Pin, PlusSquare } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
+import { Seo } from '@/components/seo/Seo';
 import { Button } from '@/components/ui/button';
+
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -439,8 +441,35 @@ export default function ProfilePage() {
     );
   }
 
+  const displayName = profile.full_name || profile.username;
+  const profileTitle = `${displayName} (@${profile.username}) — Openflip`;
+  const profileDesc = profile.bio?.slice(0, 160) || `See photos, reels and stories from @${profile.username} on Openflip.`;
+
   return (
     <MainLayout>
+      <Seo
+        title={profileTitle}
+        description={profileDesc}
+        path={`/profile/${profile.id}`}
+        type="profile"
+        image={profile.avatar_url || undefined}
+        noindex={profile.is_private}
+        jsonLd={[
+          {
+            '@context': 'https://schema.org',
+            '@type': 'ProfilePage',
+            mainEntity: {
+              '@type': 'Person',
+              name: displayName,
+              alternateName: profile.username,
+              description: profile.bio || undefined,
+              image: profile.avatar_url || undefined,
+              url: `https://openflip.lovable.app/profile/${profile.id}`,
+              sameAs: profile.website ? [profile.website] : undefined,
+            },
+          },
+        ]}
+      />
       <div className="max-w-4xl mx-auto">
         {/* Profile Header */}
         <div className="p-4 md:py-8">

@@ -1,5 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
+import { Seo } from '@/components/seo/Seo';
+
 import { PostCard } from '@/components/post/PostCard';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -373,11 +375,18 @@ export default function FeedPage() {
 
   return (
     <MainLayout>
+      <Seo
+        title="Openflip — Photo & short‑video social network"
+        description="Share photos and short videos, follow creators, and discover trending content on Openflip."
+        path="/"
+      />
+      <h1 className="sr-only">Openflip — your photo and short‑video feed</h1>
       <div
         ref={containerRef}
         className="w-full max-w-lg mx-auto relative overflow-x-hidden"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
+
         onTouchEnd={handleTouchEnd}
       >
         {/* Pull-to-refresh indicator */}
@@ -401,20 +410,20 @@ export default function FeedPage() {
           <header className="sticky top-0 z-40 glass-strong border-b px-4 py-4 md:hidden">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <img src={openflipLogo} alt="Openflip" className="w-8 h-8 rounded-lg object-cover" />
+                <img src={openflipLogo} alt="Openflip - Secure Social Media" fetchPriority="high" decoding="async" className="w-8 h-8 rounded-lg object-cover" />
                 <span className="text-xl font-display font-bold gradient-text">Openflip</span>
               </div>
               <div className="flex items-center gap-1">
-                <Link to="/search">
-                  <Button variant="ghost" size="icon">
-                    <Search className="w-5 h-5" />
+                <Link to="/search" aria-label="Search">
+                  <Button variant="ghost" size="icon" aria-label="Search">
+                    <Search aria-hidden="true" className="w-5 h-5" />
                   </Button>
                 </Link>
-                <Link to="/notifications">
-                  <Button variant="ghost" size="icon" className="relative">
-                    <Bell className="w-5 h-5" />
+                <Link to="/notifications" aria-label="Notifications">
+                  <Button variant="ghost" size="icon" aria-label="Notifications" className="relative">
+                    <Bell aria-hidden="true" className="w-5 h-5" />
                     {unreadNotifications > 0 && (
-                      <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 flex items-center justify-center bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full">
+                      <span aria-label={`${unreadNotifications} unread notifications`} className="absolute top-1 right-1 min-w-[16px] h-4 px-1 flex items-center justify-center bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full">
                         {unreadNotifications > 99 ? '99+' : unreadNotifications}
                       </span>
                     )}

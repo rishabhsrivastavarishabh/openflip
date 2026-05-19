@@ -574,7 +574,7 @@ export default function SettingsPage() {
           </header>
           <div className="p-4 space-y-4">
             <div className="p-4 rounded-xl bg-primary/5 border border-primary/10">
-              <h3 className="font-semibold mb-2">Supervision Tools</h3>
+              <h2 className="font-semibold mb-2">Supervision Tools</h2>
               <p className="text-sm text-muted-foreground">
                 Family Centre helps parents and guardians understand and manage their teen's Openflip experience.
               </p>
@@ -704,9 +704,9 @@ export default function SettingsPage() {
           {/* Grouped sections */}
           {settingsSections.map((section) => (
             <div key={section.title} className="space-y-1">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1 mb-2">
+              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1 mb-2">
                 {section.title}
-              </h3>
+              </h2>
               <div className="space-y-0.5">
                 {section.items.map((item) => (
                   <button

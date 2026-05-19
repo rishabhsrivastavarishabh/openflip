@@ -1,0 +1,16 @@
+# Openflip
+
+> Openflip is a social network for sharing photos and short videos. Users post, like, comment, follow, and discover creators through hashtags and a curated feed.
+
+## Pages
+
+- [Home feed](/): Personalized feed of photos and short videos from people you follow.
+- [Explore](/explore): Trending posts, reels, hashtags, and creator discovery.
+- [Reels](/reels): Full-screen short-form video feed.
+- [How it works](/how-it-works): Overview of secure messaging and platform basics.
+- [Sign in](/auth): Create an account or sign in.
+
+## Optional
+
+- [Privacy policy](/privacy)
+- [Terms of service](/terms)

@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { Search, TrendingUp, Hash, User, Film, Grid3X3 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
+import { Seo } from '@/components/seo/Seo';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProtectedMedia } from '@/components/media/ProtectedMedia';
+
 
 interface ExplorePost {
   id: string;
@@ -179,7 +181,13 @@ export default function ExplorePage() {
 
   return (
     <MainLayout>
+      <Seo
+        title="Explore — Openflip"
+        description="Discover trending photos, reels, hashtags, and creators across Openflip."
+        path="/explore"
+      />
       <div className="max-w-4xl mx-auto px-4 py-4">
+        <h1 className="sr-only">Explore Openflip</h1>
         {/* Search Bar */}
         <div className="sticky top-0 z-40 glass-strong -mx-4 px-4 py-3 mb-4">
           <div className="relative">

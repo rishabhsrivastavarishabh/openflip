@@ -1,8 +1,10 @@
 import { createRoot } from "react-dom/client";
 import { useState, useCallback } from "react";
+import { HelmetProvider } from "react-helmet-async";
 import App from "./App.tsx";
 import { SplashScreen } from "./components/ui/splash-screen.tsx";
 import "./index.css";
+
 
 function Root() {
   const [showSplash, setShowSplash] = useState(() => {
@@ -15,10 +17,10 @@ function Root() {
   const handleSplashComplete = useCallback(() => setShowSplash(false), []);
 
   return (
-    <>
+    <HelmetProvider>
       {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
       <App />
-    </>
+    </HelmetProvider>
   );
 }
 

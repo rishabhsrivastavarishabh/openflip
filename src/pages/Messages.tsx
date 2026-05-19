@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { PenSquare, Search, Users, HelpCircle } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
+import { Seo } from '@/components/seo/Seo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -168,6 +169,7 @@ export default function MessagesPage() {
 
   return (
     <MainLayout>
+      <Seo title="Messages — Openflip" description="Private chats and group conversations on Openflip." path="/messages" noindex />
       <div className="max-w-2xl mx-auto">
         <header className="sticky top-0 z-40 glass-strong border-b px-4 py-3">
           <div className="flex items-center justify-between mb-3">
@@ -271,7 +273,7 @@ export default function MessagesPage() {
           ) : (
             <div className="text-center py-12">
               <PenSquare className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="font-semibold mb-2">No messages yet</h3>
+              <h2 className="font-semibold mb-2">No messages yet</h2>
               <p className="text-sm text-muted-foreground mb-4">Start a conversation with someone</p>
               <Button variant="gradient" onClick={() => setShowNewMessage(true)}>
                 New Message

@@ -4,7 +4,9 @@ import { ArrowLeft, Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Chevro
 import { formatDistanceToNow } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MainLayout } from '@/components/layout/MainLayout';
+import { Seo } from '@/components/seo/Seo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -330,13 +332,36 @@ export default function PostPage() {
 
   const captionIsLong = post.caption && post.caption.length > 100;
 
+  const postTitle = `${post.profiles.username} on Openflip${post.caption ? `: ${post.caption.slice(0, 60)}` : ''}`;
+  const postDesc = post.caption?.slice(0, 160) || `Post by @${post.profiles.username} on Openflip.`;
+
   return (
     <MainLayout>
+      <Seo
+        title={postTitle}
+        description={postDesc}
+        path={`/post/${post.id}`}
+        type="article"
+        image={post.media_type === 'image' ? post.media_url : undefined}
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'SocialMediaPosting',
+          headline: postTitle,
+          articleBody: post.caption || undefined,
+          datePublished: post.created_at,
+          image: post.media_type === 'image' ? post.media_url : undefined,
+          author: {
+            '@type': 'Person',
+            name: post.profiles.full_name || post.profiles.username,
+            url: `https://openflip.lovable.app/profile/${post.profiles.id}`,
+          },
+        }}
+      />
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <header className="sticky top-0 z-40 glass-strong border-b px-4 py-3 flex items-center gap-4">
-          <Button variant="ghost" size="icon-sm" onClick={() => navigate(-1)}>
-            <ArrowLeft className="h-5 w-5" />
+          <Button variant="ghost" size="icon-sm" aria-label="Go back" onClick={() => navigate(-1)}>
+            <ArrowLeft aria-hidden="true" className="h-5 w-5" />
           </Button>
           <h1 className="font-semibold">Post</h1>
         </header>

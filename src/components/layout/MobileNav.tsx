@@ -31,6 +31,8 @@ export function MobileNav() {
             <Link
               key={item.label}
               to={item.href}
+              aria-label={item.label}
+              aria-current={isActive ? 'page' : undefined}
               className={cn(
                 "flex items-center justify-center w-12 h-12 rounded-xl transition-all duration-200 relative",
                 isActive 
@@ -40,13 +42,14 @@ export function MobileNav() {
             >
               {item.isProfile ? (
                 <Avatar className={cn("w-7 h-7 transition-all duration-200", isActive && "ring-2 ring-primary")}>
-                  <AvatarImage src={profile?.avatar_url || undefined} />
+                  <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.username ? `${profile.username} profile` : 'Your profile'} />
                   <AvatarFallback className="text-xs bg-primary/10 text-primary">
                     {profile?.username?.charAt(0).toUpperCase() || 'U'}
                   </AvatarFallback>
                 </Avatar>
               ) : (
                 <item.icon 
+                  aria-hidden="true"
                   className={cn(
                     "w-6 h-6 transition-all duration-200",
                     isActive && "scale-110"
@@ -55,7 +58,7 @@ export function MobileNav() {
                 />
               )}
               {item.badge > 0 && (
-                <span className="absolute top-1 right-0.5 min-w-[16px] h-4 px-1 flex items-center justify-center bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full">
+                <span aria-label={`${item.badge} unread`} className="absolute top-1 right-0.5 min-w-[16px] h-4 px-1 flex items-center justify-center bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full">
                   {item.badge > 99 ? '99+' : item.badge}
                 </span>
               )}
