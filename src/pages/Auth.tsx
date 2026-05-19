@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, ArrowLeft, Phone, Camera, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Seo } from '@/components/seo/Seo';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -205,13 +206,14 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
+      <Seo title="Sign in or create an account — Openflip" description="Join Openflip to share photos, short videos, and connect with creators." path="/auth" />
       {/* Left branding */}
       <div className="hidden lg:flex lg:w-1/2 gradient-primary items-center justify-center p-12 relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.1),transparent_50%)]" />
         <div className="relative z-10 text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-            <img src={openflipLogo} alt="Openflip" className="h-16 mx-auto mb-8" />
-            <h1 className="text-4xl font-display font-bold text-primary-foreground mb-4">Welcome to Openflip</h1>
+            <img src={openflipLogo} alt="Openflip - Secure Social Media" className="h-16 mx-auto mb-8" />
+            <h2 className="text-4xl font-display font-bold text-primary-foreground mb-4">Welcome to Openflip</h2>
             <p className="text-primary-foreground/80 text-lg max-w-md mx-auto">
               Share moments, connect with friends, and discover amazing content from creators around the world.
             </p>
