@@ -12,3 +12,10 @@ Allow: /
 
 User-agent: *
 Allow: /
+Disallow: /settings
+Disallow: /account-center
+Disallow: /messages
+Disallow: /notifications
+Disallow: /create
+
+Sitemap: https://openflip.lovable.app/sitemap.xml
