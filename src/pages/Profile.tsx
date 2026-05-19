@@ -551,7 +551,7 @@ export default function ProfilePage() {
                 {profile.bio && (
                   <p className="text-sm whitespace-pre-wrap">{profile.bio}</p>
                 )}
-                {profile.website && (
+                {profile.website && /^https?:\/\//i.test(profile.website) && (
                   <a
                     href={profile.website}
                     target="_blank"
@@ -573,7 +573,7 @@ export default function ProfilePage() {
             {profile.bio && (
               <p className="text-sm whitespace-pre-wrap">{profile.bio}</p>
             )}
-            {profile.website && (
+            {profile.website && /^https?:\/\//i.test(profile.website) && (
               <a
                 href={profile.website}
                 target="_blank"

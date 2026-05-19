@@ -28,9 +28,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .select('*')
       .eq('id', userId)
       .single();
-    
+
+    // Sensitive columns (phone_number, date_of_birth, gender, business_email,
+    // country_code) are column-level revoked from direct SELECT and must be
+    // fetched via SECURITY DEFINER RPC restricted to the owner.
+    const { data: priv } = await supabase.rpc('get_my_private_profile');
+
     if (data) {
-      setProfile(data as Profile);
+      const merged = priv && priv[0] ? { ...data, ...priv[0] } : data;
+      setProfile(merged as Profile);
     }
   };
 
