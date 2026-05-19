@@ -20,15 +20,20 @@ serve(async (req) => {
       throw new Error("Razorpay secret not configured");
     }
 
-    // Verify webhook signature
+    // Verify webhook signature — MANDATORY
     const signature = req.headers.get("x-razorpay-signature");
     const body = await req.text();
-    
-    if (signature) {
+
+    if (!signature) {
+      logStep("Missing signature header");
+      return new Response("Missing signature", { status: 401 });
+    }
+
+    {
       const encoder = new TextEncoder();
       const key = encoder.encode(razorpayKeySecret);
       const data = encoder.encode(body);
-      
+
       const hmac = await crypto.subtle.importKey(
         "raw",
         key,
@@ -36,7 +41,7 @@ serve(async (req) => {
         false,
         ["sign"]
       );
-      
+
       const expectedSig = await crypto.subtle.sign("HMAC", hmac, data);
       const expectedSignature = Array.from(new Uint8Array(expectedSig))
         .map(b => b.toString(16).padStart(2, '0'))
