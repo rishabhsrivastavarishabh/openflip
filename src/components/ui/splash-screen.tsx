@@ -31,7 +31,7 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
           >
             <motion.img
               src={openflipLogo}
-              alt="Openflip"
+              alt="Openflip - Secure Social Media"
               className="w-20 h-20 rounded-2xl shadow-2xl mb-6"
               animate={{ rotate: [0, 5, -5, 0] }}
               transition={{ duration: 1.5, repeat: 0, ease: 'easeInOut' }}
