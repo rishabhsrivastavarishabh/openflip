@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Grid3X3, Bookmark, Settings, UserPlus, UserMinus, MessageCircle, Plus, Film, Lock, Clock, Share2, MoreHorizontal, Pin, PlusSquare } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
+import { Seo } from '@/components/seo/Seo';
 import { Button } from '@/components/ui/button';
+
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
