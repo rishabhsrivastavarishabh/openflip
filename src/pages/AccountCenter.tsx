@@ -130,12 +130,18 @@ export default function AccountCenter() {
   };
 
   const handleSaveProfile = async () => {
+    // Validate website URL: must be http(s) to prevent javascript:/data: XSS
+    const websiteInput = (formData.website || '').trim();
+    if (websiteInput && !/^https?:\/\//i.test(websiteInput)) {
+      toast.error('Website must start with http:// or https://');
+      return;
+    }
     setSaving(true);
     const { error } = await updateProfile({
       username: formData.username,
       full_name: formData.full_name || null,
       bio: formData.bio || null,
-      website: formData.website || null,
+      website: websiteInput || null,
     });
     
     // Update extended fields via direct update
