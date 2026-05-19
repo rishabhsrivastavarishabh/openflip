@@ -142,19 +142,25 @@ serve(async (req) => {
 
       logStep("Subscription activated", { billing_cycle, periodEnd });
     } else if (type === 'boost') {
-      // Activate boost campaign
+      // Activate boost campaign — enforce ownership to prevent IDOR
       const campaignId = metadata?.campaign_id;
       if (campaignId) {
         const durationDays = parseInt(metadata?.duration_days || '7');
-        await supabaseClient
+        const { data: updated, error: updErr } = await supabaseClient
           .from('boost_campaigns')
           .update({
             status: 'active',
             starts_at: new Date().toISOString(),
             ends_at: new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000).toISOString(),
           })
-          .eq('id', campaignId);
-        
+          .eq('id', campaignId)
+          .eq('user_id', user.id) // ownership enforcement
+          .select('id');
+
+        if (updErr) throw updErr;
+        if (!updated || updated.length === 0) {
+          throw new Error("Campaign not found or not owned by user");
+        }
         logStep("Boost campaign activated", { campaignId });
       }
     }
