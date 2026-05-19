@@ -271,7 +271,7 @@ export default function MessagesPage() {
           ) : (
             <div className="text-center py-12">
               <PenSquare className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="font-semibold mb-2">No messages yet</h3>
+              <h2 className="font-semibold mb-2">No messages yet</h2>
               <p className="text-sm text-muted-foreground mb-4">Start a conversation with someone</p>
               <Button variant="gradient" onClick={() => setShowNewMessage(true)}>
                 New Message

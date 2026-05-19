@@ -340,7 +340,7 @@ export default function NotificationsPage() {
               ) : (
                 <div className="text-center py-12">
                   <Heart className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="font-semibold mb-2">No notifications yet</h3>
+                  <h2 className="font-semibold mb-2">No notifications yet</h2>
                   <p className="text-sm text-muted-foreground">
                     When someone likes or comments on your posts, you'll see it here
                   </p>
@@ -405,7 +405,7 @@ export default function NotificationsPage() {
               ) : (
                 <div className="text-center py-12">
                   <UserPlus className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="font-semibold mb-2">No follow requests</h3>
+                  <h2 className="font-semibold mb-2">No follow requests</h2>
                   <p className="text-sm text-muted-foreground">
                     When someone requests to follow you, you'll see it here
                   </p>
