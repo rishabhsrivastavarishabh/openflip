@@ -3,6 +3,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Heart, MessageCircle, UserPlus, UserCheck, X, Check, Send, Trash2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
+import { Seo } from '@/components/seo/Seo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -266,6 +267,7 @@ export default function NotificationsPage() {
 
   return (
     <MainLayout>
+      <Seo title="Notifications — Openflip" description="Likes, comments, follows and mentions on your Openflip account." path="/notifications" noindex />
       <div className="max-w-2xl mx-auto">
         <header className="sticky top-0 z-40 glass-strong border-b px-4 py-4">
           <h1 className="font-semibold text-lg">Notifications</h1>
