@@ -1,5 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
+import { Seo } from '@/components/seo/Seo';
+
 import { PostCard } from '@/components/post/PostCard';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -373,11 +375,18 @@ export default function FeedPage() {
 
   return (
     <MainLayout>
+      <Seo
+        title="Openflip — Photo & short‑video social network"
+        description="Share photos and short videos, follow creators, and discover trending content on Openflip."
+        path="/"
+      />
+      <h1 className="sr-only">Openflip — your photo and short‑video feed</h1>
       <div
         ref={containerRef}
         className="w-full max-w-lg mx-auto relative overflow-x-hidden"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
+
         onTouchEnd={handleTouchEnd}
       >
         {/* Pull-to-refresh indicator */}
