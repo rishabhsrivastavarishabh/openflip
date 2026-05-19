@@ -706,7 +706,7 @@ export default function SettingsPage() {
             <div key={section.title} className="space-y-1">
               <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1 mb-2">
                 {section.title}
-              </h3>
+              </h2>
               <div className="space-y-0.5">
                 {section.items.map((item) => (
                   <button
