@@ -4,7 +4,9 @@ import { ArrowLeft, Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Chevro
 import { formatDistanceToNow } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MainLayout } from '@/components/layout/MainLayout';
+import { Seo } from '@/components/seo/Seo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
