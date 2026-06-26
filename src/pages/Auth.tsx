@@ -84,6 +84,22 @@ export default function AuthPage() {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    const result = await lovable.auth.signInWithOAuth('google', {
+      redirect_uri: window.location.origin,
+    });
+    if (result.error) {
+      setLoading(false);
+      toast.error(result.error.message || 'Failed to sign in with Google');
+      return;
+    }
+    if (result.redirected) return;
+    setLoading(false);
+    toast.success('Welcome!');
+    navigate('/');
+  };
+
   const handleSignIn = async (data: SignInForm) => {
     setLoading(true);
     let email = data.identifier;
