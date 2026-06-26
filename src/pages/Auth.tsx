@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { lovable } from '@/integrations/lovable';
 import openflipLogo from '@/assets/openflip-logo.png';
 
 const countryCodes = [
@@ -72,7 +73,7 @@ export default function AuthPage() {
   const handleForgotPassword = async (data: ForgotPasswordForm) => {
     setLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
-      redirectTo: `${window.location.origin}/auth`,
+      redirectTo: `${window.location.origin}/reset-password`,
     });
     setLoading(false);
     if (error) {
@@ -81,6 +82,22 @@ export default function AuthPage() {
       toast.success('Password reset email sent! Check your inbox.');
       setMode('signin');
     }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    const result = await lovable.auth.signInWithOAuth('google', {
+      redirect_uri: window.location.origin,
+    });
+    if (result.error) {
+      setLoading(false);
+      toast.error(result.error.message || 'Failed to sign in with Google');
+      return;
+    }
+    if (result.redirected) return;
+    setLoading(false);
+    toast.success('Welcome!');
+    navigate('/');
   };
 
   const handleSignIn = async (data: SignInForm) => {
@@ -423,6 +440,14 @@ export default function AuthPage() {
                     {loading ? 'Signing in...' : 'Sign in'}<ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </form>
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border" /></div>
+                  <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">or</span></div>
+                </div>
+                <Button type="button" variant="outline" size="lg" className="w-full" onClick={handleGoogleSignIn} disabled={loading}>
+                  <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24" aria-hidden="true"><path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.4-1.6 4.1-5.5 4.1-3.3 0-6-2.7-6-6.1s2.7-6.1 6-6.1c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.8 3.4 14.6 2.4 12 2.4 6.7 2.4 2.4 6.7 2.4 12S6.7 21.6 12 21.6c6.9 0 11.5-4.8 11.5-11.6 0-.8-.1-1.4-.2-2H12z"/></svg>
+                  Continue with Google
+                </Button>
                 <div className="text-center text-sm text-muted-foreground">
                   <Link to="/privacy" className="hover:text-primary">Privacy</Link>
                   <span className="mx-2">·</span>
