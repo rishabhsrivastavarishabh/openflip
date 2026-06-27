@@ -2,7 +2,14 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+
+function RootRoute() {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  return user ? <Feed /> : <Navigate to="/auth" replace />;
+}
 import { AuthProvider } from "@/contexts/AuthContext";
 import { MultiAccountProvider } from "@/contexts/MultiAccountContext";
 import { PushNotificationProvider } from "@/components/PushNotificationProvider";
@@ -40,7 +47,7 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={<Feed />} />
+              <Route path="/" element={<RootRoute />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/explore" element={<Explore />} />
