@@ -222,14 +222,15 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row">
+    <main className="min-h-screen flex flex-col lg:flex-row">
       <Seo title="Sign in or create an account — Openflip" description="Join Openflip to share photos, short videos, and connect with creators." path="/auth" />
+      <h1 className="sr-only">Sign in or create your Openflip account</h1>
       {/* Left branding */}
       <div className="hidden lg:flex lg:w-1/2 gradient-primary items-center justify-center p-12 relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.1),transparent_50%)]" />
         <div className="relative z-10 text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-            <img src={openflipLogo} alt="Openflip - Secure Social Media" className="h-16 mx-auto mb-8" />
+            <img src={openflipLogo} alt="Openflip — secure social network logo" className="h-16 mx-auto mb-8" />
             <h2 className="text-4xl font-display font-bold text-primary-foreground mb-4">Welcome to Openflip</h2>
             <p className="text-primary-foreground/80 text-lg max-w-md mx-auto">
               Share moments, connect with friends, and discover amazing content from creators around the world.
@@ -242,7 +243,7 @@ export default function AuthPage() {
       <div className="flex-1 flex items-center justify-center p-6 lg:p-12 bg-background">
         <div className="w-full max-w-md">
           <div className="lg:hidden text-center mb-8">
-            <img src={openflipLogo} alt="Openflip" className="h-12 mx-auto" />
+            <img src={openflipLogo} alt="Openflip — secure social network logo" className="h-12 mx-auto" />
           </div>
 
           <AnimatePresence mode="wait">
@@ -306,7 +307,7 @@ export default function AuthPage() {
                         <div className="relative">
                           <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                           <Input id="password" type={showPassword ? 'text' : 'password'} placeholder="••••••••" className="pl-10 pr-10" {...signUpForm.register('password')} />
-                          <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                          <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Hide password' : 'Show password'} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                             {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                           </button>
                         </div>
@@ -430,7 +431,7 @@ export default function AuthPage() {
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                       <Input id="password" type={showPassword ? 'text' : 'password'} placeholder="••••••••" className="pl-10 pr-10" {...signInForm.register('password')} />
-                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Hide password' : 'Show password'} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                         {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                       </button>
                     </div>
@@ -473,6 +474,6 @@ export default function AuthPage() {
           )}
         </div>
       </div>
-    </div>
+    </main>
   );
 }
