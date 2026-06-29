@@ -21,18 +21,6 @@ export function useConversation() {
     }
 
     try {
-      // Check if blocked
-      const { data: blocked } = await (supabase as any)
-        .from('blocked_users')
-        .select('id')
-        .or(`blocker_id.eq.${user.id},blocker_id.eq.${targetUserId}`)
-        .or(`blocked_id.eq.${user.id},blocked_id.eq.${targetUserId}`)
-        .limit(1);
-
-      if (blocked && blocked.length > 0) {
-        toast.error("Cannot start conversation with this user");
-        return null;
-      }
 
       // Manual lookup and creation (fallback since RPC might not be in types)
       const { data: myConversations } = await supabase
