@@ -114,7 +114,10 @@ serve(async (req) => {
 
     if (!orderResponse.ok) {
       const errorData = await orderResponse.text();
-      logStep("Razorpay order creation failed", { error: errorData });
+      logStep("Razorpay order creation failed", { status: orderResponse.status, error: errorData });
+      if (orderResponse.status === 401 || errorData.includes("Authentication failed")) {
+        throw new Error("Payment gateway authentication failed. The Razorpay API keys are invalid or belong to a different mode (test vs live). Please update RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in backend secrets.");
+      }
       throw new Error(`Razorpay error: ${errorData}`);
     }
 
