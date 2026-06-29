@@ -21,24 +21,26 @@ export function useConversation() {
     }
 
     try {
-
-      // Manual lookup and creation (fallback since RPC might not be in types)
-      const { data: myConversations } = await supabase
+      // Find existing 1-on-1 conversation
+      const { data: myConversations, error: myConvosError } = await supabase
         .from('conversation_participants')
         .select('conversation_id')
         .eq('user_id', user.id);
 
+      if (myConvosError) throw myConvosError;
+
       const myConvoIds = myConversations?.map(c => c.conversation_id) || [];
 
       if (myConvoIds.length > 0) {
-        // Find existing 1-on-1 conversation
-        const { data: existingConvo } = await supabase
+        const { data: existingConvo, error: existingError } = await supabase
           .from('conversation_participants')
           .select('conversation_id')
           .eq('user_id', targetUserId)
           .in('conversation_id', myConvoIds)
           .limit(1)
           .maybeSingle();
+
+        if (existingError) throw existingError;
 
         if (existingConvo) {
           if (navigateToChat) {
@@ -56,22 +58,36 @@ export function useConversation() {
         .single();
 
       if (convoError) throw convoError;
+      if (!newConvo?.id) throw new Error('Conversation was created but no ID was returned.');
 
-      await supabase.from('conversation_participants').insert([
-        { conversation_id: newConvo.id, user_id: user.id },
-        { conversation_id: newConvo.id, user_id: targetUserId },
-      ]);
+      const { error: participantsError } = await supabase
+        .from('conversation_participants')
+        .insert([
+          { conversation_id: newConvo.id, user_id: user.id },
+          { conversation_id: newConvo.id, user_id: targetUserId },
+        ]);
+
+      if (participantsError) throw participantsError;
 
       if (navigateToChat) {
         navigate(`/messages/${newConvo.id}`);
       }
       return newConvo.id;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error starting conversation:', error);
-      toast.error('Failed to start conversation');
+      const detail =
+        error?.message ||
+        error?.error_description ||
+        error?.hint ||
+        error?.details ||
+        (typeof error === 'string' ? error : null) ||
+        'Unknown error';
+      const code = error?.code ? ` (${error.code})` : '';
+      toast.error(`Couldn't open chat: ${detail}${code}`);
       return null;
     }
   }, [user, navigate]);
+
 
   // Send a message to a conversation
   const sendMessage = useCallback(async (
