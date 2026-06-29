@@ -63,9 +63,24 @@ export default function MessagesPage() {
 
     const { data: allParticipants } = await supabase
       .from('conversation_participants')
-      .select(`conversation_id, user_id, profiles(id, username, avatar_url)`)
+      .select('conversation_id, user_id')
       .in('conversation_id', conversationIds)
       .neq('user_id', user.id);
+
+    const otherUserIds = Array.from(
+      new Set((allParticipants || []).map((p: any) => p.user_id).filter(Boolean))
+    );
+
+    let profilesById: Record<string, { id: string; username: string; avatar_url: string | null }> = {};
+    if (otherUserIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .in('id', otherUserIds);
+      (profiles || []).forEach((p: any) => {
+        profilesById[p.id] = { id: p.id, username: p.username, avatar_url: p.avatar_url };
+      });
+    }
 
     const { data: messages } = await supabase
       .from('messages')
@@ -88,13 +103,14 @@ export default function MessagesPage() {
     const conversationsData = participations.map((p: any) => {
       const convo = p.conversations;
       const isGroup = convo?.is_group || false;
-      const otherParticipants = allParticipants?.filter(
+      const otherParticipants = (allParticipants || []).filter(
         (op: any) => op.conversation_id === p.conversation_id
-      ) || [];
+      );
 
-      // For 1-on-1 chats, use the other participant's info
-      // For group chats, use group info
-      const firstParticipant = otherParticipants[0]?.profiles || { id: '', username: 'Unknown', avatar_url: null };
+      const firstOtherId = otherParticipants[0]?.user_id;
+      const firstParticipant =
+        (firstOtherId && profilesById[firstOtherId]) ||
+        { id: firstOtherId || '', username: 'Unknown', avatar_url: null };
 
       return {
         id: p.conversation_id,
@@ -108,6 +124,7 @@ export default function MessagesPage() {
         group_avatar_url: convo?.group_avatar_url || null,
       } as ConversationItem;
     });
+
 
     conversationsData.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
     setConversations(conversationsData);
