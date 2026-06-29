@@ -51,7 +51,7 @@ export function useConversation() {
       // Create new conversation
       const { data: newConvo, error: convoError } = await supabase
         .from('conversations')
-        .insert({})
+        .insert({ created_by: user.id } as any)
         .select()
         .single();
 
