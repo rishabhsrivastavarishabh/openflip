@@ -49,8 +49,10 @@ interface SettingsSection {
     action: () => void;
     badge?: string;
     highlight?: boolean;
+    route?: string;
   }[];
 }
+
 
 export default function SettingsPage() {
   const { user, profile, signOut, updateProfile } = useAuth();
