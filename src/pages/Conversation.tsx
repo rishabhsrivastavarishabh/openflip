@@ -79,6 +79,15 @@ export default function ConversationPage() {
   const { sendEncrypted, isReady: encryptionReady } = useSendEncryptedMessage();
   const { decrypt } = useDecryptMessage();
   const { getRecipientPublicKey } = useDeviceKeys();
+  const { startCall, starting: startingCall } = useStartCall();
+
+  // Mark this chat as the active conversation so global push logic can suppress
+  // duplicate notifications while the user is looking at it.
+  useEffect(() => {
+    setActiveConversation(conversationId ?? null);
+    return () => setActiveConversation(null);
+  }, [conversationId]);
+
 
   // Device public key cache for decryption
   const senderKeyCache = useRef<Record<string, string>>({});
