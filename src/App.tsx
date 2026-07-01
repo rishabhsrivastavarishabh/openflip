@@ -39,6 +39,12 @@ import Notifications from "./pages/Notifications";
 import Messages from "./pages/Messages";
 import Conversation from "./pages/Conversation";
 import Settings from "./pages/Settings";
+import SettingsLayout from "./pages/settings/SettingsLayout";
+import AccountPage from "./pages/settings/AccountPage";
+import SecurityPage from "./pages/settings/SecurityPage";
+import PrivacyPage from "./pages/settings/PrivacyPage";
+import NotificationsPage from "./pages/settings/NotificationsPage";
+import AppearancePage from "./pages/settings/AppearancePage";
 import Reels from "./pages/Reels";
 import Followers from "./pages/Followers";
 import Following from "./pages/Following";
@@ -50,6 +56,7 @@ import { CreateReel } from "./components/reels/CreateReel";
 import AccountCenter from "./pages/AccountCenter";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
+
 
 const queryClient = new QueryClient();
 
