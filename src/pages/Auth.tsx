@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable';
 import openflipLogo from '@/assets/openflip-logo.png';
+import { LoginMfaChallenge } from '@/components/auth/LoginMfaChallenge';
 
 const countryCodes = [
   { code: '+1', country: 'US' }, { code: '+44', country: 'UK' }, { code: '+91', country: 'IN' },
