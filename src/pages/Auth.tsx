@@ -110,13 +110,29 @@ export default function AuthPage() {
       }
     }
     const { error } = await signIn(email, data.password);
-    setLoading(false);
     if (error) {
+      setLoading(false);
       toast.error(error.message || 'Failed to sign in');
-    } else {
-      toast.success('Welcome back!');
-      navigate('/');
+      return;
     }
+
+    // Enforce 2FA for enrolled users
+    try {
+      const { data: factorsData } = await supabase.auth.mfa.listFactors();
+      const verifiedTotp = (factorsData?.totp ?? []).find((f: any) => f.status === 'verified');
+      const { data: sessionData } = await supabase.auth.getUser();
+      if (verifiedTotp && sessionData?.user) {
+        setLoading(false);
+        setMfaChallenge({ factorId: verifiedTotp.id, userId: sessionData.user.id });
+        return;
+      }
+    } catch (e) {
+      console.warn('MFA check failed, proceeding', e);
+    }
+
+    setLoading(false);
+    toast.success('Welcome back!');
+    navigate('/');
   };
 
   const handleSignUpStep1 = async (data: SignUpForm) => {
