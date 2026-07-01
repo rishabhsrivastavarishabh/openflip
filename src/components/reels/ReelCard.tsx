@@ -409,7 +409,7 @@ export function ReelCard({ reel, isActive, onLike, globalMuted = false, onMuteTo
       <div className="absolute left-4 right-20 bottom-8 space-y-3">
         {/* Username + Follow */}
         <div className="flex items-center gap-3">
-          <Link to={`/profile/${reel.user_id}`} className="flex items-center gap-2">
+          <Link to={`/profile/${reel.profiles?.username ?? reel.user_id}`} className="flex items-center gap-2">
             <span className="text-white font-bold text-base">{reel.profiles?.username}</span>
             {reel.profiles?.is_verified && <VerifiedBadge size="sm" />}
           </Link>

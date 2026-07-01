@@ -353,7 +353,7 @@ export default function PostPage() {
           author: {
             '@type': 'Person',
             name: post.profiles.full_name || post.profiles.username,
-            url: `https://openflip.lovable.app/profile/${post.profiles.id}`,
+            url: `https://openflip.lovable.app/profile/${post.profiles.username}`,
           },
         }}
       />
@@ -368,7 +368,7 @@ export default function PostPage() {
 
         {/* Post Author */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-          <Link to={`/profile/${post.profiles.id}`} className="flex items-center gap-3 group">
+          <Link to={`/profile/${post.profiles.username}`} className="flex items-center gap-3 group">
             <Avatar className="h-10 w-10 ring-2 ring-transparent group-hover:ring-primary/20 transition-all">
               <AvatarImage src={post.profiles.avatar_url || undefined} />
               <AvatarFallback className="bg-primary/10 text-primary">
@@ -465,7 +465,7 @@ export default function PostPage() {
           {/* Caption */}
           {post.caption && (
             <div className="text-sm">
-              <Link to={`/profile/${post.profiles.id}`} className="font-semibold hover:text-primary transition-colors mr-2">
+              <Link to={`/profile/${post.profiles.username}`} className="font-semibold hover:text-primary transition-colors mr-2">
                 {post.profiles.username}
               </Link>
               <span className={cn(!expandedCaption && captionIsLong && 'line-clamp-2')}>
@@ -497,7 +497,7 @@ export default function PostPage() {
             comments.map(comment => (
               <div key={comment.id} className="px-4 py-3">
                 <div className="flex gap-3">
-                  <Link to={`/profile/${comment.profiles.id}`}>
+                  <Link to={`/profile/${comment.profiles.username}`}>
                     <Avatar className="h-8 w-8">
                       <AvatarImage src={comment.profiles.avatar_url || undefined} />
                       <AvatarFallback className="bg-primary/10 text-primary text-xs">
@@ -507,7 +507,7 @@ export default function PostPage() {
                   </Link>
                   <div className="flex-1">
                     <p className="text-sm">
-                      <Link to={`/profile/${comment.profiles.id}`} className="font-semibold hover:text-primary transition-colors mr-2">
+                      <Link to={`/profile/${comment.profiles.username}`} className="font-semibold hover:text-primary transition-colors mr-2">
                         {comment.profiles.username}
                       </Link>
                       {comment.content}
@@ -520,7 +520,7 @@ export default function PostPage() {
                       <div className="mt-3 space-y-3 pl-4 border-l border-border">
                         {comment.replies.map(reply => (
                           <div key={reply.id} className="flex gap-3">
-                            <Link to={`/profile/${reply.profiles.id}`}>
+                            <Link to={`/profile/${reply.profiles.username}`}>
                               <Avatar className="h-6 w-6">
                                 <AvatarImage src={reply.profiles.avatar_url || undefined} />
                                 <AvatarFallback className="bg-primary/10 text-primary text-xs">
@@ -530,7 +530,7 @@ export default function PostPage() {
                             </Link>
                             <div>
                               <p className="text-sm">
-                                <Link to={`/profile/${reply.profiles.id}`} className="font-semibold hover:text-primary transition-colors mr-2">
+                                <Link to={`/profile/${reply.profiles.username}`} className="font-semibold hover:text-primary transition-colors mr-2">
                                   {reply.profiles.username}
                                 </Link>
                                 {reply.content}

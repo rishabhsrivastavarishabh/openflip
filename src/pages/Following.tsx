@@ -240,14 +240,14 @@ export default function Following() {
           ) : (
             filteredFollowing.map((followedUser) => (
               <div key={followedUser.id} className="flex items-center gap-3 p-4">
-                <Link to={`/profile/${followedUser.id}`}>
+                <Link to={`/profile/${followedUser.username}`}>
                   <Avatar className="w-12 h-12">
                     <AvatarImage src={followedUser.avatar_url || undefined} />
                     <AvatarFallback>{followedUser.username.charAt(0).toUpperCase()}</AvatarFallback>
                   </Avatar>
                 </Link>
                 <div className="flex-1 min-w-0">
-                  <Link to={`/profile/${followedUser.id}`} className="flex items-center gap-1">
+                  <Link to={`/profile/${followedUser.username}`} className="flex items-center gap-1">
                     <span className="font-medium truncate">{followedUser.username}</span>
                     {followedUser.isMutual && (
                       <UserCheck className="w-4 h-4 text-primary shrink-0" />

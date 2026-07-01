@@ -171,7 +171,7 @@ export function SuggestedUsers() {
               </button>
 
               <Link 
-                to={`/profile/${suggestedUser.id}`}
+                to={`/profile/${suggestedUser.username}`}
                 className="flex flex-col items-center gap-2"
               >
                 <Avatar className="w-14 h-14">

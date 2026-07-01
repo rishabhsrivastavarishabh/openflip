@@ -151,7 +151,7 @@ export function PostCard({ post, onUpdate }: PostCardProps) {
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3">
         <Link 
-          to={`/profile/${post.profiles.id}`}
+          to={`/profile/${post.profiles.username}`}
           className="flex items-center gap-3 group"
         >
           <Avatar className="h-9 w-9 ring-2 ring-transparent group-hover:ring-primary/20 transition-all">
@@ -287,7 +287,7 @@ export function PostCard({ post, onUpdate }: PostCardProps) {
         {post.caption && (
           <p className="text-sm">
             <Link 
-              to={`/profile/${post.profiles.id}`}
+              to={`/profile/${post.profiles.username}`}
               className="font-semibold hover:text-primary transition-colors mr-2"
             >
               {post.profiles.username}

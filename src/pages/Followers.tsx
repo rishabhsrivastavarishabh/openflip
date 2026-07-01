@@ -240,14 +240,14 @@ export default function Followers() {
           ) : (
             filteredFollowers.map((follower) => (
               <div key={follower.id} className="flex items-center gap-3 p-4">
-                <Link to={`/profile/${follower.id}`}>
+                <Link to={`/profile/${follower.username}`}>
                   <Avatar className="w-12 h-12">
                     <AvatarImage src={follower.avatar_url || undefined} />
                     <AvatarFallback>{follower.username.charAt(0).toUpperCase()}</AvatarFallback>
                   </Avatar>
                 </Link>
                 <div className="flex-1 min-w-0">
-                  <Link to={`/profile/${follower.id}`} className="flex items-center gap-1">
+                  <Link to={`/profile/${follower.username}`} className="flex items-center gap-1">
                     <span className="font-medium truncate">{follower.username}</span>
                     {follower.isMutual && (
                       <UserCheck className="w-4 h-4 text-primary shrink-0" />

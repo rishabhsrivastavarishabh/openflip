@@ -231,13 +231,13 @@ export function MobilePostViewer({ postId, isOpen, onClose }: MobilePostViewerPr
             <>
               {/* Author */}
               <div className="flex items-center gap-3 p-4">
-                <Link to={`/profile/${post.profiles?.id}`}>
+                <Link to={`/profile/${post.profiles?.username}`}>
                   <Avatar className="w-10 h-10">
                     <AvatarImage src={post.profiles?.avatar_url} />
                     <AvatarFallback>{post.profiles?.username?.charAt(0).toUpperCase()}</AvatarFallback>
                   </Avatar>
                 </Link>
-                <Link to={`/profile/${post.profiles?.id}`} className="font-semibold">
+                <Link to={`/profile/${post.profiles?.username}`} className="font-semibold">
                   {post.profiles?.username}
                 </Link>
               </div>

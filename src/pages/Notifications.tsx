@@ -246,9 +246,9 @@ export default function NotificationsPage() {
         return '/messages';
       case 'like':
       case 'comment':
-        return notification.post_id ? `/post/${notification.post_id}` : `/profile/${notification.actor.id}`;
+        return notification.post_id ? `/post/${notification.post_id}` : `/profile/${notification.actor.username}`;
       default:
-        return `/profile/${notification.actor.id}`;
+        return `/profile/${notification.actor.username}`;
     }
   };
 
@@ -367,7 +367,7 @@ export default function NotificationsPage() {
               ) : followRequests.length > 0 ? (
                 followRequests.map(request => (
                   <div key={request.id} className="flex items-center gap-3 p-4">
-                    <Link to={`/profile/${request.requester.id}`}>
+                    <Link to={`/profile/${request.requester.username}`}>
                       <Avatar className="h-12 w-12">
                         <AvatarImage src={request.requester.avatar_url || undefined} />
                         <AvatarFallback className="bg-primary/10 text-primary">
@@ -376,7 +376,7 @@ export default function NotificationsPage() {
                       </Avatar>
                     </Link>
                     <div className="flex-1 min-w-0">
-                      <Link to={`/profile/${request.requester.id}`}>
+                      <Link to={`/profile/${request.requester.username}`}>
                         <p className="font-semibold truncate">{request.requester.username}</p>
                       </Link>
                       {request.requester.full_name && (
