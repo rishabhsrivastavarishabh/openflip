@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Home, Search, PlusSquare, Heart, MessageCircle, User, Menu, LogOut, Settings, Users, Film } from 'lucide-react';
+import { House, Search, SquarePlus, Heart, MessagesSquare, User, Menu, LogOut, Settings, Users, Clapperboard } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
