@@ -55,7 +55,16 @@ import HowItWorks from "./pages/HowItWorks";
 import { CreateReel } from "./components/reels/CreateReel";
 import AccountCenter from "./pages/AccountCenter";
 import ResetPassword from "./pages/ResetPassword";
+import Call from "./pages/Call";
+import { IncomingCallDialog } from "./components/calls/IncomingCallDialog";
+import { useAuth as useAuthForCall } from "@/contexts/AuthContext";
 import NotFound from "./pages/NotFound";
+
+function GlobalCallOverlay() {
+  const { user } = useAuthForCall();
+  if (!user) return null;
+  return <IncomingCallDialog />;
+}
 
 
 const queryClient = new QueryClient();
@@ -79,12 +88,13 @@ const App = () => (
               <Route path="/create/reel" element={<CreateReel />} />
               <Route path="/reels" element={<Reels />} />
               <Route path="/post/:postId" element={<Post />} />
-              <Route path="/profile/:userId" element={<Profile />} />
-              <Route path="/profile/:userId/followers" element={<Followers />} />
-              <Route path="/profile/:userId/following" element={<Following />} />
+              <Route path="/profile/:username" element={<Profile />} />
+              <Route path="/profile/:username/followers" element={<Followers />} />
+              <Route path="/profile/:username/following" element={<Following />} />
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/messages" element={<Messages />} />
               <Route path="/messages/:conversationId" element={<Conversation />} />
+              <Route path="/call/:callId" element={<Call />} />
               <Route path="/settings" element={<SettingsLayout />}>
                 <Route index element={<Navigate to="/settings/account" replace />} />
                 <Route path="account" element={<AccountPage />} />
@@ -100,6 +110,7 @@ const App = () => (
               <Route path="/how-it-works" element={<HowItWorks />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <GlobalCallOverlay />
           </BrowserRouter>
         </TooltipProvider>
         </PushNotificationProvider>

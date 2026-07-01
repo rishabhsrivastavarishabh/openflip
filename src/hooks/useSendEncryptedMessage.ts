@@ -96,6 +96,33 @@ export function useSendEncryptedMessage() {
         .update({ updated_at: new Date().toISOString() })
         .eq('id', conversationId);
 
+      // Fire background web push to the recipient (best-effort).
+      try {
+        const { data: senderProfile } = await supabase
+          .from('profiles')
+          .select('username, avatar_url')
+          .eq('id', user.id)
+          .maybeSingle();
+        const preview = options?.mediaUrl
+          ? '📎 Sent an attachment'
+          : plaintext.length > 120
+            ? plaintext.slice(0, 120) + '…'
+            : plaintext;
+        supabase.functions
+          .invoke('send-push', {
+            body: {
+              user_id: recipientUserId,
+              title: senderProfile?.username ?? 'New message',
+              body: recipientPublicKey ? '🔒 New encrypted message' : preview,
+              type: 'message',
+              tag: `conv-${conversationId}`,
+              icon: senderProfile?.avatar_url ?? undefined,
+              data: { url: `/messages/${conversationId}`, conversationId },
+            },
+          })
+          .catch(() => {});
+      } catch (_) {}
+
       return true;
     } catch (err) {
       console.error('Failed to send encrypted message:', err);

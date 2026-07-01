@@ -17,30 +17,37 @@ interface FollowUser extends Profile {
 }
 
 export default function Following() {
-  const { userId } = useParams<{ userId: string }>();
+  const { username } = useParams<{ username: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [userId, setUserId] = useState<string | null>(null);
   const [following, setFollowing] = useState<FollowUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [profileUsername, setProfileUsername] = useState('');
 
   useEffect(() => {
+    if (!username) return;
+    (async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, username')
+        .eq('username', username)
+        .maybeSingle();
+      if (data) {
+        setUserId(data.id);
+        setProfileUsername(data.username);
+      } else {
+        setLoading(false);
+      }
+    })();
+  }, [username]);
+
+  useEffect(() => {
     if (userId) {
       fetchFollowing();
-      fetchProfile();
     }
   }, [userId]);
-
-  const fetchProfile = async () => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('username')
-      .eq('id', userId)
-      .single();
-    
-    if (data) setProfileUsername(data.username);
-  };
 
   const fetchFollowing = async () => {
     if (!userId) return;
@@ -200,7 +207,7 @@ export default function Following() {
         {/* Header */}
         <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border p-4">
           <div className="flex items-center gap-4">
-            <Link to={`/profile/${userId}`}>
+            <Link to={`/profile/${username}`}>
               <ArrowLeft className="w-6 h-6" />
             </Link>
             <div>
@@ -240,14 +247,14 @@ export default function Following() {
           ) : (
             filteredFollowing.map((followedUser) => (
               <div key={followedUser.id} className="flex items-center gap-3 p-4">
-                <Link to={`/profile/${followedUser.id}`}>
+                <Link to={`/profile/${followedUser.username}`}>
                   <Avatar className="w-12 h-12">
                     <AvatarImage src={followedUser.avatar_url || undefined} />
                     <AvatarFallback>{followedUser.username.charAt(0).toUpperCase()}</AvatarFallback>
                   </Avatar>
                 </Link>
                 <div className="flex-1 min-w-0">
-                  <Link to={`/profile/${followedUser.id}`} className="flex items-center gap-1">
+                  <Link to={`/profile/${followedUser.username}`} className="flex items-center gap-1">
                     <span className="font-medium truncate">{followedUser.username}</span>
                     {followedUser.isMutual && (
                       <UserCheck className="w-4 h-4 text-primary shrink-0" />

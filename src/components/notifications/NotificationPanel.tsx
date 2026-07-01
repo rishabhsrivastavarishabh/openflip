@@ -169,11 +169,11 @@ export function NotificationPanel({ open, onOpenChange }: NotificationPanelProps
     if (notification.post_id) {
       navigate(`/post/${notification.post_id}`);
     } else if (notification.type === 'follow' || notification.type === 'follow_request' || notification.type === 'follow_accepted') {
-      navigate(`/profile/${notification.actor_id}`);
+      navigate(`/profile/${notification.actor?.username ?? notification.actor_id}`);
     } else if (notification.type === 'message') {
       navigate('/messages');
     } else {
-      navigate(`/profile/${notification.actor_id}`);
+      navigate(`/profile/${notification.actor?.username ?? notification.actor_id}`);
     }
     onOpenChange(false);
   };

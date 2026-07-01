@@ -32,7 +32,7 @@ export function Sidebar() {
     { icon: Film, href: '/reels', label: 'Reels', badge: 0 },
     { icon: MessageCircle, href: '/messages', label: 'Messages', badge: unreadMessages },
     { icon: Heart, href: '/notifications', label: 'Notifications', badge: unreadNotifications },
-    { icon: User, href: user ? `/profile/${user.id}` : '/auth', label: 'Profile', badge: 0 },
+    { icon: User, href: profile ? `/profile/${profile.username}` : '/auth', label: 'Profile', badge: 0 },
   ];
 
   return (

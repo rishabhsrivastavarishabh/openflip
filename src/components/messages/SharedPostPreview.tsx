@@ -180,7 +180,7 @@ export function SharedPostPreview({ postId, reelId, profileId, isMine }: SharedP
   if (profile) {
     return (
       <Link
-        to={`/profile/${profile.id}`}
+        to={`/profile/${profile.username}`}
         className={cn(
           "flex items-center gap-3 p-3 rounded-lg border",
           isMine ? "border-primary-foreground/20 bg-primary-foreground/10" : "border-border bg-muted"

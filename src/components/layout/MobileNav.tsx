@@ -10,7 +10,7 @@ export function MobileNav() {
   const { user, profile } = useAuth();
   const { unreadMessages } = useUnreadCounts();
 
-  const profileHref = user ? `/profile/${user.id}` : '/auth';
+  const profileHref = profile ? `/profile/${profile.username}` : '/auth';
 
   const navItems = [
     { icon: Home, href: '/', label: 'Home', badge: 0, isProfile: false },

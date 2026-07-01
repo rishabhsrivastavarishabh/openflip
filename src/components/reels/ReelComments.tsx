@@ -129,7 +129,7 @@ export function ReelComments({ reelId, isOpen, onClose }: ReelCommentsProps) {
             ) : (
               comments.map(comment => (
                 <div key={comment.id} className="flex gap-3">
-                  <Link to={`/profile/${comment.profiles.id}`}>
+                  <Link to={`/profile/${comment.profiles.username}`}>
                     <Avatar className="w-9 h-9">
                       <AvatarImage src={comment.profiles.avatar_url || undefined} />
                       <AvatarFallback>{comment.profiles.username.charAt(0).toUpperCase()}</AvatarFallback>
@@ -137,7 +137,7 @@ export function ReelComments({ reelId, isOpen, onClose }: ReelCommentsProps) {
                   </Link>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <Link to={`/profile/${comment.profiles.id}`} className="font-semibold text-sm hover:text-primary">
+                      <Link to={`/profile/${comment.profiles.username}`} className="font-semibold text-sm hover:text-primary">
                         {comment.profiles.username}
                       </Link>
                       <span className="text-xs text-muted-foreground">

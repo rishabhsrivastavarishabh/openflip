@@ -104,7 +104,7 @@ export function ProfileViewDialog({ open, onOpenChange, profile, isOnline }: Pro
 
           {/* Actions */}
           <div className="flex items-center gap-2 justify-center">
-            <Link to={`/profile/${profile.id}`} onClick={() => onOpenChange(false)}>
+            <Link to={`/profile/${profile.username}`} onClick={() => onOpenChange(false)}>
               <Button variant="outline" className="flex-1">
                 View Profile
               </Button>

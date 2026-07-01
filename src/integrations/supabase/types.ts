@@ -136,6 +136,62 @@ export type Database = {
           },
         ]
       }
+      calls: {
+        Row: {
+          answer: Json | null
+          call_type: Database["public"]["Enums"]["call_type"]
+          callee_id: string
+          caller_id: string
+          conversation_id: string | null
+          created_at: string
+          ended_at: string | null
+          ice_candidates: Json | null
+          id: string
+          offer: Json | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["call_status"]
+          updated_at: string
+        }
+        Insert: {
+          answer?: Json | null
+          call_type?: Database["public"]["Enums"]["call_type"]
+          callee_id: string
+          caller_id: string
+          conversation_id?: string | null
+          created_at?: string
+          ended_at?: string | null
+          ice_candidates?: Json | null
+          id?: string
+          offer?: Json | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["call_status"]
+          updated_at?: string
+        }
+        Update: {
+          answer?: Json | null
+          call_type?: Database["public"]["Enums"]["call_type"]
+          callee_id?: string
+          caller_id?: string
+          conversation_id?: string | null
+          created_at?: string
+          ended_at?: string | null
+          ice_candidates?: Json | null
+          id?: string
+          offer?: Json | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["call_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calls_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_disabled: {
         Row: {
           conversation_id: string
@@ -1367,6 +1423,39 @@ export type Database = {
         }
         Relationships: []
       }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       reel_comments: {
         Row: {
           content: string
@@ -1934,6 +2023,14 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      call_status:
+        | "ringing"
+        | "accepted"
+        | "declined"
+        | "missed"
+        | "ended"
+        | "cancelled"
+      call_type: "voice" | "video"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2062,6 +2159,15 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      call_status: [
+        "ringing",
+        "accepted",
+        "declined",
+        "missed",
+        "ended",
+        "cancelled",
+      ],
+      call_type: ["voice", "video"],
     },
   },
 } as const

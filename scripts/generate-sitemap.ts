@@ -68,7 +68,7 @@ async function main() {
     ...posts.map((p: any) => ({ path: `/post/${p.id}`, changefreq: "weekly" as const, priority: "0.7" })),
     ...profiles
       .filter((p: any) => !p.is_private)
-      .map((p: any) => ({ path: `/profile/${p.id}`, changefreq: "weekly" as const, priority: "0.6" })),
+      .map((p: any) => ({ path: `/profile/${p.username}`, changefreq: "weekly" as const, priority: "0.6" })),
   ];
 
   const all = [...staticEntries, ...dynamicEntries];

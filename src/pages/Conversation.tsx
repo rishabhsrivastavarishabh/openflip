@@ -26,6 +26,8 @@ import { useSendEncryptedMessage } from '@/hooks/useSendEncryptedMessage';
 import { useDecryptMessage } from '@/hooks/useDecryptMessage';
 import { useDeviceKeys } from '@/hooks/useDeviceKeys';
 import { toast } from 'sonner';
+import { useStartCall } from '@/hooks/useStartCall';
+import { setActiveConversation } from '@/hooks/useActiveConversation';
 
 interface ChatMessage extends Message {
   isMine: boolean;
@@ -77,6 +79,15 @@ export default function ConversationPage() {
   const { sendEncrypted, isReady: encryptionReady } = useSendEncryptedMessage();
   const { decrypt } = useDecryptMessage();
   const { getRecipientPublicKey } = useDeviceKeys();
+  const { startCall, starting: startingCall } = useStartCall();
+
+  // Mark this chat as the active conversation so global push logic can suppress
+  // duplicate notifications while the user is looking at it.
+  useEffect(() => {
+    setActiveConversation(conversationId ?? null);
+    return () => setActiveConversation(null);
+  }, [conversationId]);
+
 
   // Device public key cache for decryption
   const senderKeyCache = useRef<Record<string, string>>({});
@@ -466,10 +477,38 @@ export default function ConversationPage() {
         ) : <Skeleton className="w-24 h-4" />}
 
         <div className="flex items-center gap-2">
-          {!isGroupChat && (
+          {!isGroupChat && participant && (
             <>
-              <Button variant="ghost" size="icon"><Phone className="w-5 h-5" /></Button>
-              <Button variant="ghost" size="icon"><Video className="w-5 h-5" /></Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                disabled={startingCall}
+                onClick={() =>
+                  startCall({
+                    calleeId: participant.id,
+                    conversationId: conversationId ?? null,
+                    type: 'voice',
+                  })
+                }
+                aria-label="Start voice call"
+              >
+                <Phone className="w-5 h-5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                disabled={startingCall}
+                onClick={() =>
+                  startCall({
+                    calleeId: participant.id,
+                    conversationId: conversationId ?? null,
+                    type: 'video',
+                  })
+                }
+                aria-label="Start video call"
+              >
+                <Video className="w-5 h-5" />
+              </Button>
             </>
           )}
           {isGroupChat && conversation ? (
