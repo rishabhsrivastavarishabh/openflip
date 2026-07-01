@@ -63,7 +63,7 @@ export async function subscribeToPush(userId: string): Promise<PushSubscription 
     try {
       sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidKey),
+        applicationServerKey: urlBase64ToUint8Array(vapidKey) as BufferSource,
       });
     } catch (e) {
       console.warn('Push subscribe failed', e);
