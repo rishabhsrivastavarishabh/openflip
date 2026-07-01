@@ -717,6 +717,37 @@ export default function SettingsPage() {
             <ChevronRight className="h-4 w-4 text-muted-foreground ml-auto" />
           </button>
 
+          {/* Prominent Security CTA */}
+          <div className="rounded-2xl p-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20">
+            <div className="flex items-start gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0">
+                <Shield className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="font-semibold text-base">Security</h2>
+                <p className="text-xs text-muted-foreground">Protect your account with strong controls</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { icon: KeyRound, label: 'Password', hash: '#password' },
+                { icon: Fingerprint, label: '2FA', hash: '#two-factor' },
+                { icon: Trash2, label: 'Delete', hash: '#delete-account', danger: true },
+              ].map((s) => (
+                <button
+                  key={s.label}
+                  onClick={() => navigate(`/settings/security${s.hash}`)}
+                  className={`flex flex-col items-center gap-1 p-3 rounded-xl bg-background/60 hover:bg-background transition-colors border border-border/50 ${
+                    s.danger ? 'hover:border-destructive/40' : 'hover:border-primary/40'
+                  }`}
+                >
+                  <s.icon className={`h-5 w-5 ${s.danger ? 'text-destructive' : 'text-primary'}`} />
+                  <span className="text-xs font-medium">{s.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Grouped sections */}
           {settingsSections.map((section) => (
             <div key={section.title} className="space-y-1">
@@ -724,27 +755,37 @@ export default function SettingsPage() {
                 {section.title}
               </h2>
               <div className="space-y-0.5">
-                {section.items.map((item) => (
-                  <button
-                    key={item.label}
-                    onClick={item.action}
-                    className={`w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary transition-colors text-left ${
-                      item.highlight ? 'bg-primary/5' : ''
-                    }`}
-                  >
-                    <item.icon className={`h-5 w-5 ${item.highlight ? 'text-primary' : 'text-muted-foreground'}`} />
-                    <div className="flex-1 min-w-0">
-                      <span className="font-medium text-sm">{item.label}</span>
-                      {item.description && (
-                        <p className="text-xs text-muted-foreground">{item.description}</p>
-                      )}
-                    </div>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                  </button>
-                ))}
+                {section.items.map((item) => {
+                  const isActive = !!item.route && location.pathname === item.route;
+                  return (
+                    <button
+                      key={item.label}
+                      onClick={item.action}
+                      aria-current={isActive ? 'page' : undefined}
+                      className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors text-left border ${
+                        isActive
+                          ? 'bg-primary/10 border-primary/30 ring-1 ring-primary/20'
+                          : item.highlight
+                            ? 'bg-primary/5 border-transparent hover:bg-secondary'
+                            : 'border-transparent hover:bg-secondary'
+                      }`}
+                    >
+                      <item.icon className={`h-5 w-5 ${isActive || item.highlight ? 'text-primary' : 'text-muted-foreground'}`} />
+                      <div className="flex-1 min-w-0">
+                        <span className={`font-medium text-sm ${isActive ? 'text-primary' : ''}`}>{item.label}</span>
+                        {item.description && (
+                          <p className="text-xs text-muted-foreground">{item.description}</p>
+                        )}
+                      </div>
+                      {isActive && <span className="text-[10px] font-semibold text-primary uppercase tracking-wider mr-1">Current</span>}
+                      <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    </button>
+                  );
+                })}
               </div>
             </div>
           ))}
+
 
           <Separator />
 
