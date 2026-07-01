@@ -400,7 +400,7 @@ export default function SettingsPage() {
               )}
             </div>
             <Separator />
-            <Button variant="outline" className="w-full justify-between" onClick={() => navigate(`/profile/${user.id}/followers`)}>
+            <Button variant="outline" className="w-full justify-between" onClick={() => navigate(`/profile/${profile?.username}/followers`)}>
               <span>Manage Followers</span>
               <ChevronRight className="h-4 w-4" />
             </Button>
@@ -643,7 +643,7 @@ export default function SettingsPage() {
       title: 'How others can interact with you',
       items: [
         { icon: MessageCircle, label: 'Messages', description: 'Who can message you', action: () => setShowNotificationSettings(true) },
-        { icon: UserCheck, label: 'Follow Requests', action: () => navigate(`/profile/${user.id}/followers`) },
+        { icon: UserCheck, label: 'Follow Requests', action: () => navigate(`/profile/${profile?.username}/followers`) },
       ],
     },
     {

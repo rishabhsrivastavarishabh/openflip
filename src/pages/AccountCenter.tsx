@@ -479,7 +479,7 @@ Currency: INR
                 }}
               />
             </div>
-            <Button variant="outline" className="w-full justify-between" onClick={() => navigate(`/profile/${user.id}/followers`)}>
+            <Button variant="outline" className="w-full justify-between" onClick={() => navigate(`/profile/${profile?.username}/followers`)}>
               Manage Followers
               <ChevronRight className="h-4 w-4" />
             </Button>

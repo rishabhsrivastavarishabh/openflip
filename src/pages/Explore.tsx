@@ -222,7 +222,7 @@ export default function ExplorePage() {
               users.map(user => (
                 <Link
                   key={user.id}
-                  to={`/profile/${user.id}`}
+                  to={`/profile/${user.username}`}
                   className="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary transition-colors"
                 >
                   <Avatar className="h-12 w-12">
