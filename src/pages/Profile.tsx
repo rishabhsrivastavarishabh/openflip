@@ -50,10 +50,11 @@ interface ProfileReel {
 }
 
 export default function ProfilePage() {
-  const { userId } = useParams<{ userId: string }>();
+  const { username } = useParams<{ username: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [posts, setPosts] = useState<ProfilePost[]>([]);
   const [reels, setReels] = useState<ProfileReel[]>([]);
   const [savedPosts, setSavedPosts] = useState<ProfilePost[]>([]);
@@ -70,11 +71,31 @@ export default function ProfilePage() {
   const [showPhotoViewer, setShowPhotoViewer] = useState(false);
   const [isFollowBack, setIsFollowBack] = useState(false);
 
-  const isOwnProfile = user?.id === userId;
+  const isOwnProfile = !!user && !!userId && user.id === userId;
+
+  // Resolve username → profile (and its id) whenever the URL changes.
+  useEffect(() => {
+    if (!username) return;
+    setLoading(true);
+    setProfile(null);
+    setUserId(null);
+    (async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('username', username)
+        .maybeSingle();
+      if (error) console.error('Error fetching profile:', error);
+      if (data) {
+        setProfile(data);
+        setUserId(data.id);
+      }
+      setLoading(false);
+    })();
+  }, [username]);
 
   useEffect(() => {
     if (userId) {
-      fetchProfile();
       fetchFollowCounts();
       if (user) {
         checkIsFollowing();
@@ -89,7 +110,7 @@ export default function ProfilePage() {
       // Check if user can view content
       const canView = isOwnProfile || !profile.is_private || isFollowing;
       setCanViewContent(canView);
-      
+
       if (canView) {
         fetchPosts();
         fetchReels();
@@ -101,6 +122,7 @@ export default function ProfilePage() {
   }, [profile, isFollowing, userId]);
 
   const fetchProfile = async () => {
+    if (!userId) return;
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -112,7 +134,6 @@ export default function ProfilePage() {
     } else {
       setProfile(data);
     }
-    setLoading(false);
   };
 
   const fetchPosts = async () => {
