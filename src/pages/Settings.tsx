@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams, useLocation } from 'react-router-dom';
 import {
   ArrowLeft, User, Lock, Bell, HelpCircle, LogOut, Camera, ChevronRight,
   Shield, Ban, Trash2, Briefcase, Settings2, Crown, BarChart3, Tag, Moon,
   Sun, Monitor, Users, Eye, Heart, MessageCircle, Smartphone, Image,
-  Globe, UserCheck, Volume2, Palette, Info, FileText, Phone, Fingerprint
+  Globe, UserCheck, Volume2, Palette, Info, FileText, Phone, Fingerprint, KeyRound
 } from 'lucide-react';
+
 import { AvatarCropDialog } from '@/components/settings/AvatarCropDialog';
 // MainLayout removed — page renders inside SettingsLayout
 import { BusinessAccountSettings } from '@/components/settings/BusinessAccountSettings';
