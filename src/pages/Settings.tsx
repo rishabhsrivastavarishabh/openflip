@@ -776,8 +776,110 @@ export default function SettingsPage() {
                 </button>
               ))}
 
-            </div>
           </div>
+
+          {/* Security checklist */}
+          {securityStatus && (() => {
+            const items = [
+              {
+                label: 'Email verified',
+                done: securityStatus.emailVerified,
+                fixLabel: 'Verify email',
+                onFix: () => navigate('/settings/account'),
+              },
+              {
+                label: 'Two-factor authentication',
+                done: securityStatus.twoFactor,
+                fixLabel: 'Enable 2FA',
+                onFix: () => navigate('/settings/2fa'),
+              },
+              {
+                label: 'Backup recovery codes',
+                done: securityStatus.recoveryCodes,
+                fixLabel: securityStatus.twoFactor ? 'Generate codes' : 'Enable 2FA first',
+                onFix: () => navigate('/settings/2fa'),
+              },
+              {
+                label: 'Private account',
+                done: securityStatus.privateAccount,
+                fixLabel: 'Go private',
+                onFix: () => setShowPrivacy(true),
+                optional: true,
+              },
+            ];
+            const doneCount = items.filter((i) => i.done).length;
+            const requiredDone = items.filter((i) => !i.optional && i.done).length;
+            const requiredTotal = items.filter((i) => !i.optional).length;
+            const pct = Math.round((requiredDone / requiredTotal) * 100);
+            return (
+              <div className="rounded-2xl border p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="font-semibold text-base">Security checklist</h2>
+                    <p className="text-xs text-muted-foreground">
+                      {requiredDone} of {requiredTotal} essentials complete
+                    </p>
+                  </div>
+                  <div
+                    className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                      pct === 100
+                        ? 'bg-green-500/15 text-green-700'
+                        : pct >= 50
+                          ? 'bg-yellow-500/15 text-yellow-700'
+                          : 'bg-destructive/15 text-destructive'
+                    }`}
+                  >
+                    {pct}%
+                  </div>
+                </div>
+                <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className={`h-full transition-all ${
+                      pct === 100 ? 'bg-green-500' : pct >= 50 ? 'bg-yellow-500' : 'bg-destructive'
+                    }`}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+                <div className="space-y-1">
+                  {items.map((it) => (
+                    <div
+                      key={it.label}
+                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-secondary/50 transition-colors"
+                    >
+                      <div
+                        className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          it.done ? 'bg-green-500/15 text-green-600' : 'bg-muted text-muted-foreground'
+                        }`}
+                        aria-hidden="true"
+                      >
+                        {it.done ? '✓' : '○'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-medium ${it.done ? 'text-muted-foreground line-through' : ''}`}>
+                          {it.label}
+                          {it.optional && !it.done && (
+                            <span className="ml-2 text-[10px] uppercase tracking-wider text-muted-foreground font-normal">
+                              Optional
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                      {!it.done && (
+                        <button
+                          onClick={it.onFix}
+                          className="text-xs font-semibold text-primary hover:underline whitespace-nowrap"
+                        >
+                          {it.fixLabel} →
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
+
 
           {/* Grouped sections */}
           {settingsSections.map((section) => (
