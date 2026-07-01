@@ -612,13 +612,14 @@ export default function SettingsPage() {
     {
       title: 'Settings',
       items: [
-        { icon: User, label: 'Account', description: 'Profile, username, email', action: () => navigate('/settings/account') },
-        { icon: Shield, label: 'Security', description: 'Password, 2FA, delete account', action: () => navigate('/settings/security') },
-        { icon: Lock, label: 'Privacy', description: 'Who can see and contact you', action: () => navigate('/settings/privacy') },
-        { icon: Bell, label: 'Notifications', description: 'Push and email preferences', action: () => navigate('/settings/notifications') },
-        { icon: Palette, label: 'Appearance', description: 'Theme and display', action: () => navigate('/settings/appearance') },
+        { icon: User, label: 'Account', description: 'Profile, username, email', action: () => navigate('/settings/account'), route: '/settings/account' },
+        { icon: Shield, label: 'Security', description: 'Password, 2FA, delete account', action: () => navigate('/settings/security'), route: '/settings/security' },
+        { icon: Lock, label: 'Privacy', description: 'Who can see and contact you', action: () => navigate('/settings/privacy'), route: '/settings/privacy' },
+        { icon: Bell, label: 'Notifications', description: 'Push and email preferences', action: () => navigate('/settings/notifications'), route: '/settings/notifications' },
+        { icon: Palette, label: 'Appearance', description: 'Theme and display', action: () => navigate('/settings/appearance'), route: '/settings/appearance' },
       ],
     },
+
     {
       title: 'How you use Openflip',
       items: [
