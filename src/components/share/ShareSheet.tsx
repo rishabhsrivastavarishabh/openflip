@@ -194,14 +194,6 @@ export function ShareSheet({ open, onOpenChange, type, itemId, itemUrl }: ShareS
           title: `Openflip ${type}`,
           url: shareUrl,
         });
-        
-        if (user && type !== 'profile') {
-          await (supabase as any).from('shares').insert({
-            user_id: user.id,
-            [type === 'post' ? 'post_id' : 'reel_id']: itemId,
-            share_type: 'external',
-          });
-        }
       } catch (error) {
         if ((error as Error).name !== 'AbortError') {
           console.error('Error sharing:', error);
