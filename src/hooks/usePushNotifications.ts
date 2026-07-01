@@ -1,55 +1,68 @@
 import { useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import {
+  isWebPushSupported,
+  registerServiceWorker,
+  requestNotificationPermission,
+  subscribeToPush,
+} from '@/lib/webPush';
+import { getActiveConversation, isDocumentVisible } from '@/hooks/useActiveConversation';
 
 export function usePushNotifications() {
   const { user } = useAuth();
 
   const requestPermission = useCallback(async () => {
-    if (!('Notification' in window)) {
-      console.log('This browser does not support notifications');
-      return false;
-    }
-
-    if (Notification.permission === 'granted') {
-      return true;
-    }
-
-    if (Notification.permission !== 'denied') {
-      const permission = await Notification.requestPermission();
-      return permission === 'granted';
-    }
-
-    return false;
+    if (!('Notification' in window)) return false;
+    const perm = await requestNotificationPermission();
+    return perm === 'granted';
   }, []);
 
-  const showNotification = useCallback((title: string, options?: NotificationOptions) => {
-    if (Notification.permission === 'granted') {
-      const notification = new Notification(title, {
+  const showNotification = useCallback(
+    async (title: string, options?: NotificationOptions) => {
+      if (Notification.permission !== 'granted') return null;
+      // Prefer showing via the service worker so notifications persist and can
+      // include actions; fall back to the constructor for older browsers.
+      const reg = 'serviceWorker' in navigator
+        ? await navigator.serviceWorker.getRegistration('/sw.js')
+        : null;
+      const opts: NotificationOptions = {
         icon: '/favicon.ico',
         badge: '/favicon.ico',
         ...options,
-      });
-
-      notification.onclick = () => {
-        window.focus();
-        notification.close();
       };
+      if (reg) {
+        await reg.showNotification(title, opts);
+        return null;
+      }
+      const n = new Notification(title, opts);
+      n.onclick = () => {
+        window.focus();
+        n.close();
+      };
+      return n;
+    },
+    [],
+  );
 
-      return notification;
-    }
-    return null;
-  }, []);
-
+  // Bootstrap: register SW, request permission, subscribe.
   useEffect(() => {
     if (!user) return;
+    (async () => {
+      if (!isWebPushSupported()) return;
+      await registerServiceWorker();
+      const perm = await requestNotificationPermission();
+      if (perm === 'granted') {
+        await subscribeToPush(user.id);
+      }
+    })();
+  }, [user]);
 
-    // Request permission on mount
-    requestPermission();
-
-    // Subscribe to new notifications
+  // Legacy `notifications` table stream (likes, comments, follows, etc.)
+  useEffect(() => {
+    if (!user) return;
     const channel = supabase
-      .channel('push-notifications')
+      .channel(`push-notifications-${user.id}`)
       .on(
         'postgres_changes',
         {
@@ -60,48 +73,140 @@ export function usePushNotifications() {
         },
         async (payload) => {
           const newNotification = payload.new as any;
-
-          // Check if user has notification settings enabled
           const { data: settings } = await supabase
             .from('notification_settings')
             .select('*')
             .eq('user_id', user.id)
             .maybeSingle();
 
-          // Check notification type settings
-          const shouldNotify = checkNotificationSettings(settings, newNotification.type);
-          if (!shouldNotify) return;
+          if (!checkNotificationSettings(settings, newNotification.type)) return;
+          if (newNotification.type === 'message' || newNotification.type === 'message_request') {
+            // Messages are handled by the dedicated messages listener below.
+            return;
+          }
 
-          // Fetch actor profile
           const { data: actor } = await supabase
             .from('profiles')
             .select('username, avatar_url')
             .eq('id', newNotification.actor_id)
-            .single();
+            .maybeSingle();
 
           if (actor) {
-            const notificationText = getNotificationText(newNotification.type);
-            showNotification(`${actor.username} ${notificationText}`, {
+            showNotification(`${actor.username} ${getNotificationText(newNotification.type)}`, {
               body: getNotificationBody(newNotification.type),
               tag: newNotification.id,
               silent: !settings?.notification_sound,
+              data: { url: '/notifications' },
             });
           }
-        }
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, showNotification]);
+
+  // New-messages listener: notify when a message arrives and the user isn't
+  // actively viewing that conversation.
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`push-messages-${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages' },
+        async (payload) => {
+          const msg = payload.new as any;
+          if (!msg || msg.sender_id === user.id) return;
+
+          // Must be a participant of this conversation.
+          const { data: part } = await supabase
+            .from('conversation_participants')
+            .select('user_id')
+            .eq('conversation_id', msg.conversation_id)
+            .eq('user_id', user.id)
+            .maybeSingle();
+          if (!part) return;
+
+          // Suppress if actively viewing this chat.
+          if (getActiveConversation() === msg.conversation_id && isDocumentVisible()) return;
+
+          const { data: settings } = await supabase
+            .from('notification_settings')
+            .select('chat_notifications, notification_sound')
+            .eq('user_id', user.id)
+            .maybeSingle();
+          if (settings?.chat_notifications === false) return;
+
+          const { data: sender } = await supabase
+            .from('profiles')
+            .select('username, avatar_url')
+            .eq('id', msg.sender_id)
+            .maybeSingle();
+
+          const senderName = sender?.username ?? 'New message';
+          const preview =
+            msg.content && typeof msg.content === 'string' && msg.content.length > 0
+              ? msg.content.slice(0, 120)
+              : msg.media_url
+                ? '📎 Sent an attachment'
+                : msg.is_encrypted
+                  ? '🔒 Encrypted message'
+                  : 'Tap to view';
+
+          showNotification(senderName, {
+            body: preview,
+            tag: `conv-${msg.conversation_id}`,
+            silent: !settings?.notification_sound,
+            icon: sender?.avatar_url || '/favicon.ico',
+            data: { url: `/messages/${msg.conversation_id}` },
+          });
+
+          // Also fire a background web push so recipients on other devices
+          // (or with the tab closed) receive it. Best-effort.
+          supabase.functions
+            .invoke('send-push', {
+              body: {
+                user_id: user.id,
+                title: senderName,
+                body: preview,
+                type: 'message',
+                tag: `conv-${msg.conversation_id}`,
+                data: { url: `/messages/${msg.conversation_id}` },
+                icon: sender?.avatar_url ?? undefined,
+              },
+            })
+            .catch(() => {});
+        },
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, requestPermission, showNotification]);
+  }, [user, showNotification]);
+
+  // Handle notification clicks forwarded from the SW.
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+    const handler = (event: MessageEvent) => {
+      const data = event.data;
+      if (!data || data.type !== 'push-notification-click') return;
+      const url = data.payload?.url;
+      if (url && typeof url === 'string') {
+        window.location.assign(url);
+      }
+    };
+    navigator.serviceWorker.addEventListener('message', handler);
+    return () => navigator.serviceWorker.removeEventListener('message', handler);
+  }, []);
 
   return { requestPermission, showNotification };
 }
 
 function checkNotificationSettings(settings: any, type: string): boolean {
-  if (!settings) return true; // Default to enabled if no settings
-
+  if (!settings) return true;
   switch (type) {
     case 'message':
     case 'message_request':
