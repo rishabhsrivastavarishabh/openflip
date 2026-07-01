@@ -1,4 +1,4 @@
-import { Home, Film, MessageCircle, PlusSquare } from 'lucide-react';
+import { House, Clapperboard, MessagesSquare, SquarePlus } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,10 +13,10 @@ export function MobileNav() {
   const profileHref = profile ? `/profile/${profile.username}` : '/auth';
 
   const navItems = [
-    { icon: Home, href: '/', label: 'Home', badge: 0, isProfile: false },
-    { icon: PlusSquare, href: '/create', label: 'Create', badge: 0, isProfile: false },
-    { icon: Film, href: '/reels', label: 'Reels', badge: 0, isProfile: false },
-    { icon: MessageCircle, href: '/messages', label: 'Messages', badge: unreadMessages, isProfile: false },
+    { icon: House, href: '/', label: 'Home', badge: 0, isProfile: false },
+    { icon: SquarePlus, href: '/create', label: 'Create', badge: 0, isProfile: false },
+    { icon: Clapperboard, href: '/reels', label: 'Reels', badge: 0, isProfile: false },
+    { icon: MessagesSquare, href: '/messages', label: 'Messages', badge: unreadMessages, isProfile: false },
     { icon: null, href: profileHref, label: 'Profile', badge: 0, isProfile: true },
   ];
 
