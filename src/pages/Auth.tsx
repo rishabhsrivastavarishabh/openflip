@@ -473,6 +473,23 @@ export default function AuthPage() {
           )}
         </div>
       </div>
+
+      {mfaChallenge && (
+        <LoginMfaChallenge
+          open={true}
+          factorId={mfaChallenge.factorId}
+          userId={mfaChallenge.userId}
+          onVerified={() => {
+            setMfaChallenge(null);
+            toast.success('Welcome back!');
+            navigate('/');
+          }}
+          onCancel={() => {
+            setMfaChallenge(null);
+            toast.message('Signed out. Please sign in again.');
+          }}
+        />
+      )}
     </main>
   );
 }
