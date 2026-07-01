@@ -94,6 +94,7 @@ const App = () => (
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/messages" element={<Messages />} />
               <Route path="/messages/:conversationId" element={<Conversation />} />
+              <Route path="/call/:callId" element={<Call />} />
               <Route path="/settings" element={<SettingsLayout />}>
                 <Route index element={<Navigate to="/settings/account" replace />} />
                 <Route path="account" element={<AccountPage />} />
@@ -109,6 +110,7 @@ const App = () => (
               <Route path="/how-it-works" element={<HowItWorks />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <GlobalCallOverlay />
           </BrowserRouter>
         </TooltipProvider>
         </PushNotificationProvider>
