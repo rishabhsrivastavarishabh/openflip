@@ -87,6 +87,14 @@ export default function SettingsPage() {
   const [blockedUsers, setBlockedUsers] = useState<any[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isPrivate, setIsPrivate] = useState(profile?.is_private || false);
+  const [securityStatus, setSecurityStatus] = useState<{
+    emailVerified: boolean;
+    twoFactor: boolean;
+    recoveryCodes: boolean;
+    privateAccount: boolean;
+    passwordSet: boolean;
+  } | null>(null);
+
   const [formData, setFormData] = useState({
     username: profile?.username || '',
     full_name: profile?.full_name || '',
