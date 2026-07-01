@@ -450,7 +450,7 @@ export default function ProfilePage() {
       <Seo
         title={profileTitle}
         description={profileDesc}
-        path={`/profile/${profile.id}`}
+        path={`/profile/${profile.username}`}
         type="profile"
         image={profile.avatar_url || undefined}
         noindex={profile.is_private}
@@ -464,7 +464,7 @@ export default function ProfilePage() {
               alternateName: profile.username,
               description: profile.bio || undefined,
               image: profile.avatar_url || undefined,
-              url: `https://openflip.lovable.app/profile/${profile.id}`,
+              url: `https://openflip.lovable.app/profile/${profile.username}`,
               sameAs: profile.website ? [profile.website] : undefined,
             },
           },

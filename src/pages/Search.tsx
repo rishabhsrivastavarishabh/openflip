@@ -320,7 +320,7 @@ export default function SearchPage() {
                         {results.users.slice(0, 5).map((profile) => (
                           <Link
                             key={profile.id}
-                            to={`/profile/${profile.id}`}
+                            to={`/profile/${profile.username}`}
                             className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted"
                           >
                             <Avatar>
@@ -436,7 +436,7 @@ export default function SearchPage() {
                   {results.users.map((profile) => (
                     <Link
                       key={profile.id}
-                      to={`/profile/${profile.id}`}
+                      to={`/profile/${profile.username}`}
                       className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted"
                     >
                       <Avatar className="w-12 h-12">
