@@ -115,16 +115,6 @@ export function ShareSheet({ open, onOpenChange, type, itemId, itemUrl }: ShareS
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       toast.success('Link copied!');
-      
-      // Track share
-      if (user && type !== 'profile') {
-        await (supabase as any).from('shares').insert({
-          user_id: user.id,
-          [type === 'post' ? 'post_id' : 'reel_id']: itemId,
-          share_type: 'copy_link',
-        });
-      }
-
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
       toast.error('Failed to copy link');
