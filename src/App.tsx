@@ -45,6 +45,8 @@ import SecurityPage from "./pages/settings/SecurityPage";
 import PrivacyPage from "./pages/settings/PrivacyPage";
 import NotificationsPage from "./pages/settings/NotificationsPage";
 import AppearancePage from "./pages/settings/AppearancePage";
+import TwoFactorPage from "./pages/settings/TwoFactorPage";
+
 import Reels from "./pages/Reels";
 import Followers from "./pages/Followers";
 import Following from "./pages/Following";
