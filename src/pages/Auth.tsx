@@ -428,7 +428,7 @@ export default function AuthPage() {
                     {loading ? 'Signing in...' : 'Sign in'}<ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </form>
-                </form>
+
 
                 <div className="text-center text-sm text-muted-foreground">
                   <Link to="/privacy" className="hover:text-primary">Privacy</Link>
