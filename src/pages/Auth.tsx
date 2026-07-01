@@ -63,6 +63,7 @@ export default function AuthPage() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [signupUserId, setSignupUserId] = useState<string | null>(null);
+  const [mfaChallenge, setMfaChallenge] = useState<{ factorId: string; userId: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
