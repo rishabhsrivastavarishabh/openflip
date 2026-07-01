@@ -127,6 +127,28 @@ export default function SettingsPage() {
   }, [user]);
 
   useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const [{ data: mfa }, codes] = await Promise.all([
+        supabase.auth.mfa.listFactors(),
+        (supabase as any)
+          .from('mfa_recovery_codes')
+          .select('id', { count: 'exact', head: true })
+          .eq('used', false),
+      ]);
+      const twoFactor = ((mfa?.totp ?? []) as any[]).some((f) => f.status === 'verified');
+      setSecurityStatus({
+        emailVerified: !!(user as any).email_confirmed_at || !!(user as any).confirmed_at,
+        twoFactor,
+        recoveryCodes: (codes?.count ?? 0) > 0,
+        privateAccount: !!profile?.is_private,
+        passwordSet: !!user.email, // email users have a password (Google removed)
+      });
+    })();
+  }, [user, profile?.is_private]);
+
+
+  useEffect(() => {
     const subscriptionStatus = searchParams.get('subscription');
     if (subscriptionStatus === 'success') {
       toast.success('Subscription activated! Welcome to Openflip Verified.');
