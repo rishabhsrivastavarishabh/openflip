@@ -17,30 +17,37 @@ interface FollowUser extends Profile {
 }
 
 export default function Followers() {
-  const { userId } = useParams<{ userId: string }>();
+  const { username } = useParams<{ username: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [userId, setUserId] = useState<string | null>(null);
   const [followers, setFollowers] = useState<FollowUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [profileUsername, setProfileUsername] = useState('');
 
   useEffect(() => {
+    if (!username) return;
+    (async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, username')
+        .eq('username', username)
+        .maybeSingle();
+      if (data) {
+        setUserId(data.id);
+        setProfileUsername(data.username);
+      } else {
+        setLoading(false);
+      }
+    })();
+  }, [username]);
+
+  useEffect(() => {
     if (userId) {
       fetchFollowers();
-      fetchProfile();
     }
   }, [userId]);
-
-  const fetchProfile = async () => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('username')
-      .eq('id', userId)
-      .single();
-    
-    if (data) setProfileUsername(data.username);
-  };
 
   const fetchFollowers = async () => {
     if (!userId) return;
