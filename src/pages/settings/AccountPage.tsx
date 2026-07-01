@@ -136,10 +136,11 @@ export default function AccountPage() {
       <AvatarCropDialog
         open={showCropDialog}
         onOpenChange={setShowCropDialog}
-        file={cropFile}
-        onSave={handleCropped}
-        loading={savingAvatar}
+        imageFile={cropFile}
+        onCropComplete={handleCropped}
+        saving={savingAvatar}
       />
+
     </div>
   );
 }

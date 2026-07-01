@@ -7,7 +7,7 @@ export default function NotificationsPage() {
         <h2 className="text-xl font-semibold mb-1">Notifications</h2>
         <p className="text-sm text-muted-foreground">Choose what you want to be notified about.</p>
       </section>
-      <NotificationSettings onBack={() => {}} hideHeader />
+      <NotificationSettings onBack={() => {}} />
     </div>
   );
 }
