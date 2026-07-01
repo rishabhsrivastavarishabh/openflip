@@ -88,9 +88,9 @@ const App = () => (
               <Route path="/create/reel" element={<CreateReel />} />
               <Route path="/reels" element={<Reels />} />
               <Route path="/post/:postId" element={<Post />} />
-              <Route path="/profile/:userId" element={<Profile />} />
-              <Route path="/profile/:userId/followers" element={<Followers />} />
-              <Route path="/profile/:userId/following" element={<Following />} />
+              <Route path="/profile/:username" element={<Profile />} />
+              <Route path="/profile/:username/followers" element={<Followers />} />
+              <Route path="/profile/:username/following" element={<Following />} />
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/messages" element={<Messages />} />
               <Route path="/messages/:conversationId" element={<Conversation />} />
