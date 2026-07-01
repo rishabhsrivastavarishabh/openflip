@@ -16,6 +16,8 @@ interface SuggestedUser {
   full_name: string | null;
   is_verified: boolean;
   mutual_followers: number;
+  follower_count: number;
+  score: number;
 }
 
 export function SuggestedUsers() {
