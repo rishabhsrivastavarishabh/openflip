@@ -578,14 +578,14 @@ export default function ProfilePage() {
                   <span className="text-muted-foreground">posts</span>
                 </div>
                 <Link 
-                  to={`/profile/${userId}/followers`}
+                  to={`/profile/${username}/followers`}
                   className="hover:opacity-70 transition-opacity"
                 >
                   <span className="font-semibold">{followersCount}</span>{' '}
                   <span className="text-muted-foreground">followers</span>
                 </Link>
                 <Link 
-                  to={`/profile/${userId}/following`}
+                  to={`/profile/${username}/following`}
                   className="hover:opacity-70 transition-opacity"
                 >
                   <span className="font-semibold">{followingCount}</span>{' '}
@@ -793,7 +793,7 @@ export default function ProfilePage() {
           onOpenChange={setShowShareSheet}
           type="profile"
           itemId={userId!}
-          itemUrl={`${window.location.origin}/profile/${userId}`}
+          itemUrl={`${window.location.origin}/profile/${username}`}
         />
 
         {/* Block/Report Sheet */}
