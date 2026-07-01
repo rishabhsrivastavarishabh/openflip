@@ -584,9 +584,14 @@ export default function SettingsPage() {
               </button>
             ))}
             <Separator />
-            <div className="text-center space-y-2 py-4">
-              <Link to="/privacy" className="text-sm text-primary hover:underline block">Privacy Policy</Link>
-              <Link to="/terms" className="text-sm text-primary hover:underline block">Terms of Service</Link>
+            <div className="text-center space-y-1 py-4">
+              <p className="text-sm font-semibold">About this web app</p>
+              <p className="text-xs text-muted-foreground">Openflip · Version 1.0</p>
+              <p className="text-xs text-muted-foreground">Owner: Rishabh Srivastava</p>
+              <div className="pt-3 space-y-2">
+                <Link to="/privacy" className="text-sm text-primary hover:underline block">Privacy Policy</Link>
+                <Link to="/terms" className="text-sm text-primary hover:underline block">Terms of Service</Link>
+              </div>
             </div>
           </div>
         </div>

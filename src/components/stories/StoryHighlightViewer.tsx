@@ -148,9 +148,10 @@ export function StoryHighlightViewer({
     setIsPaused(!isPaused);
   };
 
-  if (!isOpen || highlight.stories.length === 0) return null;
+  if (!isOpen) return null;
 
-  const currentStory = highlight.stories[currentIndex];
+  const hasStories = highlight.stories.length > 0;
+  const currentStory = hasStories ? highlight.stories[currentIndex] : null;
 
   return (
     <AnimatePresence>
@@ -276,32 +277,31 @@ export function StoryHighlightViewer({
 
         {/* Story content */}
         <div className="w-full max-w-md h-full max-h-[80vh] relative">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentStory.id}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 1.05 }}
-              transition={{ duration: 0.2 }}
-              className="w-full h-full flex items-center justify-center"
-            >
-              {currentStory.media_type === 'video' ? (
-                <video
-                  src={currentStory.media_url}
-                  className="max-w-full max-h-full object-contain rounded-lg"
-                  autoPlay
-                  muted
-                  loop
-                />
-              ) : (
-                <img
-                  src={currentStory.media_url}
-                  alt=""
-                  className="max-w-full max-h-full object-contain rounded-lg"
-                />
-              )}
-            </motion.div>
-          </AnimatePresence>
+          {!hasStories ? (
+            <div className="w-full h-full flex items-center justify-center text-white/70 text-center px-6">
+              <div>
+                <p className="text-lg font-semibold mb-2">No stories in this highlight yet</p>
+                <p className="text-sm">Add stories from the editor to see them here.</p>
+              </div>
+            </div>
+          ) : (
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentStory!.id}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 1.05 }}
+                transition={{ duration: 0.2 }}
+                className="w-full h-full flex items-center justify-center"
+              >
+                {currentStory!.media_type === 'video' ? (
+                  <video src={currentStory!.media_url} className="max-w-full max-h-full object-contain rounded-lg" autoPlay muted loop />
+                ) : (
+                  <img src={currentStory!.media_url} alt="" className="max-w-full max-h-full object-contain rounded-lg" />
+                )}
+              </motion.div>
+            </AnimatePresence>
+          )}
         </div>
 
         {/* Pause indicator */}

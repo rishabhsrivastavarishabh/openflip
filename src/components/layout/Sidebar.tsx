@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Home, Search, PlusSquare, Heart, MessageCircle, User, Menu, LogOut, Settings, Users, Film } from 'lucide-react';
+import { House, Search, SquarePlus, Heart, MessagesSquare, User, Menu, LogOut, Settings, Users, Clapperboard } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -27,10 +27,10 @@ export function Sidebar() {
   const hasMultipleAccounts = accounts.length > 1;
 
   const navItems = [
-    { icon: Home, href: '/', label: 'Home', badge: 0 },
+    { icon: House, href: '/', label: 'Home', badge: 0 },
     { icon: Search, href: '/explore', label: 'Explore', badge: 0 },
-    { icon: Film, href: '/reels', label: 'Reels', badge: 0 },
-    { icon: MessageCircle, href: '/messages', label: 'Messages', badge: unreadMessages },
+    { icon: Clapperboard, href: '/reels', label: 'Reels', badge: 0 },
+    { icon: MessagesSquare, href: '/messages', label: 'Messages', badge: unreadMessages },
     { icon: Heart, href: '/notifications', label: 'Notifications', badge: unreadNotifications },
     { icon: User, href: profile ? `/profile/${profile.username}` : '/auth', label: 'Profile', badge: 0 },
   ];

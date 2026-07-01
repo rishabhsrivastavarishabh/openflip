@@ -115,16 +115,6 @@ export function ShareSheet({ open, onOpenChange, type, itemId, itemUrl }: ShareS
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       toast.success('Link copied!');
-      
-      // Track share
-      if (user && type !== 'profile') {
-        await (supabase as any).from('shares').insert({
-          user_id: user.id,
-          [type === 'post' ? 'post_id' : 'reel_id']: itemId,
-          share_type: 'copy_link',
-        });
-      }
-
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
       toast.error('Failed to copy link');
@@ -176,24 +166,17 @@ export function ShareSheet({ open, onOpenChange, type, itemId, itemUrl }: ShareS
         messageData.shared_profile_id = itemId;
       }
 
-      await (supabase as any).from('messages').insert(messageData);
+      const { error: msgErr } = await (supabase as any).from('messages').insert(messageData);
+      if (msgErr) throw msgErr;
 
-      // Create notification for the recipient
-      await supabase.from('notifications').insert({
-        user_id: friend.id,
-        actor_id: user.id,
-        type: 'message',
-      });
-
-      // Track share
-      if (type !== 'profile') {
-        await (supabase as any).from('shares').insert({
-          user_id: user.id,
-          [type === 'post' ? 'post_id' : 'reel_id']: itemId,
-          shared_to_user_id: friend.id,
-          share_type: 'chat',
+      // Best-effort notification (invalid types silently ignored)
+      try {
+        await supabase.from('notifications').insert({
+          user_id: friend.id,
+          actor_id: user.id,
+          type: 'mention',
         });
-      }
+      } catch (_) { /* non-fatal */ }
 
       toast.success(`Shared with ${friend.username}`);
     } catch (error) {
@@ -211,14 +194,6 @@ export function ShareSheet({ open, onOpenChange, type, itemId, itemUrl }: ShareS
           title: `Openflip ${type}`,
           url: shareUrl,
         });
-        
-        if (user && type !== 'profile') {
-          await (supabase as any).from('shares').insert({
-            user_id: user.id,
-            [type === 'post' ? 'post_id' : 'reel_id']: itemId,
-            share_type: 'external',
-          });
-        }
       } catch (error) {
         if ((error as Error).name !== 'AbortError') {
           console.error('Error sharing:', error);

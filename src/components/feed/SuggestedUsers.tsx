@@ -16,6 +16,8 @@ interface SuggestedUser {
   full_name: string | null;
   is_verified: boolean;
   mutual_followers: number;
+  follower_count: number;
+  score: number;
 }
 
 export function SuggestedUsers() {
@@ -53,32 +55,37 @@ export function SuggestedUsers() {
         .limit(10);
 
       if (suggestedData) {
-        // Get mutual followers count for each suggested user
-        const usersWithMutuals = await Promise.all(
+        // Compute a recommendation score per user:
+        //   score = 3 * mutual followers + 0.5 * verified + log(follower_count + 1)
+        const usersWithScore = await Promise.all(
           suggestedData.map(async (suggestedUser) => {
-            // Get people who follow the suggested user
             const { data: theirFollowers } = await supabase
               .from('follows')
               .select('follower_id')
               .eq('following_id', suggestedUser.id);
 
             const theirFollowerIds = theirFollowers?.map(f => f.follower_id) || [];
-
-            // Count how many of them the current user is following
-            const mutualCount = theirFollowerIds.filter(id => 
+            const followerCount = theirFollowerIds.length;
+            const mutualCount = theirFollowerIds.filter(id =>
               followingIds.includes(id) && id !== user.id
             ).length;
+
+            const score =
+              mutualCount * 3 +
+              (suggestedUser.is_verified ? 0.5 : 0) +
+              Math.log(followerCount + 1);
 
             return {
               ...suggestedUser,
               mutual_followers: mutualCount,
+              follower_count: followerCount,
+              score,
             };
           })
         );
 
-        // Sort by mutual followers
-        usersWithMutuals.sort((a, b) => b.mutual_followers - a.mutual_followers);
-        setUsers(usersWithMutuals);
+        usersWithScore.sort((a, b) => b.score - a.score);
+        setUsers(usersWithScore);
       }
     } catch (error) {
       console.error('Error fetching suggested users:', error);

@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable';
 import openflipLogo from '@/assets/openflip-logo.png';
+import { LoginMfaChallenge } from '@/components/auth/LoginMfaChallenge';
 
 const countryCodes = [
   { code: '+1', country: 'US' }, { code: '+44', country: 'UK' }, { code: '+91', country: 'IN' },
@@ -62,6 +63,7 @@ export default function AuthPage() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [signupUserId, setSignupUserId] = useState<string | null>(null);
+  const [mfaChallenge, setMfaChallenge] = useState<{ factorId: string; userId: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
@@ -108,13 +110,29 @@ export default function AuthPage() {
       }
     }
     const { error } = await signIn(email, data.password);
-    setLoading(false);
     if (error) {
+      setLoading(false);
       toast.error(error.message || 'Failed to sign in');
-    } else {
-      toast.success('Welcome back!');
-      navigate('/');
+      return;
     }
+
+    // Enforce 2FA for enrolled users
+    try {
+      const { data: factorsData } = await supabase.auth.mfa.listFactors();
+      const verifiedTotp = (factorsData?.totp ?? []).find((f: any) => f.status === 'verified');
+      const { data: sessionData } = await supabase.auth.getUser();
+      if (verifiedTotp && sessionData?.user) {
+        setLoading(false);
+        setMfaChallenge({ factorId: verifiedTotp.id, userId: sessionData.user.id });
+        return;
+      }
+    } catch (e) {
+      console.warn('MFA check failed, proceeding', e);
+    }
+
+    setLoading(false);
+    toast.success('Welcome back!');
+    navigate('/');
   };
 
   const handleSignUpStep1 = async (data: SignUpForm) => {
@@ -455,6 +473,23 @@ export default function AuthPage() {
           )}
         </div>
       </div>
+
+      {mfaChallenge && (
+        <LoginMfaChallenge
+          open={true}
+          factorId={mfaChallenge.factorId}
+          userId={mfaChallenge.userId}
+          onVerified={() => {
+            setMfaChallenge(null);
+            toast.success('Welcome back!');
+            navigate('/');
+          }}
+          onCancel={() => {
+            setMfaChallenge(null);
+            toast.message('Signed out. Please sign in again.');
+          }}
+        />
+      )}
     </main>
   );
 }
