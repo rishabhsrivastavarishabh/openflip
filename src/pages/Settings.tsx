@@ -7,7 +7,7 @@ import {
   Globe, UserCheck, Volume2, Palette, Info, FileText, Phone, Fingerprint
 } from 'lucide-react';
 import { AvatarCropDialog } from '@/components/settings/AvatarCropDialog';
-import { MainLayout } from '@/components/layout/MainLayout';
+// MainLayout removed — page renders inside SettingsLayout
 import { BusinessAccountSettings } from '@/components/settings/BusinessAccountSettings';
 import { AccountSwitcher } from '@/components/account/AccountSwitcher';
 import { AccountSettings } from '@/components/settings/AccountSettings';
@@ -236,7 +236,7 @@ export default function SettingsPage() {
 
   if (showBlockedUsers) {
     return (
-      <MainLayout>
+      <>
         <div className="max-w-lg mx-auto">
           <header className="sticky top-0 z-40 glass-strong border-b px-4 py-3">
             <div className="flex items-center gap-4">
@@ -268,13 +268,13 @@ export default function SettingsPage() {
             ))}
           </div>
         </div>
-      </MainLayout>
+      </>
     );
   }
 
   if (showAccountSettings) {
     return (
-      <MainLayout>
+      <>
         <div className="max-w-lg mx-auto p-4">
           <AccountSettings
             onBack={() => setShowAccountSettings(false)}
@@ -283,84 +283,84 @@ export default function SettingsPage() {
             onShowBusiness={() => { setShowAccountSettings(false); setShowBusinessSettings(true); }}
           />
         </div>
-      </MainLayout>
+      </>
     );
   }
 
   if (showNotificationSettings) {
     return (
-      <MainLayout>
+      <>
         <div className="max-w-lg mx-auto p-4">
           <NotificationSettings onBack={() => setShowNotificationSettings(false)} />
         </div>
-      </MainLayout>
+      </>
     );
   }
 
   if (showBusinessSettings) {
     return (
-      <MainLayout>
+      <>
         <div className="max-w-lg mx-auto p-4">
           <BusinessAccountSettings onBack={() => setShowBusinessSettings(false)} />
         </div>
-      </MainLayout>
+      </>
     );
   }
 
   if (showSubscriptionSettings) {
     return (
-      <MainLayout>
+      <>
         <div className="max-w-lg mx-auto p-4">
           <SubscriptionSettings onBack={() => setShowSubscriptionSettings(false)} />
         </div>
-      </MainLayout>
+      </>
     );
   }
 
   // Creator Tools sub-sections
   if (showCreatorTools && creatorSection === 'earnings') {
-    return <MainLayout><div className="max-w-lg mx-auto p-4"><CreatorEarnings onBack={() => setCreatorSection(null)} /></div></MainLayout>;
+    return <><div className="max-w-lg mx-auto p-4"><CreatorEarnings onBack={() => setCreatorSection(null)} /></div></>;
   }
   if (showCreatorTools && creatorSection === 'ai-assistant') {
-    return <MainLayout><div className="max-w-lg mx-auto p-4"><AIGrowthAssistant onBack={() => setCreatorSection(null)} /></div></MainLayout>;
+    return <><div className="max-w-lg mx-auto p-4"><AIGrowthAssistant onBack={() => setCreatorSection(null)} /></div></>;
   }
   if (showCreatorTools && creatorSection === 'audience') {
-    return <MainLayout><div className="max-w-lg mx-auto p-4"><AudienceInsights onBack={() => setCreatorSection(null)} /></div></MainLayout>;
+    return <><div className="max-w-lg mx-auto p-4"><AudienceInsights onBack={() => setCreatorSection(null)} /></div></>;
   }
   if (showCreatorTools && creatorSection === 'manager') {
-    return <MainLayout><div className="max-w-lg mx-auto p-4"><ContentManager onBack={() => setCreatorSection(null)} onBoost={() => setCreatorSection('boost')} /></div></MainLayout>;
+    return <><div className="max-w-lg mx-auto p-4"><ContentManager onBack={() => setCreatorSection(null)} onBoost={() => setCreatorSection('boost')} /></div></>;
   }
   if (showCreatorTools && creatorSection === 'boost') {
-    return <MainLayout><div className="max-w-lg mx-auto p-4"><BoostCampaign onBack={() => setCreatorSection(null)} /></div></MainLayout>;
+    return <><div className="max-w-lg mx-auto p-4"><BoostCampaign onBack={() => setCreatorSection(null)} /></div></>;
   }
   if (showCreatorTools && creatorSection === 'calendar') {
-    return <MainLayout><div className="max-w-lg mx-auto p-4"><ContentCalendar onBack={() => setCreatorSection(null)} /></div></MainLayout>;
+    return <><div className="max-w-lg mx-auto p-4"><ContentCalendar onBack={() => setCreatorSection(null)} /></div></>;
   }
   if (showCreatorTools && creatorSection === 'fan-subs') {
-    return <MainLayout><div className="max-w-lg mx-auto p-4"><FanSubscriptions onBack={() => setCreatorSection(null)} /></div></MainLayout>;
+    return <><div className="max-w-lg mx-auto p-4"><FanSubscriptions onBack={() => setCreatorSection(null)} /></div></>;
   }
   if (showCreatorTools) {
-    return <MainLayout><div className="max-w-lg mx-auto p-4"><CreatorDashboard onBack={() => setShowCreatorTools(false)} onOpenSection={(section) => setCreatorSection(section)} /></div></MainLayout>;
+    return <><div className="max-w-lg mx-auto p-4"><CreatorDashboard onBack={() => setShowCreatorTools(false)} onOpenSection={(section) => setCreatorSection(section)} /></div></>;
   }
   if (showPromoManager) {
-    return <MainLayout><div className="max-w-lg mx-auto p-4"><AdminPromoManager onBack={() => setShowPromoManager(false)} /></div></MainLayout>;
+    return <><div className="max-w-lg mx-auto p-4"><AdminPromoManager onBack={() => setShowPromoManager(false)} /></div></>;
   }
   if (showVerificationFlow) {
-    return <MainLayout><div className="max-w-lg mx-auto p-4"><BusinessVerificationFlow onBack={() => setShowVerificationFlow(false)} /></div></MainLayout>;
+    return <><div className="max-w-lg mx-auto p-4"><BusinessVerificationFlow onBack={() => setShowVerificationFlow(false)} /></div></>;
   }
   if (showDevicePermissions) {
-    return <MainLayout><DevicePermissions onBack={() => setShowDevicePermissions(false)} /></MainLayout>;
+    return <><DevicePermissions onBack={() => setShowDevicePermissions(false)} /></>;
   }
   if (showMediaQuality) {
-    return <MainLayout><MediaQualitySettings onBack={() => setShowMediaQuality(false)} /></MainLayout>;
+    return <><MediaQualitySettings onBack={() => setShowMediaQuality(false)} /></>;
   }
   if (showDeviceManagement) {
-    return <MainLayout><div className="max-w-lg mx-auto p-4"><DeviceManagement onBack={() => setShowDeviceManagement(false)} /></div></MainLayout>;
+    return <><div className="max-w-lg mx-auto p-4"><DeviceManagement onBack={() => setShowDeviceManagement(false)} /></div></>;
   }
 
   if (showPrivacy) {
     return (
-      <MainLayout>
+      <>
         <div className="max-w-lg mx-auto">
           <header className="sticky top-0 z-40 glass-strong border-b px-4 py-3">
             <div className="flex items-center gap-4">
@@ -413,14 +413,14 @@ export default function SettingsPage() {
             </Button>
           </div>
         </div>
-      </MainLayout>
+      </>
     );
   }
 
   // Edit profile page
   if (showEditProfile) {
     return (
-      <MainLayout>
+      <>
         <div className="max-w-lg mx-auto">
           <header className="sticky top-0 z-40 glass-strong border-b px-4 py-3">
             <div className="flex items-center gap-4">
@@ -473,14 +473,14 @@ export default function SettingsPage() {
           </div>
         </div>
         <AvatarCropDialog open={showCropDialog} onOpenChange={setShowCropDialog} imageFile={cropFile} onCropComplete={handleCroppedAvatar} saving={savingAvatar} />
-      </MainLayout>
+      </>
     );
   }
 
   // Appearance page
   if (showAppearance) {
     return (
-      <MainLayout>
+      <>
         <div className="max-w-lg mx-auto">
           <header className="sticky top-0 z-40 glass-strong border-b px-4 py-3">
             <div className="flex items-center gap-4">
@@ -513,14 +513,14 @@ export default function SettingsPage() {
             <p className="text-sm text-muted-foreground">Auto mode follows your device's system theme.</p>
           </div>
         </div>
-      </MainLayout>
+      </>
     );
   }
 
   // Help page
   if (showHelp) {
     return (
-      <MainLayout>
+      <>
         <div className="max-w-lg mx-auto">
           <header className="sticky top-0 z-40 glass-strong border-b px-4 py-3">
             <div className="flex items-center gap-4">
@@ -555,14 +555,14 @@ export default function SettingsPage() {
             </div>
           </div>
         </div>
-      </MainLayout>
+      </>
     );
   }
 
   // Family Centre
   if (showFamilyCentre) {
     return (
-      <MainLayout>
+      <>
         <div className="max-w-lg mx-auto">
           <header className="sticky top-0 z-40 glass-strong border-b px-4 py-3">
             <div className="flex items-center gap-4">
@@ -597,7 +597,7 @@ export default function SettingsPage() {
             ))}
           </div>
         </div>
-      </MainLayout>
+      </>
     );
   }
 
@@ -671,7 +671,7 @@ export default function SettingsPage() {
   ];
 
   return (
-    <MainLayout>
+    <>
       <div className="max-w-lg mx-auto">
         <header className="sticky top-0 z-40 glass-strong border-b px-4 py-3">
           <div className="flex items-center gap-4">
@@ -756,6 +756,6 @@ export default function SettingsPage() {
       <AccountSwitcher open={showAccountSwitcher} onOpenChange={setShowAccountSwitcher} />
       <VerificationPanel open={showVerificationPanel} onOpenChange={setShowVerificationPanel} />
       <AvatarCropDialog open={showCropDialog} onOpenChange={setShowCropDialog} imageFile={cropFile} onCropComplete={handleCroppedAvatar} saving={savingAvatar} />
-    </MainLayout>
+    </>
   );
 }
