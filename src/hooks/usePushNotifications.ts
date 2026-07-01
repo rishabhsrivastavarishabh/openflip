@@ -162,22 +162,8 @@ export function usePushNotifications() {
             icon: sender?.avatar_url || '/favicon.ico',
             data: { url: `/messages/${msg.conversation_id}` },
           });
-
-          // Also fire a background web push so recipients on other devices
-          // (or with the tab closed) receive it. Best-effort.
-          supabase.functions
-            .invoke('send-push', {
-              body: {
-                user_id: user.id,
-                title: senderName,
-                body: preview,
-                type: 'message',
-                tag: `conv-${msg.conversation_id}`,
-                data: { url: `/messages/${msg.conversation_id}` },
-                icon: sender?.avatar_url ?? undefined,
-              },
-            })
-            .catch(() => {});
+          // Background web push for other devices / when tab is closed is
+          // dispatched by the sender in useSendEncryptedMessage.
         },
       )
       .subscribe();
