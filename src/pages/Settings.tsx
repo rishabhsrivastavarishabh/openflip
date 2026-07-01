@@ -55,8 +55,10 @@ interface SettingsSection {
 export default function SettingsPage() {
   const { user, profile, signOut, updateProfile } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const { theme, setTheme } = useTheme();
+
   const [showAccountSwitcher, setShowAccountSwitcher] = useState(false);
   const [loading, setLoading] = useState(false);
   const [cropFile, setCropFile] = useState<File | null>(null);
