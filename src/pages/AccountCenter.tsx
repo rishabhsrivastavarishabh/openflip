@@ -417,7 +417,7 @@ Currency: INR
               </div>
               <Button variant="outline" className="w-full" onClick={() => {
                 supabase.auth.resetPasswordForEmail(user.email!, {
-                  redirectTo: `${window.location.origin}/auth`,
+                  redirectTo: `${window.location.origin}/reset-password`,
                 });
                 toast.success('Password reset email sent!');
               }}>

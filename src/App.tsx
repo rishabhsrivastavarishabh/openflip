@@ -2,11 +2,27 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 function RootRoute() {
   const { user, loading } = useAuth();
+  const location = useLocation();
+
+  // If Supabase redirected the recovery link to the Site URL root instead of
+  // /reset-password (e.g. because the redirect_to wasn't in the allow list),
+  // forward the recovery params so the reset flow still works.
+  const search = location.search || window.location.search;
+  const hash = location.hash || window.location.hash;
+  const isRecovery =
+    /(^|[?&])type=recovery(&|$)/.test(search) ||
+    /(^|[#&])type=recovery(&|$)/.test(hash) ||
+    (/(^|[?&])code=/.test(search) && /recovery/i.test(hash + search));
+
+  if (isRecovery) {
+    return <Navigate to={`/reset-password${search}${hash}`} replace />;
+  }
+
   if (loading) return null;
   return user ? <Feed /> : <Navigate to="/auth" replace />;
 }
