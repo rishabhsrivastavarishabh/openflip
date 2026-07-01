@@ -84,9 +84,7 @@ export function StoryHighlights({ userId, isOwnProfile }: StoryHighlightsProps) 
   };
 
   const handleViewHighlight = (highlight: Highlight) => {
-    if (highlight.stories.length > 0) {
-      setViewingHighlight(highlight);
-    }
+    setViewingHighlight(highlight);
   };
 
   const handleEditorClose = () => {
