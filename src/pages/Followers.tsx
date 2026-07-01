@@ -207,7 +207,7 @@ export default function Followers() {
         {/* Header */}
         <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border p-4">
           <div className="flex items-center gap-4">
-            <Link to={`/profile/${userId}`}>
+            <Link to={`/profile/${username}`}>
               <ArrowLeft className="w-6 h-6" />
             </Link>
             <div>
