@@ -85,7 +85,15 @@ const App = () => (
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/messages" element={<Messages />} />
               <Route path="/messages/:conversationId" element={<Conversation />} />
-              <Route path="/settings" element={<Settings />} />
+              <Route path="/settings" element={<SettingsLayout />}>
+                <Route index element={<Navigate to="/settings/account" replace />} />
+                <Route path="account" element={<AccountPage />} />
+                <Route path="security" element={<SecurityPage />} />
+                <Route path="privacy" element={<PrivacyPage />} />
+                <Route path="notifications" element={<NotificationsPage />} />
+                <Route path="appearance" element={<AppearancePage />} />
+              </Route>
+              <Route path="/settings/more" element={<Settings />} />
               <Route path="/account-center" element={<AccountCenter />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
               <Route path="/terms" element={<TermsOfService />} />
