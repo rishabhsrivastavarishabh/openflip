@@ -605,11 +605,21 @@ export default function SettingsPage() {
 
   const settingsSections: SettingsSection[] = [
     {
+      title: 'Settings',
+      items: [
+        { icon: User, label: 'Account', description: 'Profile, username, email', action: () => navigate('/settings/account') },
+        { icon: Shield, label: 'Security', description: 'Password, 2FA, delete account', action: () => navigate('/settings/security') },
+        { icon: Lock, label: 'Privacy', description: 'Who can see and contact you', action: () => navigate('/settings/privacy') },
+        { icon: Bell, label: 'Notifications', description: 'Push and email preferences', action: () => navigate('/settings/notifications') },
+        { icon: Palette, label: 'Appearance', description: 'Theme and display', action: () => navigate('/settings/appearance') },
+      ],
+    },
+    {
       title: 'How you use Openflip',
       items: [
         { icon: User, label: 'Edit profile', action: () => setShowEditProfile(true) },
-        { icon: Bell, label: 'Notifications', action: () => setShowNotificationSettings(true) },
-        { icon: Palette, label: 'Appearance', action: () => setShowAppearance(true) },
+        { icon: Bell, label: 'Notification details', action: () => setShowNotificationSettings(true) },
+        { icon: Palette, label: 'Appearance (legacy)', action: () => setShowAppearance(true) },
       ],
     },
     {
