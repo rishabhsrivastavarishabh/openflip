@@ -101,6 +101,8 @@ const App = () => (
                 <Route index element={<Navigate to="/settings/account" replace />} />
                 <Route path="account" element={<AccountPage />} />
                 <Route path="security" element={<SecurityPage />} />
+                <Route path="2fa" element={<TwoFactorPage />} />
+
                 <Route path="privacy" element={<PrivacyPage />} />
                 <Route path="notifications" element={<NotificationsPage />} />
                 <Route path="appearance" element={<AppearancePage />} />
