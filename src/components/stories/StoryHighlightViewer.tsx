@@ -148,9 +148,10 @@ export function StoryHighlightViewer({
     setIsPaused(!isPaused);
   };
 
-  if (!isOpen || highlight.stories.length === 0) return null;
+  if (!isOpen) return null;
 
-  const currentStory = highlight.stories[currentIndex];
+  const hasStories = highlight.stories.length > 0;
+  const currentStory = hasStories ? highlight.stories[currentIndex] : null;
 
   return (
     <AnimatePresence>
