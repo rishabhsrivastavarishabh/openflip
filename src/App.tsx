@@ -102,8 +102,8 @@ const App = () => (
                 <Route path="privacy" element={<PrivacyPage />} />
                 <Route path="notifications" element={<NotificationsPage />} />
                 <Route path="appearance" element={<AppearancePage />} />
+                <Route path="more" element={<Settings />} />
               </Route>
-              <Route path="/settings/more" element={<Settings />} />
               <Route path="/account-center" element={<AccountCenter />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
               <Route path="/terms" element={<TermsOfService />} />
