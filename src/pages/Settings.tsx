@@ -775,8 +775,9 @@ export default function SettingsPage() {
                   <span className="text-xs font-medium">{s.label}</span>
                 </button>
               ))}
-
+            </div>
           </div>
+
 
           {/* Security checklist */}
           {securityStatus && (() => {
