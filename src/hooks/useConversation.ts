@@ -161,7 +161,14 @@ export function useConversation() {
 
   // Share a profile to a conversation
   const shareProfile = useCallback(async (profileId: string, conversationId: string) => {
-    const profileUrl = `${window.location.origin}/profile/${profileId}`;
+    // Look up the target username so the shared URL is human-readable.
+    const { data: prof } = await supabase
+      .from('profiles')
+      .select('username')
+      .eq('id', profileId)
+      .maybeSingle();
+    const slug = prof?.username ?? profileId;
+    const profileUrl = `${window.location.origin}/profile/${slug}`;
     return sendMessage(conversationId, profileUrl, {
       messageType: 'profile_share',
       sharedProfileId: profileId,
