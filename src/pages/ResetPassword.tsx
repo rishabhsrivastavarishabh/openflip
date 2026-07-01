@@ -33,8 +33,31 @@ export default function ResetPassword() {
   const form = useForm<FormValues>({ resolver: zodResolver(schema) });
 
   useEffect(() => {
-    // Supabase auto-exchanges the recovery token in the URL hash on load
-    // and emits a PASSWORD_RECOVERY event. We just need an active session.
+    // Surface any error from the recovery link (expired/invalid token, etc.)
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const searchParams = new URLSearchParams(window.location.search);
+    const errDesc =
+      hashParams.get('error_description') || searchParams.get('error_description');
+    if (errDesc) {
+      toast.error(decodeURIComponent(errDesc.replace(/\+/g, ' ')));
+    }
+
+    // PKCE flow: Supabase redirects here with ?code=... — exchange it for a session.
+    const code = searchParams.get('code');
+    if (code) {
+      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
+        if (error) {
+          toast.error(error.message || 'Reset link is invalid or expired');
+        } else {
+          setReady(true);
+          // Clean the code out of the URL
+          window.history.replaceState({}, '', '/reset-password');
+        }
+      });
+    }
+
+    // Implicit flow: Supabase auto-exchanges the recovery token in the hash
+    // and emits PASSWORD_RECOVERY. Either an active session or that event is enough.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY' || session) {
         setReady(true);
