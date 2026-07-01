@@ -26,6 +26,8 @@ import { useSendEncryptedMessage } from '@/hooks/useSendEncryptedMessage';
 import { useDecryptMessage } from '@/hooks/useDecryptMessage';
 import { useDeviceKeys } from '@/hooks/useDeviceKeys';
 import { toast } from 'sonner';
+import { useStartCall } from '@/hooks/useStartCall';
+import { setActiveConversation } from '@/hooks/useActiveConversation';
 
 interface ChatMessage extends Message {
   isMine: boolean;
