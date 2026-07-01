@@ -761,7 +761,7 @@ export default function SettingsPage() {
             <div className="grid grid-cols-3 gap-2">
               {[
                 { icon: KeyRound, label: 'Password', hash: '#password' },
-                { icon: Fingerprint, label: '2FA', hash: '#two-factor' },
+                { icon: Fingerprint, label: '2FA', hash: '', route: '/settings/2fa' },
                 { icon: Trash2, label: 'Delete', hash: '#delete-account', danger: true },
               ].map((s) => (
                 <button
