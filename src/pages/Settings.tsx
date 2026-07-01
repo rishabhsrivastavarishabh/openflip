@@ -760,13 +760,13 @@ export default function SettingsPage() {
             </div>
             <div className="grid grid-cols-3 gap-2">
               {[
-                { icon: KeyRound, label: 'Password', hash: '#password' },
-                { icon: Fingerprint, label: '2FA', hash: '', route: '/settings/2fa' },
-                { icon: Trash2, label: 'Delete', hash: '#delete-account', danger: true },
+                { icon: KeyRound, label: 'Password', route: '/settings/security' },
+                { icon: Fingerprint, label: '2FA', route: '/settings/2fa' },
+                { icon: Trash2, label: 'Delete', route: '/settings/security', danger: true },
               ].map((s) => (
                 <button
                   key={s.label}
-                  onClick={() => navigate(`/settings/security${s.hash}`)}
+                  onClick={() => navigate(s.route)}
                   className={`flex flex-col items-center gap-1 p-3 rounded-xl bg-background/60 hover:bg-background transition-colors border border-border/50 ${
                     s.danger ? 'hover:border-destructive/40' : 'hover:border-primary/40'
                   }`}
@@ -775,6 +775,7 @@ export default function SettingsPage() {
                   <span className="text-xs font-medium">{s.label}</span>
                 </button>
               ))}
+
             </div>
           </div>
 
