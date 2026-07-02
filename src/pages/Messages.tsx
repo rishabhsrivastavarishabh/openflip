@@ -125,12 +125,18 @@ export default function MessagesPage() {
         (firstOtherId && profilesById[firstOtherId]) ||
         { id: firstOtherId || '', username: 'Unknown', avatar_url: null };
 
+      const lastSenderId = lastMessages[p.conversation_id]?.sender_id || null;
+      const lastSenderUsername = lastSenderId
+        ? (lastSenderId === user.id ? null : profilesById[lastSenderId]?.username || null)
+        : null;
+
       return {
         id: p.conversation_id,
         updated_at: convo?.updated_at || '',
         participant: firstParticipant,
         last_message: lastMessages[p.conversation_id]?.content || null,
-        last_sender_id: lastMessages[p.conversation_id]?.sender_id || null,
+        last_sender_id: lastSenderId,
+        last_sender_username: lastSenderUsername,
         unread_count: unreadCounts[p.conversation_id] || 0,
         is_group: isGroup,
         group_name: convo?.group_name || null,
