@@ -272,6 +272,68 @@ export default function ConversationPage() {
     return () => { supabase.removeChannel(channel); };
   };
 
+  const fetchCallLogs = async () => {
+    if (!conversationId) return;
+    const { data } = await (supabase as any)
+      .from('calls')
+      .select('id, caller_id, callee_id, call_type, status, started_at, ended_at, created_at')
+      .eq('conversation_id', conversationId)
+      .order('created_at', { ascending: true });
+    if (data) setCallLogs(data as CallLogEntry[]);
+  };
+
+  const subscribeToCalls = () => {
+    const channel = supabase
+      .channel(`calls-${conversationId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'calls', filter: `conversation_id=eq.${conversationId}` },
+        (payload) => setCallLogs(prev => [...prev, payload.new as CallLogEntry]))
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'calls', filter: `conversation_id=eq.${conversationId}` },
+        (payload) => setCallLogs(prev => prev.map(c => c.id === (payload.new as any).id ? { ...c, ...(payload.new as any) } : c)))
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    const { error } = await supabase
+      .from('messages')
+      .update({ deleted_at: new Date().toISOString(), content: '' } as any)
+      .eq('id', messageId);
+    if (error) toast.error('Could not delete message');
+    else setMessages(prev => prev.map(m => m.id === messageId ? { ...m, deleted_at: new Date().toISOString(), content: '' } as any : m));
+  };
+
+  const startEditMessage = (msg: ChatMessage) => {
+    const current = (msg as any).is_encrypted ? decryptedContents[msg.id] || '' : msg.content || '';
+    setEditingId(msg.id);
+    setEditingText(current);
+  };
+
+  const cancelEditMessage = () => { setEditingId(null); setEditingText(''); };
+
+  const saveEditMessage = async () => {
+    if (!editingId) return;
+    const trimmed = editingText.trim();
+    if (!trimmed) { cancelEditMessage(); return; }
+    const target = messages.find(m => m.id === editingId);
+    if (!target) { cancelEditMessage(); return; }
+    if ((target as any).is_encrypted) {
+      toast.error('Encrypted messages can\'t be edited yet');
+      cancelEditMessage();
+      return;
+    }
+    const { error } = await supabase
+      .from('messages')
+      .update({ content: trimmed, edited_at: new Date().toISOString() } as any)
+      .eq('id', editingId);
+    if (error) {
+      toast.error('Could not edit message');
+      return;
+    }
+    setMessages(prev => prev.map(m => m.id === editingId ? { ...m, content: trimmed, edited_at: new Date().toISOString() } as any : m));
+    cancelEditMessage();
+  };
+
+
   const handleTyping = async () => {
     if (!user || !conversationId) return;
     await supabase.from('conversation_participants').update({ typing_at: new Date().toISOString() }).eq('conversation_id', conversationId).eq('user_id', user.id);
