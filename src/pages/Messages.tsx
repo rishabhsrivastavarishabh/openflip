@@ -27,6 +27,7 @@ interface ConversationItem {
   last_message: string | null;
   unread_count: number;
   last_sender_id: string | null;
+  last_sender_username: string | null;
   is_group?: boolean;
   group_name?: string;
   group_avatar_url?: string;
