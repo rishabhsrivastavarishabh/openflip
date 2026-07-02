@@ -16,6 +16,7 @@ import { CreateStory } from '@/components/stories/CreateStory';
 import { StoryGroup } from '@/types/database';
 import { useUnreadCounts } from '@/hooks/useUnreadCounts';
 import { SuggestedUsers } from '@/components/feed/SuggestedUsers';
+import { SuggestedPosts } from '@/components/feed/SuggestedPosts';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { VerifiedBadge } from '@/components/common/VerifiedBadge';
 import openflipLogo from '@/assets/openflip-logo.png';
@@ -168,7 +169,7 @@ export default function FeedPage() {
       followedPosts = followedData || [];
     }
 
-    const suggestedLimit = Math.max(2, Math.floor(limit * 0.3));
+    const suggestedLimit = Math.max(3, Math.floor(limit * 0.4));
     if (user && followingIds.length > 0) {
       const { data: suggestedData } = await supabase
         .from('posts')
@@ -176,9 +177,29 @@ export default function FeedPage() {
         .eq('media_type', 'image')
         .not('user_id', 'in', `(${followingIds.join(',')})`)
         .order('created_at', { ascending: false })
-        .limit(suggestedLimit);
-      
-      suggestedPosts = (suggestedData || []).map(p => ({ ...p, is_suggested: true }));
+        .limit(suggestedLimit * 4);
+
+      // Rank candidates: engagement + recency decay (client-side heuristic)
+      const candidates = suggestedData || [];
+      if (candidates.length > 0) {
+        const cIds = candidates.map((p: any) => p.id);
+        const [{ data: cLikes }, { data: cComments }] = await Promise.all([
+          supabase.from('likes').select('post_id').in('post_id', cIds),
+          supabase.from('comments').select('post_id').in('post_id', cIds),
+        ]);
+        const lc: Record<string, number> = {};
+        const cc: Record<string, number> = {};
+        cLikes?.forEach((l: any) => { lc[l.post_id] = (lc[l.post_id] || 0) + 1; });
+        cComments?.forEach((c: any) => { cc[c.post_id] = (cc[c.post_id] || 0) + 1; });
+        const scored = candidates.map((p: any) => {
+          const engagement = (lc[p.id] || 0) + (cc[p.id] || 0) * 2;
+          const ageH = (Date.now() - new Date(p.created_at).getTime()) / 36e5;
+          const decay = 1 / (1 + ageH / 48);
+          return { ...p, _score: engagement * decay + Math.log(engagement + 1) };
+        });
+        scored.sort((a: any, b: any) => b._score - a._score);
+        suggestedPosts = scored.slice(0, suggestedLimit).map((p: any) => ({ ...p, is_suggested: true }));
+      }
     }
 
     let combinedPosts = [...followedPosts];
@@ -274,6 +295,20 @@ export default function FeedPage() {
 
   useEffect(() => {
     fetchPosts(0);
+  }, [fetchPosts]);
+
+  // Realtime: prepend new posts and reels as they are published
+  useEffect(() => {
+    const channel = supabase
+      .channel('feed-live')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, () => {
+        fetchPosts(0);
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'reels' }, () => {
+        fetchPosts(0);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, [fetchPosts]);
 
   const loadMore = useCallback(() => {
@@ -439,6 +474,7 @@ export default function FeedPage() {
           />
 
           <SuggestedUsers />
+          <SuggestedPosts />
 
           {viewingStory && (
             <StoryViewer
