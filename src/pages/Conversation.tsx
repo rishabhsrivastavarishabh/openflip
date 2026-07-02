@@ -6,7 +6,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Send, MoreVertical, Phone, Video, Check, CheckCheck, Users, Lock, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Send, MoreVertical, Phone, Video, Check, CheckCheck, Users, Lock, ShieldCheck, MoreHorizontal, Pencil, Trash2, X as XIcon } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { CallLogItem, CallLogEntry } from '@/components/messages/CallLogItem';
 import { cn } from '@/lib/utils';
 import { Profile, Message } from '@/types/database';
 import { BlockReportSheet } from '@/components/moderation/BlockReportSheet';
@@ -61,6 +68,7 @@ export default function ConversationPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [callLogs, setCallLogs] = useState<CallLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [newMessage, setNewMessage] = useState('');
@@ -72,6 +80,8 @@ export default function ConversationPage() {
   const [showProfileView, setShowProfileView] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [decryptedContents, setDecryptedContents] = useState<Record<string, string>>({});
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -108,12 +118,14 @@ export default function ConversationPage() {
       fetchConversation();
       fetchMessages();
       fetchParticipant();
+      fetchCallLogs();
       const unsubscribe = subscribeToMessages();
-      return () => { unsubscribe(); };
+      const unsubscribeCalls = subscribeToCalls();
+      return () => { unsubscribe(); unsubscribeCalls(); };
     }
   }, [user, conversationId]);
 
-  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, callLogs]);
 
   const fetchConversation = async () => {
     if (!conversationId) return;
