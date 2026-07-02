@@ -549,6 +549,29 @@ export default function ConversationPage() {
     );
   };
 
+  const MessageActionMenu = ({ onEdit, onDelete }: { onEdit?: () => void; onDelete: () => void }) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          aria-label="Message actions"
+          className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-muted-foreground hover:text-foreground transition-opacity p-1"
+        >
+          <MoreHorizontal className="w-4 h-4" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-40">
+        {onEdit && (
+          <DropdownMenuItem onClick={onEdit}>
+            <Pencil className="w-4 h-4 mr-2" /> Edit
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
+          <Trash2 className="w-4 h-4 mr-2" /> Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   if (!user) return <div className="h-screen flex items-center justify-center"><p>Please sign in</p></div>;
 
   const isGroupChat = conversation?.is_group;
