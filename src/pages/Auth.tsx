@@ -17,6 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable';
 import openflipLogo from '@/assets/openflip-logo.png';
 import { LoginMfaChallenge } from '@/components/auth/LoginMfaChallenge';
+import { isDeviceTrusted } from '@/lib/trustedDevice';
 
 const countryCodes = [
   { code: '+1', country: 'US' }, { code: '+44', country: 'UK' }, { code: '+91', country: 'IN' },
@@ -116,15 +117,17 @@ export default function AuthPage() {
       return;
     }
 
-    // Enforce 2FA for enrolled users
+    // Enforce 2FA for enrolled users (unless this device is trusted)
     try {
       const { data: factorsData } = await supabase.auth.mfa.listFactors();
       const verifiedTotp = (factorsData?.totp ?? []).find((f: any) => f.status === 'verified');
       const { data: sessionData } = await supabase.auth.getUser();
       if (verifiedTotp && sessionData?.user) {
-        setLoading(false);
-        setMfaChallenge({ factorId: verifiedTotp.id, userId: sessionData.user.id });
-        return;
+        if (!isDeviceTrusted(sessionData.user.id, verifiedTotp.id)) {
+          setLoading(false);
+          setMfaChallenge({ factorId: verifiedTotp.id, userId: sessionData.user.id });
+          return;
+        }
       }
     } catch (e) {
       console.warn('MFA check failed, proceeding', e);

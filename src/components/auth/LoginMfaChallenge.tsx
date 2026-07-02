@@ -3,9 +3,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { ShieldCheck, KeyRound } from 'lucide-react';
+import { trustDevice, TRUSTED_DEVICE_DAYS } from '@/lib/trustedDevice';
 
 async function sha256Hex(input: string): Promise<string> {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input));
@@ -24,6 +26,17 @@ export function LoginMfaChallenge({ open, factorId, userId, onVerified, onCancel
   const [mode, setMode] = useState<'totp' | 'recovery'>('totp');
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
+  const [remember, setRemember] = useState(true);
+
+  const finalize = () => {
+    if (remember) {
+      trustDevice(userId, factorId);
+      toast.success(`Verified — this device is trusted for ${TRUSTED_DEVICE_DAYS} days`);
+    } else {
+      toast.success('Verified');
+    }
+    onVerified();
+  };
 
   const submit = async () => {
     if (!code.trim()) return;
@@ -38,8 +51,7 @@ export function LoginMfaChallenge({ open, factorId, userId, onVerified, onCancel
           code: code.trim(),
         });
         if (vErr) throw vErr;
-        toast.success('Verified');
-        onVerified();
+        finalize();
       } else {
         const normalized = code.trim().toUpperCase();
         const hash = await sha256Hex(normalized);
@@ -58,8 +70,7 @@ export function LoginMfaChallenge({ open, factorId, userId, onVerified, onCancel
           .from('mfa_recovery_codes')
           .update({ used: true, used_at: new Date().toISOString() })
           .eq('id', row.id);
-        toast.success('Recovery code accepted');
-        onVerified();
+        finalize();
       }
     } catch (e: any) {
       toast.error(e.message || 'Verification failed');
@@ -69,7 +80,6 @@ export function LoginMfaChallenge({ open, factorId, userId, onVerified, onCancel
   };
 
   const cancel = async () => {
-    // Sign the user back out because they did not complete 2FA
     await supabase.auth.signOut();
     onCancel();
   };
@@ -100,6 +110,21 @@ export function LoginMfaChallenge({ open, factorId, userId, onVerified, onCancel
             onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
           />
 
+          <label className="flex items-start gap-2 pt-1 cursor-pointer select-none">
+            <Checkbox
+              id="mfa-remember"
+              checked={remember}
+              onCheckedChange={(c) => setRemember(c === true)}
+              className="mt-0.5"
+            />
+            <span className="text-sm text-muted-foreground leading-tight">
+              Trust this device for {TRUSTED_DEVICE_DAYS} days
+              <span className="block text-xs">
+                Skip this step next time on this browser. Only use on personal devices.
+              </span>
+            </span>
+          </label>
+
           <div className="flex flex-col gap-2 pt-2">
             <Button onClick={submit} disabled={busy || !code.trim()} className="w-full">
               {busy ? 'Verifying…' : 'Verify'}
@@ -121,3 +146,4 @@ export function LoginMfaChallenge({ open, factorId, userId, onVerified, onCancel
     </Dialog>
   );
 }
+
