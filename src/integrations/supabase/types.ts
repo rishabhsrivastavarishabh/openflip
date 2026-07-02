@@ -899,7 +899,9 @@ export type Database = {
           content: string
           conversation_id: string
           created_at: string | null
+          deleted_at: string | null
           delivered_at: string | null
+          edited_at: string | null
           expires_at: string | null
           file_name: string | null
           file_size: number | null
@@ -930,7 +932,9 @@ export type Database = {
           content: string
           conversation_id: string
           created_at?: string | null
+          deleted_at?: string | null
           delivered_at?: string | null
+          edited_at?: string | null
           expires_at?: string | null
           file_name?: string | null
           file_size?: number | null
@@ -961,7 +965,9 @@ export type Database = {
           content?: string
           conversation_id?: string
           created_at?: string | null
+          deleted_at?: string | null
           delivered_at?: string | null
+          edited_at?: string | null
           expires_at?: string | null
           file_name?: string | null
           file_size?: number | null
