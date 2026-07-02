@@ -111,23 +111,7 @@ export default function MessagesPage() {
       });
     }
 
-    const { data: messages } = await supabase
-      .from('messages')
-      .select('conversation_id, content, created_at, sender_id, is_read')
-      .in('conversation_id', conversationIds)
-      .order('created_at', { ascending: false });
 
-    const lastMessages: Record<string, { content: string; sender_id: string }> = {};
-    const unreadCounts: Record<string, number> = {};
-
-    messages?.forEach((m: any) => {
-      if (!lastMessages[m.conversation_id]) {
-        lastMessages[m.conversation_id] = { content: m.content, sender_id: m.sender_id };
-      }
-      if (!m.is_read && m.sender_id !== user.id) {
-        unreadCounts[m.conversation_id] = (unreadCounts[m.conversation_id] || 0) + 1;
-      }
-    });
 
     const conversationsData = participations.map((p: any) => {
       const convo = p.conversations;
