@@ -370,7 +370,11 @@ export default function MessagesPage() {
                       <p className={`text-sm truncate flex-1 ${unread ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
                         {conversation.last_message ? (
                           <>
-                            {conversation.last_sender_id === user.id && <span className="opacity-70">You: </span>}
+                            {conversation.last_sender_id === user.id ? (
+                              <span className="opacity-70">You: </span>
+                            ) : conversation.is_group && conversation.last_sender_username ? (
+                              <span className="opacity-70">{conversation.last_sender_username}: </span>
+                            ) : null}
                             {conversation.last_message}
                           </>
                         ) : (
