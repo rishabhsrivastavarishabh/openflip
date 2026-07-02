@@ -67,7 +67,7 @@ export function useDecryptMessage() {
     } catch {
       return '🔒 This message can\'t be decrypted on this device.';
     }
-  }, [privateKey]);
+  }, [privateKey, keysLoading, keysError]);
 
   const clearCache = useCallback(() => {
     decryptionCache.clear();
