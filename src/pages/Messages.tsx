@@ -27,6 +27,7 @@ interface ConversationItem {
   last_message: string | null;
   unread_count: number;
   last_sender_id: string | null;
+  last_sender_username: string | null;
   is_group?: boolean;
   group_name?: string;
   group_avatar_url?: string;
@@ -75,17 +76,6 @@ export default function MessagesPage() {
       new Set((allParticipants || []).map((p: any) => p.user_id).filter(Boolean))
     );
 
-    const profilesById: Record<string, { id: string; username: string; avatar_url: string | null }> = {};
-    if (otherUserIds.length > 0) {
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, username, avatar_url')
-        .in('id', otherUserIds);
-      (profiles || []).forEach((p: any) => {
-        profilesById[p.id] = { id: p.id, username: p.username, avatar_url: p.avatar_url };
-      });
-    }
-
     const { data: messages } = await supabase
       .from('messages')
       .select('conversation_id, content, created_at, sender_id, is_read')
@@ -104,6 +94,25 @@ export default function MessagesPage() {
       }
     });
 
+    // Resolve profiles for both other participants and last-message senders
+    const profileIdsToFetch = Array.from(new Set([
+      ...otherUserIds,
+      ...Object.values(lastMessages).map(m => m.sender_id).filter(id => id && id !== user.id),
+    ]));
+
+    const profilesById: Record<string, { id: string; username: string; avatar_url: string | null }> = {};
+    if (profileIdsToFetch.length > 0) {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .in('id', profileIdsToFetch);
+      (profiles || []).forEach((p: any) => {
+        profilesById[p.id] = { id: p.id, username: p.username, avatar_url: p.avatar_url };
+      });
+    }
+
+
+
     const conversationsData = participations.map((p: any) => {
       const convo = p.conversations;
       const isGroup = convo?.is_group || false;
@@ -116,12 +125,18 @@ export default function MessagesPage() {
         (firstOtherId && profilesById[firstOtherId]) ||
         { id: firstOtherId || '', username: 'Unknown', avatar_url: null };
 
+      const lastSenderId = lastMessages[p.conversation_id]?.sender_id || null;
+      const lastSenderUsername = lastSenderId
+        ? (lastSenderId === user.id ? null : profilesById[lastSenderId]?.username || null)
+        : null;
+
       return {
         id: p.conversation_id,
         updated_at: convo?.updated_at || '',
         participant: firstParticipant,
         last_message: lastMessages[p.conversation_id]?.content || null,
-        last_sender_id: lastMessages[p.conversation_id]?.sender_id || null,
+        last_sender_id: lastSenderId,
+        last_sender_username: lastSenderUsername,
         unread_count: unreadCounts[p.conversation_id] || 0,
         is_group: isGroup,
         group_name: convo?.group_name || null,
@@ -355,7 +370,11 @@ export default function MessagesPage() {
                       <p className={`text-sm truncate flex-1 ${unread ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
                         {conversation.last_message ? (
                           <>
-                            {conversation.last_sender_id === user.id && <span className="opacity-70">You: </span>}
+                            {conversation.last_sender_id === user.id ? (
+                              <span className="opacity-70">You: </span>
+                            ) : conversation.is_group && conversation.last_sender_username ? (
+                              <span className="opacity-70">{conversation.last_sender_username}: </span>
+                            ) : null}
                             {conversation.last_message}
                           </>
                         ) : (

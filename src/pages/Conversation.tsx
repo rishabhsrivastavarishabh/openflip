@@ -608,11 +608,13 @@ export default function ConversationPage() {
                 <p className="font-medium">{displayName}</p>
                 {!isGroupChat && participant?.is_verified && <VerifiedBadge size="sm" />}
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground truncate max-w-[220px]">
                 {isTyping ? (
                   <span className="text-primary animate-pulse">typing...</span>
                 ) : isGroupChat ? (
-                  `${participants.length + 1} members`
+                  participants.length > 0
+                    ? `You, ${participants.map(p => p.username).join(', ')}`
+                    : `${participants.length + 1} members`
                 ) : participant ? (
                   getLastSeenText(participant.id) || ''
                 ) : ''}
