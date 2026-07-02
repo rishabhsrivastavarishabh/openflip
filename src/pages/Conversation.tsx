@@ -701,8 +701,33 @@ export default function ConversationPage() {
         )}
 
         {loading ? Array.from({ length: 5 }).map((_, i) => <div key={i} className={cn("flex", i % 2 === 0 ? "justify-end" : "justify-start")}><Skeleton className={cn("h-10 rounded-2xl", i % 2 === 0 ? "w-40" : "w-32")} /></div>)
-        : messages.length === 0 ? <div className="flex flex-col items-center justify-center h-full text-muted-foreground"><p>No messages yet</p></div>
-        : messages.map((message, index) => renderMessage(message, index))}
+        : messages.length === 0 && callLogs.length === 0 ? <div className="flex flex-col items-center justify-center h-full text-muted-foreground"><p>No messages yet</p></div>
+        : (() => {
+            type TL = { kind: 'message'; msg: ChatMessage; idx: number } | { kind: 'call'; call: CallLogEntry };
+            const items: TL[] = [
+              ...messages.map((m, idx) => ({ kind: 'message' as const, msg: m, idx })),
+              ...callLogs.map((c) => ({ kind: 'call' as const, call: c })),
+            ];
+            items.sort((a, b) => {
+              const at = a.kind === 'message' ? new Date(a.msg.created_at).getTime() : new Date(a.call.created_at).getTime();
+              const bt = b.kind === 'message' ? new Date(b.msg.created_at).getTime() : new Date(b.call.created_at).getTime();
+              return at - bt;
+            });
+            return items.map((item) =>
+              item.kind === 'message'
+                ? renderMessage(item.msg, item.idx)
+                : (
+                  <CallLogItem
+                    key={`call-${item.call.id}`}
+                    call={item.call}
+                    currentUserId={user!.id}
+                    onCallBack={(calleeId, type) =>
+                      startCall({ calleeId, conversationId: conversationId ?? null, type })
+                    }
+                  />
+                )
+            );
+          })()}
         <div ref={messagesEndRef} />
       </div>
 
