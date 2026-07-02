@@ -1,29 +1,62 @@
-## Phase 1: Database Migration
-- Add `devices` table (user_id, device_name, device_public_key, signed_prekey_public, prekey_bundle, last_seen_at)
-- Add E2EE columns to existing `messages` table: `ciphertext`, `nonce`, `aad`, `sender_device_id`, `is_encrypted`
-- Add `message_receipts` table (message_id, user_id, delivered_at, seen_at)
-- RLS policies for all new tables
+## Goal
 
-## Phase 2: Crypto Layer (libsodium-wrappers)
-- Install `libsodium-wrappers` for X25519 + XChaCha20-Poly1305
-- Create `src/lib/crypto.ts` — key generation, encrypt/decrypt, shared secret derivation
-- Create `src/lib/keyStore.ts` — IndexedDB wrapper for private key storage (never leaves device)
-- Device registration on first login
+Roll a bolder version of the Messages refresh across every page: stronger gradients, glassmorphism, softer motion, tighter typography, and rounded card surfaces — while keeping structure and business logic untouched.
 
-## Phase 3: Hooks & Integration
-- `useDeviceKeys` hook — manage device keypair lifecycle
-- `useSendEncryptedMessage` hook — encrypt before sending
-- Update existing `useConversation` hook to encrypt outgoing messages
-- Decrypt incoming messages in conversation view
+## Design language (locked across all phases)
 
-## Phase 4: UI Updates
-- Show lock icon for E2E encrypted messages
-- "Unable to decrypt" fallback for failed decryption
-- Device management in Settings
-- Delivery states (sending → sent → delivered → seen) using message_receipts
+- **Surfaces**: `rounded-2xl` / `rounded-3xl` cards, subtle 1px borders, `backdrop-blur-xl` on floating chrome, layered soft shadows.
+- **Headers**: gradient logo wordmark, sticky glass top bars with blurred backdrop, floating segmented tabs.
+- **Accents**: blue→purple gradient tokens already in the theme, tinted unread/active states, gradient badges and CTAs.
+- **Motion**: `transition-all` on interactive surfaces, subtle scale-on-press for buttons, fade/slide-in for lists (Tailwind + existing animate utilities — no new libs).
+- **Icons**: keep the modernized Lucide set (House, Clapperboard, etc.).
+- **Type**: heavier tracking on section titles, muted-foreground metadata, larger touch targets on mobile.
 
-## Constraints
-- Text messages: fully E2EE from day 1
-- Media: clearly marked as "not E2EE in MVP" — encrypted text metadata but media files uploaded as-is
-- Never log plaintext, never store private keys in DB
-- Group chat E2EE scaffolded but not required
+New shared primitives added in phase 1 and reused everywhere:
+
+- `GlassHeader` — sticky blurred page header with title/back-button/actions slots.
+- `SectionCard` — rounded, bordered, hoverable content card.
+- `GradientBadge` — pill for counts/unread/status.
+- `EmptyState` — icon + copy + optional CTA.
+
+## Phase 1 (this turn) — Feed + Profile
+
+**Feed (`src/pages/Feed.tsx` and its section components)**
+- New sticky glass top bar with gradient "openflip" wordmark, notification + messages icons.
+- Stories row: pill container with gradient rings on unseen stories, smoother horizontal scroll.
+- Post cards: `rounded-3xl`, thin border, elevated on hover, gradient action row.
+- `SuggestedUsers` and `SuggestedPosts`: retitled section headers, horizontal snap carousel with rounded avatars/thumbnails.
+- Modern empty state when feed is empty.
+
+**Profile (`src/pages/Profile.tsx`)**
+- Gradient cover strip behind avatar, larger avatar with gradient ring for verified/live status.
+- Stats row as three rounded tiles with tap targets.
+- Action buttons (Follow / Message / Share) as gradient pill row.
+- Tabs (Posts / Reels / Tagged / Saved) as floating segmented control.
+- Grid tiles with rounded corners and hover overlay for like/comment counts.
+
+No changes to hooks, queries, RLS, routing, or data shapes — visuals only.
+
+## Phase 2 (next turn) — Settings + Auth
+
+- Restyle `SettingsLayout` sidebar and every subpage (Account, Security, Privacy, Notifications, Appearance, 2FA, More) using `SectionCard` + `GlassHeader`.
+- Security checklist becomes a progress ring + tinted rows.
+- Auth pages (Sign in / Sign up / Reset / MFA challenge) get the gradient hero panel and glass card treatment.
+
+## Phase 3 (following turn) — Explore, Notifications, Reels, misc.
+
+- Explore: trending grid as bento layout, search bar as glass pill, category chips.
+- Notifications: grouped cards, gradient unread indicator, swipe-friendly rows.
+- Reels overlay chrome: cleaner gradient scrims, rounded action rail.
+- Sweep remaining pages (Followers/Following, Highlights, Billing, etc.) for consistency.
+
+## Out of scope
+
+- No backend, RLS, schema, routing, or business-logic changes.
+- No new dependencies.
+- No changes to Messages/Conversation (already done).
+
+## Technical notes
+
+- All colors via existing semantic tokens in `index.css` / `tailwind.config.ts`. No hardcoded hex in components.
+- New primitives live in `src/components/ui/` (project-local, not shadcn overrides).
+- Verify each phase with a Playwright screenshot pass on Feed/Profile at mobile viewport before closing the turn.
