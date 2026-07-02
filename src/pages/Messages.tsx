@@ -76,12 +76,36 @@ export default function MessagesPage() {
       new Set((allParticipants || []).map((p: any) => p.user_id).filter(Boolean))
     );
 
+    const { data: messages } = await supabase
+      .from('messages')
+      .select('conversation_id, content, created_at, sender_id, is_read')
+      .in('conversation_id', conversationIds)
+      .order('created_at', { ascending: false });
+
+    const lastMessages: Record<string, { content: string; sender_id: string }> = {};
+    const unreadCounts: Record<string, number> = {};
+
+    messages?.forEach((m: any) => {
+      if (!lastMessages[m.conversation_id]) {
+        lastMessages[m.conversation_id] = { content: m.content, sender_id: m.sender_id };
+      }
+      if (!m.is_read && m.sender_id !== user.id) {
+        unreadCounts[m.conversation_id] = (unreadCounts[m.conversation_id] || 0) + 1;
+      }
+    });
+
+    // Resolve profiles for both other participants and last-message senders
+    const profileIdsToFetch = Array.from(new Set([
+      ...otherUserIds,
+      ...Object.values(lastMessages).map(m => m.sender_id).filter(id => id && id !== user.id),
+    ]));
+
     const profilesById: Record<string, { id: string; username: string; avatar_url: string | null }> = {};
-    if (otherUserIds.length > 0) {
+    if (profileIdsToFetch.length > 0) {
       const { data: profiles } = await supabase
         .from('profiles')
         .select('id, username, avatar_url')
-        .in('id', otherUserIds);
+        .in('id', profileIdsToFetch);
       (profiles || []).forEach((p: any) => {
         profilesById[p.id] = { id: p.id, username: p.username, avatar_url: p.avatar_url };
       });
