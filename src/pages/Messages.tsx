@@ -1,13 +1,14 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
-import { PenSquare, Search, Users, HelpCircle } from 'lucide-react';
+import { SquarePen, Search, Users, HelpCircle, MessagesSquare, Sparkles } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Seo } from '@/components/seo/Seo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { OnlineIndicator } from '@/components/messages/OnlineIndicator';
@@ -31,6 +32,8 @@ interface ConversationItem {
   group_avatar_url?: string;
 }
 
+type Filter = 'all' | 'unread' | 'groups';
+
 export default function MessagesPage() {
   const { user } = useAuth();
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
@@ -38,12 +41,12 @@ export default function MessagesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showNewMessage, setShowNewMessage] = useState(false);
   const [showMessageSearch, setShowMessageSearch] = useState(false);
+  const [filter, setFilter] = useState<Filter>('all');
   const { fetchOnlineStatus, subscribeToOnlineStatus, isUserOnline } = useOnlineStatus();
 
   const fetchConversations = useCallback(async () => {
     if (!user) return;
 
-    // Get all conversations with their details including group info
     const { data: participations, error } = await supabase
       .from('conversation_participants')
       .select(`conversation_id, conversations(id, updated_at, is_group, group_name, group_avatar_url)`)
@@ -58,6 +61,7 @@ export default function MessagesPage() {
 
     if (conversationIds.length === 0) {
       setLoading(false);
+      setConversations([]);
       return;
     }
 
@@ -71,7 +75,7 @@ export default function MessagesPage() {
       new Set((allParticipants || []).map((p: any) => p.user_id).filter(Boolean))
     );
 
-    let profilesById: Record<string, { id: string; username: string; avatar_url: string | null }> = {};
+    const profilesById: Record<string, { id: string; username: string; avatar_url: string | null }> = {};
     if (otherUserIds.length > 0) {
       const { data: profiles } = await supabase
         .from('profiles')
@@ -90,7 +94,7 @@ export default function MessagesPage() {
 
     const lastMessages: Record<string, { content: string; sender_id: string }> = {};
     const unreadCounts: Record<string, number> = {};
-    
+
     messages?.forEach((m: any) => {
       if (!lastMessages[m.conversation_id]) {
         lastMessages[m.conversation_id] = { content: m.content, sender_id: m.sender_id };
@@ -125,12 +129,10 @@ export default function MessagesPage() {
       } as ConversationItem;
     });
 
-
     conversationsData.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
     setConversations(conversationsData);
     setLoading(false);
 
-    // Fetch online status for all participants (for 1-on-1 chats)
     const participantIds = conversationsData
       .filter(c => !c.is_group)
       .map(c => c.participant.id)
@@ -146,16 +148,13 @@ export default function MessagesPage() {
 
   useEffect(() => {
     if (!user) return;
-
     const channel = supabase
       .channel('messages-list')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => fetchConversations())
       .subscribe();
-
     return () => { supabase.removeChannel(channel); };
   }, [user, fetchConversations]);
 
-  // Subscribe to online status
   useEffect(() => {
     const participantIds = conversations.map(c => c.participant.id).filter(Boolean);
     if (participantIds.length > 0) {
@@ -163,13 +162,26 @@ export default function MessagesPage() {
     }
   }, [conversations, subscribeToOnlineStatus]);
 
-  const filteredConversations = conversations.filter(c => {
-    const searchTerm = searchQuery.toLowerCase();
-    if (c.is_group) {
-      return c.group_name?.toLowerCase().includes(searchTerm);
-    }
-    return c.participant.username.toLowerCase().includes(searchTerm);
-  });
+  const totalUnread = useMemo(
+    () => conversations.reduce((sum, c) => sum + c.unread_count, 0),
+    [conversations]
+  );
+
+  const filteredConversations = useMemo(() => {
+    const term = searchQuery.toLowerCase().trim();
+    return conversations.filter(c => {
+      if (filter === 'unread' && c.unread_count === 0) return false;
+      if (filter === 'groups' && !c.is_group) return false;
+      if (!term) return true;
+      if (c.is_group) return c.group_name?.toLowerCase().includes(term);
+      return c.participant.username.toLowerCase().includes(term);
+    });
+  }, [conversations, searchQuery, filter]);
+
+  const onlineFriends = useMemo(
+    () => conversations.filter(c => !c.is_group && isUserOnline(c.participant.id)).slice(0, 10),
+    [conversations, isUserOnline]
+  );
 
   if (!user) {
     return (
@@ -187,39 +199,107 @@ export default function MessagesPage() {
   return (
     <MainLayout>
       <Seo title="Messages — Openflip" description="Private chats and group conversations on Openflip." path="/messages" noindex />
-      <div className="max-w-2xl mx-auto">
-        <header className="sticky top-0 z-40 glass-strong border-b px-4 py-3">
-          <div className="flex items-center justify-between mb-3">
-            <h1 className="font-semibold text-lg">Messages</h1>
-            <div className="flex items-center gap-1">
-              <Link to="/how-it-works">
-                <Button variant="ghost" size="icon">
-                  <HelpCircle className="h-5 w-5" />
+      <div className="max-w-2xl mx-auto pb-24">
+        {/* Header */}
+        <header className="sticky top-0 z-40 glass-strong border-b">
+          <div className="px-4 pt-4 pb-3">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center shadow-sm">
+                  <MessagesSquare className="h-5 w-5 text-primary-foreground" />
+                </div>
+                <div>
+                  <h1 className="font-bold text-xl leading-tight">Messages</h1>
+                  <p className="text-[11px] text-muted-foreground leading-tight">
+                    {totalUnread > 0 ? `${totalUnread} unread` : 'All caught up'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1">
+                <Link to="/how-it-works">
+                  <Button variant="ghost" size="icon" aria-label="Help">
+                    <HelpCircle className="h-5 w-5" />
+                  </Button>
+                </Link>
+                <Button variant="ghost" size="icon" onClick={() => setShowMessageSearch(true)} aria-label="Search messages">
+                  <Search className="h-5 w-5" />
                 </Button>
-              </Link>
-              <Button variant="ghost" size="icon" onClick={() => setShowMessageSearch(true)}>
-                <Search className="h-5 w-5" />
-              </Button>
-              <Button variant="ghost" size="icon" onClick={() => setShowNewMessage(true)}>
-                <PenSquare className="h-5 w-5" />
-              </Button>
+                <Button
+                  size="icon"
+                  onClick={() => setShowNewMessage(true)}
+                  aria-label="New message"
+                  className="rounded-full gradient-primary shadow-md"
+                >
+                  <SquarePen className="h-5 w-5" />
+                </Button>
+              </div>
+            </div>
+
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search chats"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 h-10 rounded-full bg-secondary/60 border-0 focus-visible:ring-1 focus-visible:ring-primary"
+              />
             </div>
           </div>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search messages"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-9"
-            />
+
+          <div className="px-4 pb-3">
+            <Tabs value={filter} onValueChange={(v) => setFilter(v as Filter)}>
+              <TabsList className="grid grid-cols-3 w-full h-9 bg-secondary/60 rounded-full p-1">
+                <TabsTrigger value="all" className="rounded-full text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                  All
+                </TabsTrigger>
+                <TabsTrigger value="unread" className="rounded-full text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                  Unread {totalUnread > 0 && <span className="ml-1 text-primary">·{totalUnread}</span>}
+                </TabsTrigger>
+                <TabsTrigger value="groups" className="rounded-full text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                  Groups
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
         </header>
 
-        <div className="divide-y divide-border">
+        {/* Active friends row */}
+        {onlineFriends.length > 0 && filter === 'all' && !searchQuery && (
+          <div className="px-4 py-3 border-b">
+            <div className="flex items-center gap-1.5 mb-2">
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Active now</span>
+            </div>
+            <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-1 px-1">
+              {onlineFriends.map(c => (
+                <Link
+                  key={c.id}
+                  to={`/messages/${c.id}`}
+                  className="flex flex-col items-center gap-1.5 shrink-0 w-16"
+                >
+                  <div className="relative">
+                    <Avatar className="h-14 w-14 ring-2 ring-primary/40">
+                      <AvatarImage src={c.participant.avatar_url || undefined} />
+                      <AvatarFallback className="bg-primary/10 text-primary">
+                        {c.participant.username.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <OnlineIndicator isOnline size="md" className="absolute bottom-0 right-0" />
+                  </div>
+                  <span className="text-[11px] truncate w-full text-center text-muted-foreground">
+                    {c.participant.username}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Chat list */}
+        <div className="px-2 py-2 space-y-1">
           {loading ? (
-            Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-3 p-4">
+            Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3 p-3">
                 <Skeleton className="h-14 w-14 rounded-full" />
                 <div className="flex-1 space-y-2">
                   <Skeleton className="h-4 w-32" />
@@ -228,73 +308,87 @@ export default function MessagesPage() {
               </div>
             ))
           ) : filteredConversations.length > 0 ? (
-            filteredConversations.map(conversation => (
-              <Link
-                key={conversation.id}
-                to={`/messages/${conversation.id}`}
-                className="flex items-center gap-3 p-4 hover:bg-secondary/50 transition-colors"
-              >
-                <div className="relative">
-                  {conversation.is_group ? (
-                    <div className="h-14 w-14 bg-primary/10 rounded-full flex items-center justify-center">
-                      {conversation.group_avatar_url ? (
-                        <Avatar className="h-14 w-14">
-                          <AvatarImage src={conversation.group_avatar_url} />
-                          <AvatarFallback className="bg-primary/10 text-primary text-lg">
-                            <Users className="h-6 w-6" />
-                          </AvatarFallback>
-                        </Avatar>
-                      ) : (
-                        <Users className="h-6 w-6 text-primary" />
-                      )}
-                    </div>
-                  ) : (
-                    <>
+            filteredConversations.map(conversation => {
+              const unread = conversation.unread_count > 0;
+              return (
+                <Link
+                  key={conversation.id}
+                  to={`/messages/${conversation.id}`}
+                  className={`flex items-center gap-3 p-3 rounded-2xl transition-all ${
+                    unread ? 'bg-primary/[0.04] hover:bg-primary/[0.08]' : 'hover:bg-secondary/60'
+                  }`}
+                >
+                  <div className="relative shrink-0">
+                    {conversation.is_group ? (
                       <Avatar className="h-14 w-14">
-                        <AvatarImage src={conversation.participant.avatar_url || undefined} />
-                        <AvatarFallback className="bg-primary/10 text-primary text-lg">
-                          {conversation.participant.username.charAt(0).toUpperCase()}
+                        <AvatarImage src={conversation.group_avatar_url || undefined} />
+                        <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/5 text-primary">
+                          <Users className="h-6 w-6" />
                         </AvatarFallback>
                       </Avatar>
-                      {isUserOnline(conversation.participant.id) && (
-                        <OnlineIndicator isOnline={true} size="md" className="absolute bottom-0 right-0" />
-                      )}
-                    </>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <span className={`font-semibold ${conversation.unread_count > 0 ? 'text-foreground' : ''}`}>
-                      {conversation.is_group ? conversation.group_name : conversation.participant.username}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(new Date(conversation.updated_at), { addSuffix: false })}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {conversation.last_message && (
-                      <p className={`text-sm truncate flex-1 ${conversation.unread_count > 0 ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
-                        {conversation.last_sender_id === user.id && 'You: '}
-                        {conversation.last_message}
-                      </p>
+                    ) : (
+                      <>
+                        <Avatar className="h-14 w-14">
+                          <AvatarImage src={conversation.participant.avatar_url || undefined} />
+                          <AvatarFallback className="bg-primary/10 text-primary text-lg">
+                            {conversation.participant.username.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        {isUserOnline(conversation.participant.id) && (
+                          <OnlineIndicator isOnline size="md" className="absolute bottom-0 right-0 ring-2 ring-background" />
+                        )}
+                      </>
                     )}
-                    {conversation.unread_count > 0 && (
-                      <span className="min-w-[20px] h-5 px-1.5 flex items-center justify-center bg-primary text-primary-foreground text-xs font-bold rounded-full">
-                        {conversation.unread_count}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={`truncate ${unread ? 'font-bold text-foreground' : 'font-semibold'}`}>
+                        {conversation.is_group ? conversation.group_name : conversation.participant.username}
                       </span>
-                    )}
+                      <span className={`text-[11px] shrink-0 ${unread ? 'text-primary font-semibold' : 'text-muted-foreground'}`}>
+                        {conversation.updated_at
+                          ? formatDistanceToNow(new Date(conversation.updated_at), { addSuffix: false })
+                          : ''}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <p className={`text-sm truncate flex-1 ${unread ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+                        {conversation.last_message ? (
+                          <>
+                            {conversation.last_sender_id === user.id && <span className="opacity-70">You: </span>}
+                            {conversation.last_message}
+                          </>
+                        ) : (
+                          <span className="italic opacity-60">Say hi 👋</span>
+                        )}
+                      </p>
+                      {unread && (
+                        <span className="min-w-[20px] h-5 px-1.5 flex items-center justify-center gradient-primary text-primary-foreground text-[11px] font-bold rounded-full shadow-sm">
+                          {conversation.unread_count}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </Link>
-            ))
+                </Link>
+              );
+            })
           ) : (
-            <div className="text-center py-12">
-              <PenSquare className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h2 className="font-semibold mb-2">No messages yet</h2>
-              <p className="text-sm text-muted-foreground mb-4">Start a conversation with someone</p>
-              <Button variant="gradient" onClick={() => setShowNewMessage(true)}>
-                New Message
-              </Button>
+            <div className="text-center py-16 px-4">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl gradient-primary/10 flex items-center justify-center bg-primary/10">
+                <MessagesSquare className="w-8 h-8 text-primary" />
+              </div>
+              <h2 className="font-semibold mb-1">
+                {filter === 'unread' ? 'No unread messages' : filter === 'groups' ? 'No group chats' : 'No messages yet'}
+              </h2>
+              <p className="text-sm text-muted-foreground mb-5">
+                {filter === 'all' ? 'Start a conversation with someone' : 'Try switching to another tab'}
+              </p>
+              {filter === 'all' && (
+                <Button variant="gradient" onClick={() => setShowNewMessage(true)} className="rounded-full">
+                  <SquarePen className="h-4 w-4" />
+                  New Message
+                </Button>
+              )}
             </div>
           )}
         </div>

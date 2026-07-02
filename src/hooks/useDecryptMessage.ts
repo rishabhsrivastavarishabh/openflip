@@ -11,7 +11,7 @@ import { useDeviceKeys } from './useDeviceKeys';
 const decryptionCache = new Map<string, string>();
 
 export function useDecryptMessage() {
-  const { privateKey } = useDeviceKeys();
+  const { privateKey, loading: keysLoading, error: keysError } = useDeviceKeys();
   const initRef = useRef(false);
 
   const decrypt = useCallback(async (
@@ -31,8 +31,13 @@ export function useDecryptMessage() {
     const cached = decryptionCache.get(messageId);
     if (cached) return cached;
 
-    if (!privateKey) {
+    if (keysLoading) {
       return '🔐 Setting up encryption on this device…';
+    }
+    if (!privateKey) {
+      return keysError
+        ? `🔒 Encryption setup failed: ${keysError}. Try refreshing the page.`
+        : '🔒 Encryption not available on this device.';
     }
     if (!senderDevicePublicKey) {
       return '🔒 This message was sent to a different device and can\'t be read here.';
@@ -62,7 +67,7 @@ export function useDecryptMessage() {
     } catch {
       return '🔒 This message can\'t be decrypted on this device.';
     }
-  }, [privateKey]);
+  }, [privateKey, keysLoading, keysError]);
 
   const clearCache = useCallback(() => {
     decryptionCache.clear();

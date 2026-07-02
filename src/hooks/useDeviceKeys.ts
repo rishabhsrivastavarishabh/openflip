@@ -41,13 +41,25 @@ export function useDeviceKeys() {
       const stored = await getKeyPairByUser(user.id);
       
       if (stored) {
-        // Verify the device still exists on server
-        const { data: device } = await (supabase as any)
+        // Verify the device still exists on server (maybeSingle avoids throwing on 0 rows)
+        const { data: device, error: verifyErr } = await (supabase as any)
           .from('devices')
           .select('id, device_public_key')
           .eq('id', stored.deviceId)
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
+
+        // If the verify query itself failed (network/RLS), trust local keys rather than blocking
+        if (verifyErr) {
+          setState({
+            deviceId: stored.deviceId,
+            publicKey: stored.publicKey,
+            privateKey: stored.privateKey,
+            loading: false,
+            error: null,
+          });
+          return;
+        }
 
         if (device) {
           setState({
@@ -57,15 +69,16 @@ export function useDeviceKeys() {
             loading: false,
             error: null,
           });
-          
-          // Update last_seen_at
-          await (supabase as any)
+
+          // Update last_seen_at (fire-and-forget)
+          (supabase as any)
             .from('devices')
             .update({ last_seen_at: new Date().toISOString() })
-            .eq('id', stored.deviceId);
+            .eq('id', stored.deviceId)
+            .then(() => {}, () => {});
           return;
         }
-        
+
         // Device was deleted on server, clean up local
         await deleteStoredKeyPair(stored.deviceId);
       }
