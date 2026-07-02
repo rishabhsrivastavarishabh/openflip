@@ -31,8 +31,11 @@ export function useDecryptMessage() {
     const cached = decryptionCache.get(messageId);
     if (cached) return cached;
 
-    if (!privateKey || !senderDevicePublicKey) {
-      return '🔒 Unable to decrypt message';
+    if (!privateKey) {
+      return '🔐 Setting up encryption on this device…';
+    }
+    if (!senderDevicePublicKey) {
+      return '🔒 This message was sent to a different device and can\'t be read here.';
     }
 
     try {
@@ -50,14 +53,14 @@ export function useDecryptMessage() {
       );
 
       if (plaintext === null) {
-        return '🔒 Unable to decrypt message';
+        return '🔒 This message was encrypted for a different device — sign in on that device to read it, or ask the sender to resend.';
       }
 
       // Cache the result
       decryptionCache.set(messageId, plaintext);
       return plaintext;
     } catch {
-      return '🔒 Unable to decrypt message';
+      return '🔒 This message can\'t be decrypted on this device.';
     }
   }, [privateKey]);
 
