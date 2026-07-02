@@ -6,7 +6,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Send, MoreVertical, Phone, Video, Check, CheckCheck, Users, Lock, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Send, MoreVertical, Phone, Video, Check, CheckCheck, Users, Lock, ShieldCheck, MoreHorizontal, Pencil, Trash2, X as XIcon } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { CallLogItem, CallLogEntry } from '@/components/messages/CallLogItem';
 import { cn } from '@/lib/utils';
 import { Profile, Message } from '@/types/database';
 import { BlockReportSheet } from '@/components/moderation/BlockReportSheet';
@@ -61,6 +68,7 @@ export default function ConversationPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [callLogs, setCallLogs] = useState<CallLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [newMessage, setNewMessage] = useState('');
@@ -72,6 +80,8 @@ export default function ConversationPage() {
   const [showProfileView, setShowProfileView] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [decryptedContents, setDecryptedContents] = useState<Record<string, string>>({});
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -108,12 +118,14 @@ export default function ConversationPage() {
       fetchConversation();
       fetchMessages();
       fetchParticipant();
+      fetchCallLogs();
       const unsubscribe = subscribeToMessages();
-      return () => { unsubscribe(); };
+      const unsubscribeCalls = subscribeToCalls();
+      return () => { unsubscribe(); unsubscribeCalls(); };
     }
   }, [user, conversationId]);
 
-  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, callLogs]);
 
   const fetchConversation = async () => {
     if (!conversationId) return;
@@ -260,6 +272,68 @@ export default function ConversationPage() {
     return () => { supabase.removeChannel(channel); };
   };
 
+  const fetchCallLogs = async () => {
+    if (!conversationId) return;
+    const { data } = await (supabase as any)
+      .from('calls')
+      .select('id, caller_id, callee_id, call_type, status, started_at, ended_at, created_at')
+      .eq('conversation_id', conversationId)
+      .order('created_at', { ascending: true });
+    if (data) setCallLogs(data as CallLogEntry[]);
+  };
+
+  const subscribeToCalls = () => {
+    const channel = supabase
+      .channel(`calls-${conversationId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'calls', filter: `conversation_id=eq.${conversationId}` },
+        (payload) => setCallLogs(prev => [...prev, payload.new as CallLogEntry]))
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'calls', filter: `conversation_id=eq.${conversationId}` },
+        (payload) => setCallLogs(prev => prev.map(c => c.id === (payload.new as any).id ? { ...c, ...(payload.new as any) } : c)))
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    const { error } = await supabase
+      .from('messages')
+      .update({ deleted_at: new Date().toISOString(), content: '' } as any)
+      .eq('id', messageId);
+    if (error) toast.error('Could not delete message');
+    else setMessages(prev => prev.map(m => m.id === messageId ? { ...m, deleted_at: new Date().toISOString(), content: '' } as any : m));
+  };
+
+  const startEditMessage = (msg: ChatMessage) => {
+    const current = (msg as any).is_encrypted ? decryptedContents[msg.id] || '' : msg.content || '';
+    setEditingId(msg.id);
+    setEditingText(current);
+  };
+
+  const cancelEditMessage = () => { setEditingId(null); setEditingText(''); };
+
+  const saveEditMessage = async () => {
+    if (!editingId) return;
+    const trimmed = editingText.trim();
+    if (!trimmed) { cancelEditMessage(); return; }
+    const target = messages.find(m => m.id === editingId);
+    if (!target) { cancelEditMessage(); return; }
+    if ((target as any).is_encrypted) {
+      toast.error('Encrypted messages can\'t be edited yet');
+      cancelEditMessage();
+      return;
+    }
+    const { error } = await supabase
+      .from('messages')
+      .update({ content: trimmed, edited_at: new Date().toISOString() } as any)
+      .eq('id', editingId);
+    if (error) {
+      toast.error('Could not edit message');
+      return;
+    }
+    setMessages(prev => prev.map(m => m.id === editingId ? { ...m, content: trimmed, edited_at: new Date().toISOString() } as any : m));
+    cancelEditMessage();
+  };
+
+
   const handleTyping = async () => {
     if (!user || !conversationId) return;
     await supabase.from('conversation_participants').update({ typing_at: new Date().toISOString() }).eq('conversation_id', conversationId).eq('user_id', user.id);
@@ -342,6 +416,22 @@ export default function ConversationPage() {
     const showAvatar = !message.isMine && (index === 0 || messages[index - 1]?.sender_id !== message.sender_id);
     const messageType = message.message_type || 'text';
     const senderProfile = participants.find(p => p.id === message.sender_id) || participant;
+    const deletedAt = (message as any).deleted_at as string | null | undefined;
+    const editedAt = (message as any).edited_at as string | null | undefined;
+
+    // Deleted message tombstone
+    if (deletedAt) {
+      return (
+        <div key={message.id} className={cn("flex", message.isMine ? "justify-end" : "justify-start")}>
+          <div className="max-w-[70%] px-3 py-1.5 rounded-2xl bg-muted/50 border border-dashed border-border">
+            <p className="text-xs italic text-muted-foreground flex items-center gap-1">
+              <Trash2 className="w-3 h-3" />
+              {message.isMine ? 'You deleted this message' : 'This message was deleted'}
+            </p>
+          </div>
+        </div>
+      );
+    }
 
     // View once media
     if (messageType === 'view_once' && message.is_view_once) {
@@ -369,7 +459,7 @@ export default function ConversationPage() {
     // Regular media
     if ((messageType === 'image' || messageType === 'video') && message.media_url) {
       return (
-        <div key={message.id} className={cn("flex items-end gap-2", message.isMine ? "justify-end" : "justify-start")}>
+        <div key={message.id} className={cn("flex items-end gap-2 group", message.isMine ? "justify-end" : "justify-start")}>
           {!message.isMine && showAvatar && senderProfile && (
             <Avatar className="w-8 h-8">
               <AvatarImage src={senderProfile.avatar_url || undefined} />
@@ -385,33 +475,65 @@ export default function ConversationPage() {
               isMine={message.isMine}
             />
           </div>
+          {message.isMine && (
+            <MessageActionMenu onDelete={() => handleDeleteMessage(message.id)} />
+          )}
         </div>
       );
     }
 
     const isEncrypted = (message as any).is_encrypted;
-    const displayContent = isEncrypted && decryptedContents[message.id] 
+    const displayContent = isEncrypted && decryptedContents[message.id]
       ? decryptedContents[message.id]
       : isEncrypted ? '🔒 Encrypted message' : message.content;
+    const isEditing = editingId === message.id;
+    const canEdit = message.isMine && (messageType === 'text' || !messageType) && !message.media_url && !message.shared_post_id && !message.shared_reel_id && !message.shared_profile_id && !isEncrypted;
 
     return (
-      <div key={message.id} className={cn("flex items-end gap-2", message.isMine ? "justify-end" : "justify-start")}>
+      <div key={message.id} className={cn("flex items-end gap-2 group", message.isMine ? "justify-end" : "justify-start")}>
         {!message.isMine && <div className="w-8">{showAvatar && senderProfile && <Avatar className="w-8 h-8"><AvatarImage src={senderProfile.avatar_url || undefined} /><AvatarFallback>{senderProfile.username.charAt(0).toUpperCase()}</AvatarFallback></Avatar>}</div>}
         <div className={cn("max-w-[70%] px-4 py-2 rounded-2xl", message.isMine ? "bg-primary text-primary-foreground rounded-br-md" : "bg-muted rounded-bl-md")}>
-          {messageType === 'voice' && message.media_url ? <VoiceMessage audioUrl={message.media_url} duration={message.voice_duration} isMine={message.isMine} />
+          {isEditing ? (
+            <div className="flex flex-col gap-2 min-w-[200px]">
+              <Input
+                autoFocus
+                value={editingText}
+                onChange={(e) => setEditingText(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); saveEditMessage(); } if (e.key === 'Escape') cancelEditMessage(); }}
+                className="text-sm h-8 bg-background text-foreground"
+              />
+              <div className="flex gap-2 justify-end">
+                <Button size="sm" variant="ghost" onClick={cancelEditMessage} className="h-7 px-2">
+                  <XIcon className="w-3 h-3" />
+                </Button>
+                <Button size="sm" onClick={saveEditMessage} className="h-7 px-2">
+                  Save
+                </Button>
+              </div>
+            </div>
+          ) : messageType === 'voice' && message.media_url ? <VoiceMessage audioUrl={message.media_url} duration={message.voice_duration} isMine={message.isMine} />
           : message.shared_post_id || message.shared_reel_id || message.shared_profile_id ? <SharedPostPreview postId={message.shared_post_id} reelId={message.shared_reel_id} profileId={message.shared_profile_id} isMine={message.isMine} />
           : (
             <div>
               <p className="text-sm whitespace-pre-wrap break-words">{displayContent}</p>
-              {isEncrypted && (
-                <div className="flex items-center gap-1 mt-1 opacity-60">
-                  <Lock className="w-3 h-3" />
-                  <span className="text-[10px]">end-to-end encrypted</span>
-                </div>
-              )}
+              <div className="flex items-center gap-1.5 mt-1 opacity-60">
+                {isEncrypted && (
+                  <>
+                    <Lock className="w-3 h-3" />
+                    <span className="text-[10px]">end-to-end encrypted</span>
+                  </>
+                )}
+                {editedAt && <span className="text-[10px] italic">edited</span>}
+              </div>
             </div>
           )}
         </div>
+        {message.isMine && !isEditing && (
+          <MessageActionMenu
+            onEdit={canEdit ? () => startEditMessage(message) : undefined}
+            onDelete={() => handleDeleteMessage(message.id)}
+          />
+        )}
         {message.isMine && (
           <div className="w-4 flex items-center justify-center">
             {message.read_at || message.is_read ? (
@@ -426,6 +548,29 @@ export default function ConversationPage() {
       </div>
     );
   };
+
+  const MessageActionMenu = ({ onEdit, onDelete }: { onEdit?: () => void; onDelete: () => void }) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          aria-label="Message actions"
+          className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-muted-foreground hover:text-foreground transition-opacity p-1"
+        >
+          <MoreHorizontal className="w-4 h-4" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-40">
+        {onEdit && (
+          <DropdownMenuItem onClick={onEdit}>
+            <Pencil className="w-4 h-4 mr-2" /> Edit
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
+          <Trash2 className="w-4 h-4 mr-2" /> Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 
   if (!user) return <div className="h-screen flex items-center justify-center"><p>Please sign in</p></div>;
 
@@ -556,8 +701,33 @@ export default function ConversationPage() {
         )}
 
         {loading ? Array.from({ length: 5 }).map((_, i) => <div key={i} className={cn("flex", i % 2 === 0 ? "justify-end" : "justify-start")}><Skeleton className={cn("h-10 rounded-2xl", i % 2 === 0 ? "w-40" : "w-32")} /></div>)
-        : messages.length === 0 ? <div className="flex flex-col items-center justify-center h-full text-muted-foreground"><p>No messages yet</p></div>
-        : messages.map((message, index) => renderMessage(message, index))}
+        : messages.length === 0 && callLogs.length === 0 ? <div className="flex flex-col items-center justify-center h-full text-muted-foreground"><p>No messages yet</p></div>
+        : (() => {
+            type TL = { kind: 'message'; msg: ChatMessage; idx: number } | { kind: 'call'; call: CallLogEntry };
+            const items: TL[] = [
+              ...messages.map((m, idx) => ({ kind: 'message' as const, msg: m, idx })),
+              ...callLogs.map((c) => ({ kind: 'call' as const, call: c })),
+            ];
+            items.sort((a, b) => {
+              const at = a.kind === 'message' ? new Date(a.msg.created_at).getTime() : new Date(a.call.created_at).getTime();
+              const bt = b.kind === 'message' ? new Date(b.msg.created_at).getTime() : new Date(b.call.created_at).getTime();
+              return at - bt;
+            });
+            return items.map((item) =>
+              item.kind === 'message'
+                ? renderMessage(item.msg, item.idx)
+                : (
+                  <CallLogItem
+                    key={`call-${item.call.id}`}
+                    call={item.call}
+                    currentUserId={user!.id}
+                    onCallBack={(calleeId, type) =>
+                      startCall({ calleeId, conversationId: conversationId ?? null, type })
+                    }
+                  />
+                )
+            );
+          })()}
         <div ref={messagesEndRef} />
       </div>
 
