@@ -395,6 +395,68 @@ export function GroupChatSettings({
           </Button>
         </div>
       </SheetContent>
+
+      <Dialog open={showAddMembers} onOpenChange={(o) => { setShowAddMembers(o); if (!o) { setAddSearch(''); setAddResults([]); setAddSelected([]); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add members</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                autoFocus
+                placeholder="Search by username"
+                value={addSearch}
+                onChange={(e) => setAddSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            {addSelected.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {addSelected.map(u => (
+                  <button
+                    key={u.id}
+                    className="flex items-center gap-1 px-2 py-1 rounded-full bg-primary/10 text-primary text-xs"
+                    onClick={() => setAddSelected(s => s.filter(x => x.id !== u.id))}
+                  >
+                    {u.username}
+                    <X className="w-3 h-3" />
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="max-h-64 overflow-y-auto space-y-1">
+              {addResults.map(u => {
+                const picked = !!addSelected.find(s => s.id === u.id);
+                return (
+                  <button
+                    key={u.id}
+                    onClick={() => setAddSelected(s => picked ? s.filter(x => x.id !== u.id) : [...s, u])}
+                    className={`w-full flex items-center gap-3 p-2 rounded-lg text-left transition-colors ${picked ? 'bg-primary/10' : 'hover:bg-muted'}`}
+                  >
+                    <Avatar className="w-9 h-9">
+                      <AvatarImage src={u.avatar_url || undefined} />
+                      <AvatarFallback>{u.username.charAt(0).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <span className="font-medium text-sm flex-1">{u.username}</span>
+                    {picked && <span className="text-xs text-primary">Selected</span>}
+                  </button>
+                );
+              })}
+              {addSearch.trim().length >= 2 && addResults.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">No users found</p>
+              )}
+              {addSearch.trim().length < 2 && (
+                <p className="text-sm text-muted-foreground text-center py-4">Type at least 2 characters</p>
+              )}
+            </div>
+            <Button className="w-full" disabled={addSelected.length === 0 || addLoading} onClick={handleAddMembers}>
+              {addLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : `Add ${addSelected.length || ''} member${addSelected.length === 1 ? '' : 's'}`}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Sheet>
   );
 }
