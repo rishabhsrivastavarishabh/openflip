@@ -27,11 +27,12 @@ export function Sidebar() {
   const hasMultipleAccounts = accounts.length > 1;
 
   const navItems = [
-    { icon: House, href: '/', label: 'Home', badge: 0 },
-    { icon: Search, href: '/explore', label: 'Explore', badge: 0 },
+    { icon: Home, href: '/', label: 'Home', badge: 0 },
+    { icon: Compass, href: '/explore', label: 'Explore', badge: 0 },
+    { icon: PlusCircle, href: '/create', label: 'Create', badge: 0 },
     { icon: Clapperboard, href: '/reels', label: 'Reels', badge: 0 },
     { icon: MessagesSquare, href: '/messages', label: 'Messages', badge: unreadMessages },
-    { icon: Heart, href: '/notifications', label: 'Notifications', badge: unreadNotifications },
+    { icon: Bell, href: '/notifications', label: 'Notifications', badge: unreadNotifications },
     { icon: User, href: profile ? `/profile/${profile.username}` : '/auth', label: 'Profile', badge: 0 },
   ];
 
