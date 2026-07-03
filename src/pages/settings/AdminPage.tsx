@@ -65,6 +65,12 @@ export default function AdminPage() {
       description: 'View active and past subscribers',
       action: () => setShowSubs(true),
     },
+    {
+      icon: UserX,
+      title: 'Account lifecycle',
+      description: 'Suspend, ban, or reactivate accounts',
+      action: () => setShowAccounts(true),
+    },
   ];
 
   return (
