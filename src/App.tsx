@@ -29,6 +29,7 @@ function RootRoute() {
 import { AuthProvider } from "@/contexts/AuthContext";
 import { MultiAccountProvider } from "@/contexts/MultiAccountContext";
 import { PushNotificationProvider } from "@/components/PushNotificationProvider";
+import { OnboardingSuggestions } from "@/components/onboarding/OnboardingSuggestions";
 import Feed from "./pages/Feed";
 import Auth from "./pages/Auth";
 import Explore from "./pages/Explore";
