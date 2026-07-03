@@ -189,15 +189,25 @@ export default function MessagesPage() {
   }, [conversations, subscribeToOnlineStatus]);
 
   const totalUnread = useMemo(
-    () => conversations.reduce((sum, c) => sum + c.unread_count, 0),
+    () => conversations.filter(c => !c.is_archived).reduce((sum, c) => sum + c.unread_count, 0),
+    [conversations]
+  );
+
+  const archivedCount = useMemo(
+    () => conversations.filter(c => c.is_archived).length,
     [conversations]
   );
 
   const filteredConversations = useMemo(() => {
     const term = searchQuery.toLowerCase().trim();
     return conversations.filter(c => {
-      if (filter === 'unread' && c.unread_count === 0) return false;
-      if (filter === 'groups' && !c.is_group) return false;
+      if (filter === 'archived') {
+        if (!c.is_archived) return false;
+      } else {
+        if (c.is_archived) return false;
+        if (filter === 'unread' && c.unread_count === 0) return false;
+        if (filter === 'groups' && !c.is_group) return false;
+      }
       if (!term) return true;
       if (c.is_group) return c.group_name?.toLowerCase().includes(term);
       return c.participant.username.toLowerCase().includes(term);
