@@ -68,6 +68,12 @@ export default function AdminPage() {
       action: () => setShowSubs(true),
     },
     {
+      icon: Flag,
+      title: 'Reports & moderation',
+      description: 'Review user reports and take action',
+      action: () => setShowReports(true),
+    },
+    {
       icon: UserX,
       title: 'Account lifecycle',
       description: 'Suspend, ban, or reactivate accounts',
