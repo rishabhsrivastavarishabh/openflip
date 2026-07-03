@@ -98,6 +98,7 @@ const App = () => (
               <Route path="/messages" element={<Messages />} />
               <Route path="/messages/:conversationId" element={<Conversation />} />
               <Route path="/call/:callId" element={<Call />} />
+              <Route path="/meet/:roomId" element={<Meet />} />
               <Route path="/settings" element={<SettingsLayout />}>
                 <Route index element={<Navigate to="/settings/account" replace />} />
                 <Route path="account" element={<AccountPage />} />
