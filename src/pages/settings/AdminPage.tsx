@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Shield, Tag, BadgeCheck, Users, Loader2, UserX } from 'lucide-react';
+import { Shield, Tag, BadgeCheck, Users, Loader2, UserX, Flag } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { VerificationPanel } from '@/components/admin/VerificationPanel';
 import { AdminPromoManager } from '@/components/admin/AdminPromoManager';
 import { AdminSubscribersPanel } from '@/components/admin/AdminSubscribersPanel';
 import { AdminAccountsPanel } from '@/components/admin/AdminAccountsPanel';
+import { AdminReportsPanel } from '@/components/admin/AdminReportsPanel';
 
 export default function AdminPage() {
   const { user } = useAuth();
