@@ -1,6 +1,9 @@
+import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   User,
   Shield,
@@ -9,9 +12,10 @@ import {
   Palette,
   ChevronRight,
   Settings2,
+  ShieldCheck,
 } from 'lucide-react';
 
-const sections = [
+const baseSections = [
   { to: '/settings/account', label: 'Account', icon: User, desc: 'Profile, username, email' },
   { to: '/settings/security', label: 'Security', icon: Shield, desc: 'Password, 2FA, delete account' },
   { to: '/settings/privacy', label: 'Privacy', icon: Lock, desc: 'Who can see and contact you' },
