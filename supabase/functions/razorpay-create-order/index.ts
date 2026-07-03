@@ -82,8 +82,9 @@ serve(async (req) => {
       }
     }
 
-    // Calculate GST (18%)
-    const gstAmount = Math.round(finalAmount * 0.18);
+    // Calculate GST (18%) — skip for tips and creator subscriptions
+    const skipGst = type === 'tip' || type === 'creator_subscription';
+    const gstAmount = skipGst ? 0 : Math.round(finalAmount * 0.18);
     const totalAmount = finalAmount + gstAmount;
 
     // Create Razorpay order

@@ -21,7 +21,7 @@ declare global {
 interface PaymentCheckoutProps {
   amount: number;
   description: string;
-  type: 'subscription' | 'boost';
+  type: 'subscription' | 'boost' | 'tip' | 'creator_subscription';
   metadata?: Record<string, string>;
   billingCycle?: string;
   promoCode?: string;
@@ -68,7 +68,8 @@ export function PaymentCheckout({
     ? promoResult.final_price
     : amount;
 
-  const gst = Math.round(displayAmount * 0.18);
+  const skipGst = type === 'tip' || type === 'creator_subscription';
+  const gst = skipGst ? 0 : Math.round(displayAmount * 0.18);
   const totalAmount = displayAmount + gst;
 
   const validatePromo = async () => {

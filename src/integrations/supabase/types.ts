@@ -47,6 +47,27 @@ export type Database = {
         }
         Relationships: []
       }
+      blocked_users: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
       boost_campaigns: {
         Row: {
           actual_reach: number | null
@@ -1330,6 +1351,7 @@ export type Database = {
           moderated_at: string | null
           moderated_by: string | null
           moderation_reason: string | null
+          onboarding_completed: boolean
           phone_number: string | null
           suspended_until: string | null
           updated_at: string | null
@@ -1358,6 +1380,7 @@ export type Database = {
           moderated_at?: string | null
           moderated_by?: string | null
           moderation_reason?: string | null
+          onboarding_completed?: boolean
           phone_number?: string | null
           suspended_until?: string | null
           updated_at?: string | null
@@ -1386,6 +1409,7 @@ export type Database = {
           moderated_at?: string | null
           moderated_by?: string | null
           moderation_reason?: string | null
+          onboarding_completed?: boolean
           phone_number?: string | null
           suspended_until?: string | null
           updated_at?: string | null
@@ -1651,6 +1675,109 @@ export type Database = {
         }
         Relationships: []
       }
+      reports: {
+        Row: {
+          action_taken: string | null
+          created_at: string
+          description: string | null
+          id: string
+          reason: string
+          reported_comment_id: string | null
+          reported_message_id: string | null
+          reported_post_id: string | null
+          reported_reel_comment_id: string | null
+          reported_reel_id: string | null
+          reported_story_id: string | null
+          reported_user_id: string | null
+          reporter_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          action_taken?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          reason: string
+          reported_comment_id?: string | null
+          reported_message_id?: string | null
+          reported_post_id?: string | null
+          reported_reel_comment_id?: string | null
+          reported_reel_id?: string | null
+          reported_story_id?: string | null
+          reported_user_id?: string | null
+          reporter_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          action_taken?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          reason?: string
+          reported_comment_id?: string | null
+          reported_message_id?: string | null
+          reported_post_id?: string | null
+          reported_reel_comment_id?: string | null
+          reported_reel_id?: string | null
+          reported_story_id?: string | null
+          reported_user_id?: string | null
+          reporter_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_reported_comment_id_fkey"
+            columns: ["reported_comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_reported_message_id_fkey"
+            columns: ["reported_message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_reported_post_id_fkey"
+            columns: ["reported_post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_reported_reel_comment_id_fkey"
+            columns: ["reported_reel_comment_id"]
+            isOneToOne: false
+            referencedRelation: "reel_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_reported_reel_id_fkey"
+            columns: ["reported_reel_id"]
+            isOneToOne: false
+            referencedRelation: "reels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_reported_story_id_fkey"
+            columns: ["reported_story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       saves: {
         Row: {
           created_at: string | null
@@ -1856,6 +1983,54 @@ export type Database = {
           id?: string
           metadata?: Json | null
           reason?: string
+        }
+        Relationships: []
+      }
+      tips: {
+        Row: {
+          amount: number
+          created_at: string
+          creator_amount: number
+          creator_id: string
+          currency: string
+          id: string
+          message: string | null
+          platform_fee: number
+          razorpay_order_id: string | null
+          razorpay_payment_id: string | null
+          sender_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          creator_amount: number
+          creator_id: string
+          currency?: string
+          id?: string
+          message?: string | null
+          platform_fee?: number
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
+          sender_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          creator_amount?: number
+          creator_id?: string
+          currency?: string
+          id?: string
+          message?: string | null
+          platform_fee?: number
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
+          sender_id?: string
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }

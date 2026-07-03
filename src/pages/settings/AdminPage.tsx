@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Shield, Tag, BadgeCheck, Users, Loader2, UserX } from 'lucide-react';
+import { Shield, Tag, BadgeCheck, Users, Loader2, UserX, Flag } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { VerificationPanel } from '@/components/admin/VerificationPanel';
 import { AdminPromoManager } from '@/components/admin/AdminPromoManager';
 import { AdminSubscribersPanel } from '@/components/admin/AdminSubscribersPanel';
 import { AdminAccountsPanel } from '@/components/admin/AdminAccountsPanel';
+import { AdminReportsPanel } from '@/components/admin/AdminReportsPanel';
 
 export default function AdminPage() {
   const { user } = useAuth();
@@ -17,6 +18,7 @@ export default function AdminPage() {
   const [showPromos, setShowPromos] = useState(false);
   const [showSubs, setShowSubs] = useState(false);
   const [showAccounts, setShowAccounts] = useState(false);
+  const [showReports, setShowReports] = useState(false);
 
   useEffect(() => {
     if (!user) { setChecking(false); return; }
@@ -64,6 +66,12 @@ export default function AdminPage() {
       title: 'Subscribers',
       description: 'View active and past subscribers',
       action: () => setShowSubs(true),
+    },
+    {
+      icon: Flag,
+      title: 'Reports & moderation',
+      description: 'Review user reports and take action',
+      action: () => setShowReports(true),
     },
     {
       icon: UserX,
@@ -122,6 +130,15 @@ export default function AdminPage() {
           <div className="max-w-3xl mx-auto p-4">
             <Button variant="ghost" onClick={() => setShowAccounts(false)} className="mb-3">← Back</Button>
             <AdminAccountsPanel />
+          </div>
+        </div>
+      )}
+      {showReports && (
+        <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
+          <div className="max-w-3xl mx-auto p-4">
+            <Button variant="ghost" onClick={() => setShowReports(false)} className="mb-3">← Back</Button>
+            <h2 className="text-lg font-bold mb-3">Reports & moderation</h2>
+            <AdminReportsPanel />
           </div>
         </div>
       )}

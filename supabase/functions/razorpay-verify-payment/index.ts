@@ -163,6 +163,75 @@ serve(async (req) => {
         }
         logStep("Boost campaign activated", { campaignId });
       }
+    } else if (type === 'tip') {
+      const creatorId = metadata?.creator_id;
+      const tipMessage = metadata?.message || null;
+      if (!creatorId) throw new Error("Missing creator_id for tip");
+      const platformFee = Math.round(amountInRupees * 0.10 * 100) / 100;
+      const creatorAmount = Math.round((amountInRupees - platformFee) * 100) / 100;
+
+      await supabaseClient.from('tips').insert({
+        sender_id: user.id,
+        creator_id: creatorId,
+        amount: amountInRupees,
+        platform_fee: platformFee,
+        creator_amount: creatorAmount,
+        currency: 'INR',
+        message: tipMessage,
+        razorpay_payment_id: razorpay_payment_id,
+        razorpay_order_id: razorpay_order_id,
+        status: 'completed',
+      });
+
+      await supabaseClient.from('creator_earnings').insert({
+        user_id: creatorId,
+        earning_type: 'tip',
+        amount: creatorAmount,
+        currency: 'INR',
+        status: 'completed',
+        description: `Tip from user`,
+      });
+
+      await supabaseClient.from('notifications').insert({
+        user_id: creatorId,
+        actor_id: user.id,
+        type: 'like',
+      });
+
+      logStep("Tip recorded", { creatorId, amount: amountInRupees, creatorAmount });
+    } else if (type === 'creator_subscription') {
+      const creatorId = metadata?.creator_id;
+      const tier = metadata?.tier || 'standard';
+      if (!creatorId) throw new Error("Missing creator_id for creator_subscription");
+      const platformFee = Math.round(amountInRupees * 0.10 * 100) / 100;
+      const creatorAmount = Math.round((amountInRupees - platformFee) * 100) / 100;
+
+      const expiresAt = billing_cycle === 'yearly'
+        ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+        : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+      await supabaseClient.from('creator_subscriptions').insert({
+        creator_id: creatorId,
+        subscriber_id: user.id,
+        tier,
+        amount: amountInRupees,
+        currency: 'INR',
+        billing_cycle: billing_cycle || 'monthly',
+        status: 'active',
+        started_at: new Date().toISOString(),
+        expires_at: expiresAt.toISOString(),
+      });
+
+      await supabaseClient.from('creator_earnings').insert({
+        user_id: creatorId,
+        earning_type: 'subscription',
+        amount: creatorAmount,
+        currency: 'INR',
+        status: 'completed',
+        description: `${billing_cycle || 'monthly'} fan subscription`,
+      });
+
+      logStep("Creator subscription activated", { creatorId, billing_cycle });
     }
 
     // Record payment history

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Grid3X3, Bookmark, Settings, UserPlus, UserMinus, MessageCircle, Plus, Film, Lock, Clock, Share2, MoreHorizontal, Pin, PlusSquare } from 'lucide-react';
+import { Grid3X3, Bookmark, Settings, UserPlus, UserMinus, MessageCircle, Plus, Film, Lock, Clock, Share2, MoreHorizontal, Pin, PlusSquare, Heart, Crown } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Seo } from '@/components/seo/Seo';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,8 @@ import { ProtectedMedia } from '@/components/media/ProtectedMedia';
 import { PostActions } from '@/components/post/PostActions';
 import { VerifiedBadge } from '@/components/common/VerifiedBadge';
 import { ProfilePhotoViewer } from '@/components/profile/ProfilePhotoViewer';
+import { TipDialog } from '@/components/monetization/TipDialog';
+import { CreatorSubscribeDialog } from '@/components/monetization/CreatorSubscribeDialog';
 
 interface ProfileData {
   id: string;
@@ -70,6 +72,8 @@ export default function ProfilePage() {
   const [showBlockReport, setShowBlockReport] = useState(false);
   const [showPhotoViewer, setShowPhotoViewer] = useState(false);
   const [isFollowBack, setIsFollowBack] = useState(false);
+  const [showTipDialog, setShowTipDialog] = useState(false);
+  const [showSubscribeDialog, setShowSubscribeDialog] = useState(false);
 
   const isOwnProfile = !!user && !!userId && user.id === userId;
 
@@ -570,6 +574,14 @@ export default function ProfilePage() {
                           Message
                         </Button>
                       )}
+                      <Button variant="outline" size="sm" onClick={() => setShowTipDialog(true)} className="border-pink-500/30 text-pink-500 hover:bg-pink-500/10">
+                        <Heart className="h-4 w-4 mr-1 fill-current" />
+                        Tip
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => setShowSubscribeDialog(true)} className="border-primary/30 text-primary hover:bg-primary/10">
+                        <Crown className="h-4 w-4 mr-1" />
+                        Subscribe
+                      </Button>
                       <Button variant="ghost" size="icon-sm" onClick={() => setShowShareSheet(true)}>
                         <Share2 className="h-4 w-4" />
                       </Button>
@@ -818,6 +830,24 @@ export default function ProfilePage() {
             onBlocked={() => navigate('/')}
           />
         )}
+
+        {!isOwnProfile && profile && userId && (
+          <>
+            <TipDialog
+              open={showTipDialog}
+              onOpenChange={setShowTipDialog}
+              creatorId={userId}
+              creatorName={profile.username}
+            />
+            <CreatorSubscribeDialog
+              open={showSubscribeDialog}
+              onOpenChange={setShowSubscribeDialog}
+              creatorId={userId}
+              creatorName={profile.username}
+            />
+          </>
+        )}
+
 
         {/* Full-screen Profile Photo Viewer */}
         <ProfilePhotoViewer
