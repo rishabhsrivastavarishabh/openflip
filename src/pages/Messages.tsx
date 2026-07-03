@@ -15,6 +15,7 @@ import { OnlineIndicator } from '@/components/messages/OnlineIndicator';
 import { NewMessageModal } from '@/components/messages/NewMessageModal';
 import { MessageSearch } from '@/components/messages/MessageSearch';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { toast } from 'sonner';
 
 interface ConversationItem {
   id: string;
