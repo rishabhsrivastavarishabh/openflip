@@ -258,6 +258,23 @@ export default function MessagesPage() {
     }
   };
 
+  const toggleArchive = async (c: ConversationItem) => {
+    if (!user) return;
+    const nextArchived = !c.is_archived;
+    setConversations(prev => prev.map(x => x.id === c.id ? { ...x, is_archived: nextArchived } : x));
+    const { error } = await (supabase as any)
+      .from('conversation_participants')
+      .update({ is_archived: nextArchived, archived_at: nextArchived ? new Date().toISOString() : null })
+      .eq('conversation_id', c.id)
+      .eq('user_id', user.id);
+    if (error) {
+      toast.error('Failed to update archive');
+      fetchConversations();
+    } else {
+      toast.success(nextArchived ? 'Chat archived' : 'Chat unarchived');
+    }
+  };
+
   if (!user) {
     return (
       <MainLayout>
