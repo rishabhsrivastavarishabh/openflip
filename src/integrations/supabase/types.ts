@@ -1319,6 +1319,7 @@ export type Database = {
           business_email: string | null
           business_website: string | null
           country_code: string | null
+          cover_url: string | null
           created_at: string | null
           date_of_birth: string | null
           full_name: string | null
@@ -1346,6 +1347,7 @@ export type Database = {
           business_email?: string | null
           business_website?: string | null
           country_code?: string | null
+          cover_url?: string | null
           created_at?: string | null
           date_of_birth?: string | null
           full_name?: string | null
@@ -1373,6 +1375,7 @@ export type Database = {
           business_email?: string | null
           business_website?: string | null
           country_code?: string | null
+          cover_url?: string | null
           created_at?: string | null
           date_of_birth?: string | null
           full_name?: string | null
