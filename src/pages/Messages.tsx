@@ -240,6 +240,26 @@ export default function MessagesPage() {
                   <Search className="h-5 w-5" />
                 </Button>
                 <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Start a group meeting"
+                  onClick={() => {
+                    const roomId =
+                      (globalThis.crypto as any)?.randomUUID?.() ??
+                      Math.random().toString(36).slice(2) + Date.now().toString(36);
+                    const url = `${window.location.origin}/meet/${roomId}`;
+                    try {
+                      navigator.clipboard.writeText(url);
+                      toast.success('Meeting link copied — share it to invite people');
+                    } catch {
+                      toast.message(url);
+                    }
+                    window.location.href = `/meet/${roomId}`;
+                  }}
+                >
+                  <Video className="h-5 w-5" />
+                </Button>
+                <Button
                   size="icon"
                   onClick={() => setShowNewMessage(true)}
                   aria-label="New message"
