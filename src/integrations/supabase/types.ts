@@ -349,8 +349,10 @@ export type Database = {
           can_post: boolean | null
           conversation_id: string
           is_admin: boolean | null
+          is_pinned: boolean
           joined_at: string | null
           last_read_at: string | null
+          pinned_at: string | null
           typing_at: string | null
           user_id: string
         }
@@ -358,8 +360,10 @@ export type Database = {
           can_post?: boolean | null
           conversation_id: string
           is_admin?: boolean | null
+          is_pinned?: boolean
           joined_at?: string | null
           last_read_at?: string | null
+          pinned_at?: string | null
           typing_at?: string | null
           user_id: string
         }
@@ -367,8 +371,10 @@ export type Database = {
           can_post?: boolean | null
           conversation_id?: string
           is_admin?: boolean | null
+          is_pinned?: boolean
           joined_at?: string | null
           last_read_at?: string | null
+          pinned_at?: string | null
           typing_at?: string | null
           user_id?: string
         }
