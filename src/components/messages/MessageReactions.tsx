@@ -115,21 +115,40 @@ export function MessageReactions({ messageId, isMine, onReactionAdded }: Message
             <Smile className="h-3.5 w-3.5" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-2" align={isMine ? "end" : "start"}>
-          <div className="flex gap-1">
-            {EMOJI_OPTIONS.map(emoji => (
+        <PopoverContent className="w-auto p-0 border-0" align={isMine ? "end" : "start"}>
+          {showFullPicker ? (
+            <EmojiPicker
+              theme={emojiTheme}
+              emojiStyle={EmojiStyle.NATIVE}
+              width={320}
+              height={380}
+              searchPlaceholder="Search emoji"
+              previewConfig={{ showPreview: false }}
+              onEmojiClick={(e) => { toggleReaction(e.emoji); setShowFullPicker(false); }}
+            />
+          ) : (
+            <div className="flex gap-1 p-2 items-center">
+              {EMOJI_OPTIONS.map(emoji => (
+                <button
+                  key={emoji}
+                  onClick={() => toggleReaction(emoji)}
+                  className={cn(
+                    "p-1.5 text-lg hover:bg-muted rounded transition-colors",
+                    reactions.some(r => r.emoji === emoji && r.user_id === user?.id) && "bg-primary/10"
+                  )}
+                >
+                  {emoji}
+                </button>
+              ))}
               <button
-                key={emoji}
-                onClick={() => toggleReaction(emoji)}
-                className={cn(
-                  "p-1.5 text-lg hover:bg-muted rounded transition-colors",
-                  reactions.some(r => r.emoji === emoji && r.user_id === user?.id) && "bg-primary/10"
-                )}
+                onClick={() => setShowFullPicker(true)}
+                className="p-1.5 hover:bg-muted rounded transition-colors"
+                aria-label="More emoji"
               >
-                {emoji}
+                <Plus className="h-4 w-4" />
               </button>
-            ))}
-          </div>
+            </div>
+          )}
         </PopoverContent>
       </Popover>
     </div>
