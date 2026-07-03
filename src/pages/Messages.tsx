@@ -207,6 +207,45 @@ export default function MessagesPage() {
     [conversations, isUserOnline]
   );
 
+  const togglePin = async (c: ConversationItem) => {
+    if (!user) return;
+    const nextPinned = !c.is_pinned;
+    setConversations(prev =>
+      [...prev.map(x => x.id === c.id ? { ...x, is_pinned: nextPinned } : x)]
+        .sort((a, b) => {
+          if ((a.is_pinned ? 1 : 0) !== (b.is_pinned ? 1 : 0)) return a.is_pinned ? -1 : 1;
+          return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+        })
+    );
+    const { error } = await (supabase as any)
+      .from('conversation_participants')
+      .update({ is_pinned: nextPinned, pinned_at: nextPinned ? new Date().toISOString() : null })
+      .eq('conversation_id', c.id)
+      .eq('user_id', user.id);
+    if (error) {
+      toast.error('Failed to update pin');
+      fetchConversations();
+    } else {
+      toast.success(nextPinned ? 'Chat pinned' : 'Chat unpinned');
+    }
+  };
+
+  const deleteChat = async (c: ConversationItem) => {
+    if (!user) return;
+    setConversations(prev => prev.filter(x => x.id !== c.id));
+    const { error } = await supabase
+      .from('conversation_participants')
+      .delete()
+      .eq('conversation_id', c.id)
+      .eq('user_id', user.id);
+    if (error) {
+      toast.error('Failed to delete chat');
+      fetchConversations();
+    } else {
+      toast.success('Chat deleted');
+    }
+  };
+
   if (!user) {
     return (
       <MainLayout>
