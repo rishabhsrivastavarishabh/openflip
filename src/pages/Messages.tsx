@@ -48,13 +48,14 @@ export default function MessagesPage() {
   const [showMessageSearch, setShowMessageSearch] = useState(false);
   const [filter, setFilter] = useState<Filter>('all');
   const { fetchOnlineStatus, subscribeToOnlineStatus, isUserOnline } = useOnlineStatus();
+  const [pendingDelete, setPendingDelete] = useState<ConversationItem | null>(null);
 
   const fetchConversations = useCallback(async () => {
     if (!user) return;
 
     const { data: participations, error } = await supabase
       .from('conversation_participants')
-      .select(`conversation_id, conversations(id, updated_at, is_group, group_name, group_avatar_url)`)
+      .select(`conversation_id, is_pinned, conversations(id, updated_at, is_group, group_name, group_avatar_url)`)
       .eq('user_id', user.id);
 
     if (error || !participations) {
