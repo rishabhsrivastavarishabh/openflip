@@ -210,6 +210,46 @@ export function GroupChatSettings({
     }
   };
 
+  useEffect(() => {
+    if (!showAddMembers) return;
+    if (addSearch.trim().length < 2) {
+      setAddResults([]);
+      return;
+    }
+    const t = setTimeout(async () => {
+      const memberIds = members.map(m => m.user_id);
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .ilike('username', `%${addSearch.trim()}%`)
+        .limit(15);
+      setAddResults((data || []).filter(p => !memberIds.includes(p.id)));
+    }, 250);
+    return () => clearTimeout(t);
+  }, [addSearch, showAddMembers, members]);
+
+  const handleAddMembers = async () => {
+    if (addSelected.length === 0) return;
+    setAddLoading(true);
+    try {
+      const { error } = await supabase.from('conversation_participants').insert(
+        addSelected.map(u => ({ conversation_id: conversationId, user_id: u.id }))
+      );
+      if (error) throw error;
+      toast.success(`Added ${addSelected.length} member${addSelected.length > 1 ? 's' : ''}`);
+      setAddSelected([]);
+      setAddSearch('');
+      setAddResults([]);
+      setShowAddMembers(false);
+      fetchMembers();
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to add members');
+    } finally {
+      setAddLoading(false);
+    }
+  };
+
+
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
