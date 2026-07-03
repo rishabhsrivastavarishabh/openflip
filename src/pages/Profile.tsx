@@ -846,6 +846,8 @@ export default function ProfilePage() {
               creatorName={profile.username}
             />
           </>
+        )}
+
 
         {/* Full-screen Profile Photo Viewer */}
         <ProfilePhotoViewer
