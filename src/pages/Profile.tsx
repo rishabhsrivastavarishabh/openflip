@@ -578,25 +578,25 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {/* Stats */}
-              <div className="flex gap-6 text-sm">
-                <div>
-                  <span className="font-semibold">{posts.length}</span>{' '}
-                  <span className="text-muted-foreground">posts</span>
+              {/* Stats tiles */}
+              <div className="grid grid-cols-3 gap-2 md:gap-3 text-sm">
+                <div className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm px-3 py-2.5 text-center">
+                  <div className="font-bold text-base md:text-lg">{posts.length}</div>
+                  <div className="text-[11px] md:text-xs text-muted-foreground uppercase tracking-wide">Posts</div>
                 </div>
-                <Link 
+                <Link
                   to={`/profile/${username}/followers`}
-                  className="hover:opacity-70 transition-opacity"
+                  className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm px-3 py-2.5 text-center hover:border-primary/40 hover:bg-card transition-all"
                 >
-                  <span className="font-semibold">{followersCount}</span>{' '}
-                  <span className="text-muted-foreground">followers</span>
+                  <div className="font-bold text-base md:text-lg">{followersCount}</div>
+                  <div className="text-[11px] md:text-xs text-muted-foreground uppercase tracking-wide">Followers</div>
                 </Link>
-                <Link 
+                <Link
                   to={`/profile/${username}/following`}
-                  className="hover:opacity-70 transition-opacity"
+                  className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm px-3 py-2.5 text-center hover:border-primary/40 hover:bg-card transition-all"
                 >
-                  <span className="font-semibold">{followingCount}</span>{' '}
-                  <span className="text-muted-foreground">following</span>
+                  <div className="font-bold text-base md:text-lg">{followingCount}</div>
+                  <div className="text-[11px] md:text-xs text-muted-foreground uppercase tracking-wide">Following</div>
                 </Link>
               </div>
 
