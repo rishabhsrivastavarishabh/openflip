@@ -19,6 +19,8 @@ import { ProtectedMedia } from '@/components/media/ProtectedMedia';
 import { PostActions } from '@/components/post/PostActions';
 import { VerifiedBadge } from '@/components/common/VerifiedBadge';
 import { ProfilePhotoViewer } from '@/components/profile/ProfilePhotoViewer';
+import { TipDialog } from '@/components/monetization/TipDialog';
+import { CreatorSubscribeDialog } from '@/components/monetization/CreatorSubscribeDialog';
 
 interface ProfileData {
   id: string;
