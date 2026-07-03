@@ -26,6 +26,9 @@ export function MessageReactions({ messageId, isMine, onReactionAdded }: Message
   const { user } = useAuth();
   const [reactions, setReactions] = useState<Reaction[]>([]);
   const [open, setOpen] = useState(false);
+  const [showFullPicker, setShowFullPicker] = useState(false);
+  const { theme } = useTheme();
+  const emojiTheme = theme === 'dark' ? Theme.DARK : theme === 'light' ? Theme.LIGHT : Theme.AUTO;
 
   useEffect(() => {
     fetchReactions();
