@@ -394,69 +394,90 @@ export default function MessagesPage() {
             filteredConversations.map(conversation => {
               const unread = conversation.unread_count > 0;
               return (
-                <Link
+                <div
                   key={conversation.id}
-                  to={`/messages/${conversation.id}`}
-                  className={`flex items-center gap-3 p-3 rounded-2xl transition-all ${
+                  className={`group relative flex items-center gap-3 p-3 rounded-2xl transition-all ${
                     unread ? 'bg-primary/[0.04] hover:bg-primary/[0.08]' : 'hover:bg-secondary/60'
                   }`}
                 >
-                  <div className="relative shrink-0">
-                    {conversation.is_group ? (
-                      <Avatar className="h-14 w-14">
-                        <AvatarImage src={conversation.group_avatar_url || undefined} />
-                        <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/5 text-primary">
-                          <Users className="h-6 w-6" />
-                        </AvatarFallback>
-                      </Avatar>
-                    ) : (
-                      <>
+                  <Link to={`/messages/${conversation.id}`} className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="relative shrink-0">
+                      {conversation.is_group ? (
                         <Avatar className="h-14 w-14">
-                          <AvatarImage src={conversation.participant.avatar_url || undefined} />
-                          <AvatarFallback className="bg-primary/10 text-primary text-lg">
-                            {conversation.participant.username.charAt(0).toUpperCase()}
+                          <AvatarImage src={conversation.group_avatar_url || undefined} />
+                          <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/5 text-primary">
+                            <Users className="h-6 w-6" />
                           </AvatarFallback>
                         </Avatar>
-                        {isUserOnline(conversation.participant.id) && (
-                          <OnlineIndicator isOnline size="md" className="absolute bottom-0 right-0 ring-2 ring-background" />
-                        )}
-                      </>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className={`truncate ${unread ? 'font-bold text-foreground' : 'font-semibold'}`}>
-                        {conversation.is_group ? conversation.group_name : conversation.participant.username}
-                      </span>
-                      <span className={`text-[11px] shrink-0 ${unread ? 'text-primary font-semibold' : 'text-muted-foreground'}`}>
-                        {conversation.updated_at
-                          ? formatDistanceToNow(new Date(conversation.updated_at), { addSuffix: false })
-                          : ''}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <p className={`text-sm truncate flex-1 ${unread ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
-                        {conversation.last_message ? (
-                          <>
-                            {conversation.last_sender_id === user.id ? (
-                              <span className="opacity-70">You: </span>
-                            ) : conversation.is_group && conversation.last_sender_username ? (
-                              <span className="opacity-70">{conversation.last_sender_username}: </span>
-                            ) : null}
-                            {conversation.last_message}
-                          </>
-                        ) : (
-                          <span className="italic opacity-60">Say hi 👋</span>
-                        )}
-                      </p>
-                      {unread && (
-                        <span className="min-w-[20px] h-5 px-1.5 flex items-center justify-center gradient-primary text-primary-foreground text-[11px] font-bold rounded-full shadow-sm">
-                          {conversation.unread_count}
-                        </span>
+                      ) : (
+                        <>
+                          <Avatar className="h-14 w-14">
+                            <AvatarImage src={conversation.participant.avatar_url || undefined} />
+                            <AvatarFallback className="bg-primary/10 text-primary text-lg">
+                              {conversation.participant.username.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          {isUserOnline(conversation.participant.id) && (
+                            <OnlineIndicator isOnline size="md" className="absolute bottom-0 right-0 ring-2 ring-background" />
+                          )}
+                        </>
                       )}
                     </div>
-                  </div>
-                </Link>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className={`truncate flex items-center gap-1 ${unread ? 'font-bold text-foreground' : 'font-semibold'}`}>
+                          {conversation.is_pinned && <Pin className="h-3 w-3 text-primary shrink-0" />}
+                          {conversation.is_group ? conversation.group_name : conversation.participant.username}
+                        </span>
+                        <span className={`text-[11px] shrink-0 ${unread ? 'text-primary font-semibold' : 'text-muted-foreground'}`}>
+                          {conversation.updated_at
+                            ? formatDistanceToNow(new Date(conversation.updated_at), { addSuffix: false })
+                            : ''}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <p className={`text-sm truncate flex-1 ${unread ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+                          {conversation.last_message ? (
+                            <>
+                              {conversation.last_sender_id === user.id ? (
+                                <span className="opacity-70">You: </span>
+                              ) : conversation.is_group && conversation.last_sender_username ? (
+                                <span className="opacity-70">{conversation.last_sender_username}: </span>
+                              ) : null}
+                              {conversation.last_message}
+                            </>
+                          ) : (
+                            <span className="italic opacity-60">Say hi 👋</span>
+                          )}
+                        </p>
+                        {unread && (
+                          <span className="min-w-[20px] h-5 px-1.5 flex items-center justify-center gradient-primary text-primary-foreground text-[11px] font-bold rounded-full shadow-sm">
+                            {conversation.unread_count}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 opacity-60 hover:opacity-100" aria-label="Chat options" onClick={(e) => e.stopPropagation()}>
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => togglePin(conversation)}>
+                        {conversation.is_pinned ? (
+                          <><PinOff className="h-4 w-4 mr-2" />Unpin chat</>
+                        ) : (
+                          <><Pin className="h-4 w-4 mr-2" />Pin chat</>
+                        )}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setPendingDelete(conversation)}>
+                        <Trash2 className="h-4 w-4 mr-2" />Delete chat
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               );
             })
           ) : (
