@@ -670,9 +670,9 @@ export default function ProfilePage() {
 
             <TabsContent value="posts" className="mt-0">
               {posts.length > 0 ? (
-                <div className="grid grid-cols-3 gap-0.5 sm:gap-1">
+                <div className="grid grid-cols-3 gap-1 sm:gap-2 p-2 sm:p-3">
                   {posts.map(post => (
-                    <div key={post.id} className="aspect-square relative group overflow-hidden">
+                    <div key={post.id} className="aspect-square relative group overflow-hidden rounded-xl sm:rounded-2xl">
                       <Link to={`/post/${post.id}`} className="block w-full h-full">
                         <ProtectedMedia
                           src={post.media_url}
@@ -714,12 +714,12 @@ export default function ProfilePage() {
 
           <TabsContent value="reels" className="mt-0">
             {reels.length > 0 ? (
-              <div className="grid grid-cols-3 gap-0.5 sm:gap-1">
+              <div className="grid grid-cols-3 gap-1 sm:gap-2 p-2 sm:p-3">
                 {reels.map(reel => (
                   <Link
                     key={reel.id}
                     to={`/reels?id=${reel.id}`}
-                    className="aspect-[9/16] relative group overflow-hidden"
+                    className="aspect-[9/16] relative group overflow-hidden rounded-xl sm:rounded-2xl"
                   >
                     <ProtectedMedia
                       src={reel.thumbnail_url || reel.video_url}
@@ -749,12 +749,12 @@ export default function ProfilePage() {
           {isOwnProfile && (
             <TabsContent value="saved" className="mt-0">
               {savedPosts.length > 0 ? (
-                <div className="grid grid-cols-3 gap-0.5 sm:gap-1">
+                <div className="grid grid-cols-3 gap-1 sm:gap-2 p-2 sm:p-3">
                   {savedPosts.map(post => (
                     <Link
                       key={post.id}
                       to={`/post/${post.id}`}
-                      className="aspect-square relative group overflow-hidden"
+                      className="aspect-square relative group overflow-hidden rounded-xl sm:rounded-2xl"
                     >
                       <ProtectedMedia
                         src={post.media_url}
