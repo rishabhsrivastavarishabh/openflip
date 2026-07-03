@@ -346,9 +346,11 @@ export type Database = {
       }
       conversation_participants: {
         Row: {
+          archived_at: string | null
           can_post: boolean | null
           conversation_id: string
           is_admin: boolean | null
+          is_archived: boolean
           is_pinned: boolean
           joined_at: string | null
           last_read_at: string | null
@@ -357,9 +359,11 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          archived_at?: string | null
           can_post?: boolean | null
           conversation_id: string
           is_admin?: boolean | null
+          is_archived?: boolean
           is_pinned?: boolean
           joined_at?: string | null
           last_read_at?: string | null
@@ -368,9 +372,11 @@ export type Database = {
           user_id: string
         }
         Update: {
+          archived_at?: string | null
           can_post?: boolean | null
           conversation_id?: string
           is_admin?: boolean | null
+          is_archived?: boolean
           is_pinned?: boolean
           joined_at?: string | null
           last_read_at?: string | null
@@ -1305,6 +1311,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_status: string
           account_type: string | null
           avatar_url: string | null
           bio: string | null
@@ -1319,7 +1326,11 @@ export type Database = {
           id: string
           is_private: boolean | null
           is_verified: boolean | null
+          moderated_at: string | null
+          moderated_by: string | null
+          moderation_reason: string | null
           phone_number: string | null
+          suspended_until: string | null
           updated_at: string | null
           username: string
           verification_requested_at: string | null
@@ -1327,6 +1338,7 @@ export type Database = {
           website: string | null
         }
         Insert: {
+          account_status?: string
           account_type?: string | null
           avatar_url?: string | null
           bio?: string | null
@@ -1341,7 +1353,11 @@ export type Database = {
           id: string
           is_private?: boolean | null
           is_verified?: boolean | null
+          moderated_at?: string | null
+          moderated_by?: string | null
+          moderation_reason?: string | null
           phone_number?: string | null
+          suspended_until?: string | null
           updated_at?: string | null
           username: string
           verification_requested_at?: string | null
@@ -1349,6 +1365,7 @@ export type Database = {
           website?: string | null
         }
         Update: {
+          account_status?: string
           account_type?: string | null
           avatar_url?: string | null
           bio?: string | null
@@ -1363,7 +1380,11 @@ export type Database = {
           id?: string
           is_private?: boolean | null
           is_verified?: boolean | null
+          moderated_at?: string | null
+          moderated_by?: string | null
+          moderation_reason?: string | null
           phone_number?: string | null
+          suspended_until?: string | null
           updated_at?: string | null
           username?: string
           verification_requested_at?: string | null
