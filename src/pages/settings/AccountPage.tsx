@@ -128,6 +128,39 @@ export default function AccountPage() {
         <p className="text-sm text-muted-foreground">Update your profile and account details.</p>
       </section>
 
+      <section>
+        <Label className="mb-2 block">Cover picture</Label>
+        <div
+          className="relative w-full h-40 rounded-2xl overflow-hidden bg-gradient-to-r from-primary/20 to-primary/10 border border-border/50"
+          style={(profile as any)?.cover_url ? { backgroundImage: `url(${(profile as any).cover_url})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
+        >
+          <div className="absolute inset-0 bg-black/20" />
+          <div className="absolute bottom-3 right-3 flex gap-2">
+            {(profile as any)?.cover_url && (
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={handleRemoveCover}
+                disabled={savingCover}
+              >
+                <X className="w-4 h-4 mr-1" /> Remove
+              </Button>
+            )}
+            <label>
+              <Button asChild size="sm" disabled={savingCover}>
+                <span className="cursor-pointer">
+                  <ImagePlus className="w-4 h-4 mr-1" />
+                  {savingCover ? 'Uploading…' : ((profile as any)?.cover_url ? 'Change cover' : 'Add cover')}
+                </span>
+              </Button>
+              <input type="file" accept="image/*" className="hidden" onChange={handleCoverChange} />
+            </label>
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground mt-2">Recommended 1500×500. Max 8MB.</p>
+      </section>
+
       <section className="flex items-center gap-4">
         <div className="relative">
           <Avatar className="w-20 h-20">
