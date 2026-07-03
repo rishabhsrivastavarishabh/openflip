@@ -1,4 +1,4 @@
-import { House, Clapperboard, MessagesSquare, SquarePlus } from 'lucide-react';
+import { Home, Clapperboard, MessagesSquare, PlusCircle } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
