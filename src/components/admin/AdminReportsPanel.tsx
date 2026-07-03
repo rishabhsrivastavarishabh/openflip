@@ -21,6 +21,7 @@ type Report = {
   description: string | null;
   status: string;
   created_at: string;
+  action_taken?: string | null;
   reporter?: { username: string; avatar_url: string | null } | null;
   reported_user?: { username: string; avatar_url: string | null } | null;
 };
