@@ -492,22 +492,29 @@ export default function ProfilePage() {
         ]}
       />
       <div className="max-w-4xl mx-auto">
+        {/* Gradient cover strip */}
+        <div className="relative h-24 md:h-36 gradient-primary overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/30" aria-hidden />
+        </div>
+
         {/* Profile Header */}
-        <div className="p-4 md:py-8">
+        <div className="px-4 -mt-12 md:-mt-16 md:py-0 pb-4">
           <div className="flex items-start gap-6 md:gap-12">
             <div className="relative">
-              <button onClick={() => setShowPhotoViewer(true)}>
-                <Avatar className="w-20 h-20 md:w-36 md:h-36 ring-2 ring-border cursor-pointer hover:opacity-90 transition-opacity">
-                  <AvatarImage src={profile.avatar_url || undefined} />
-                  <AvatarFallback className="text-2xl md:text-4xl bg-primary/10 text-primary">
-                    {profile.username.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
+              <button onClick={() => setShowPhotoViewer(true)} className="block">
+                <div className="p-[3px] rounded-full gradient-primary shadow-lg">
+                  <Avatar className="w-24 h-24 md:w-36 md:h-36 ring-4 ring-background cursor-pointer hover:opacity-90 transition-opacity">
+                    <AvatarImage src={profile.avatar_url || undefined} />
+                    <AvatarFallback className="text-2xl md:text-4xl bg-primary/10 text-primary">
+                      {profile.username.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
               </button>
               {isOwnProfile && (
                 <button
                   onClick={() => setShowCreateStory(true)}
-                  className="absolute -bottom-1 -right-1 w-7 h-7 md:w-8 md:h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center border-2 border-background hover:bg-primary/90 transition-colors"
+                  className="absolute bottom-0 right-0 w-8 h-8 md:w-9 md:h-9 rounded-full gradient-primary text-primary-foreground flex items-center justify-center border-2 border-background hover:scale-105 shadow-md transition-transform"
                 >
                   <Plus className="w-4 h-4 md:w-5 md:h-5" />
                 </button>
