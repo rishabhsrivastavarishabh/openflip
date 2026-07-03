@@ -72,6 +72,8 @@ export default function ProfilePage() {
   const [showBlockReport, setShowBlockReport] = useState(false);
   const [showPhotoViewer, setShowPhotoViewer] = useState(false);
   const [isFollowBack, setIsFollowBack] = useState(false);
+  const [showTipDialog, setShowTipDialog] = useState(false);
+  const [showSubscribeDialog, setShowSubscribeDialog] = useState(false);
 
   const isOwnProfile = !!user && !!userId && user.id === userId;
 
