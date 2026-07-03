@@ -68,6 +68,46 @@ export default function AccountPage() {
     }
   };
 
+  const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !user) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      toast.error('Cover image must be under 8MB');
+      return;
+    }
+    setSavingCover(true);
+    try {
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const fileName = `${user.id}/cover.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from('media')
+        .upload(fileName, file, { upsert: true, contentType: file.type });
+      if (uploadError) throw uploadError;
+      const { data: { publicUrl } } = supabase.storage.from('media').getPublicUrl(fileName);
+      await updateProfile({ cover_url: `${publicUrl}?t=${Date.now()}` } as any);
+      toast.success('Cover updated');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update cover');
+    } finally {
+      setSavingCover(false);
+    }
+  };
+
+  const handleRemoveCover = async () => {
+    setSavingCover(true);
+    try {
+      await updateProfile({ cover_url: null } as any);
+      toast.success('Cover removed');
+    } finally {
+      setSavingCover(false);
+    }
+  };
+
   const handleSave = async () => {
     setLoading(true);
     const { error } = await updateProfile({
