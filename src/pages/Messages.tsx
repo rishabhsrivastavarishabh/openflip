@@ -504,6 +504,13 @@ export default function MessagesPage() {
                           <><Pin className="h-4 w-4 mr-2" />Pin chat</>
                         )}
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => toggleArchive(conversation)}>
+                        {conversation.is_archived ? (
+                          <><ArchiveRestore className="h-4 w-4 mr-2" />Unarchive</>
+                        ) : (
+                          <><Archive className="h-4 w-4 mr-2" />Archive chat</>
+                        )}
+                      </DropdownMenuItem>
                       <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setPendingDelete(conversation)}>
                         <Trash2 className="h-4 w-4 mr-2" />Delete chat
                       </DropdownMenuItem>
