@@ -146,10 +146,14 @@ export default function MessagesPage() {
         is_group: isGroup,
         group_name: convo?.group_name || null,
         group_avatar_url: convo?.group_avatar_url || null,
+        is_pinned: !!p.is_pinned,
       } as ConversationItem;
     });
 
-    conversationsData.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+    conversationsData.sort((a, b) => {
+      if ((a.is_pinned ? 1 : 0) !== (b.is_pinned ? 1 : 0)) return a.is_pinned ? -1 : 1;
+      return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+    });
     setConversations(conversationsData);
     setLoading(false);
 
