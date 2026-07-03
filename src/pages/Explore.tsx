@@ -189,28 +189,33 @@ export default function ExplorePage() {
       <div className="max-w-4xl mx-auto px-4 py-4">
         <h1 className="sr-only">Explore Openflip</h1>
         {/* Search Bar */}
-        <div className="sticky top-0 z-40 glass-strong -mx-4 px-4 py-3 mb-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input
-              placeholder="Search users..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-              maxLength={100}
-            />
+        <div className="sticky top-0 z-40 header-glow -mx-4 px-4 py-3 mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-2xl gradient-primary flex items-center justify-center shadow-glow shrink-0">
+              <TrendingUp className="w-4 h-4 text-primary-foreground" />
+            </div>
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search users, creators, hashtags..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-11 h-11 rounded-full bg-background/60 border-border/40 backdrop-blur-lg focus-visible:ring-primary/40"
+                maxLength={100}
+              />
+            </div>
           </div>
         </div>
 
         {searchQuery.length > 0 ? (
           <div className="space-y-2">
             <h2 className="font-semibold text-lg flex items-center gap-2 mb-4">
-              <User className="h-5 w-5" />
+              <User className="h-5 w-5 text-primary" />
               Search Results
             </h2>
             {searchLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-3 p-3">
+                <div key={i} className="flex items-center gap-3 p-3 glass-tile">
                   <Skeleton className="h-12 w-12 rounded-full" />
                   <div className="space-y-2">
                     <Skeleton className="h-4 w-32" />
@@ -223,14 +228,16 @@ export default function ExplorePage() {
                 <Link
                   key={user.id}
                   to={`/profile/${user.username}`}
-                  className="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary transition-colors"
+                  className="flex items-center gap-3 p-3 rounded-2xl glass-tile hover:shadow-glow transition-all"
                 >
-                  <Avatar className="h-12 w-12">
-                    <AvatarImage src={user.avatar_url || undefined} />
-                    <AvatarFallback className="bg-primary/10 text-primary">
-                      {user.username.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="p-[2px] rounded-full gradient-primary">
+                    <Avatar className="h-12 w-12 border-2 border-background">
+                      <AvatarImage src={user.avatar_url || undefined} />
+                      <AvatarFallback className="bg-primary/10 text-primary">
+                        {user.username.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
                   <div>
                     <div className="flex items-center gap-1">
                       <span className="font-semibold">{user.username}</span>
@@ -247,22 +254,24 @@ export default function ExplorePage() {
                 </Link>
               ))
             ) : (
-              <p className="text-center text-muted-foreground py-8">No users found</p>
+              <div className="text-center py-16 glass-card">
+                <p className="text-muted-foreground">No users found</p>
+              </div>
             )}
           </div>
         ) : (
           <>
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="w-full mb-4">
-                <TabsTrigger value="posts" className="flex-1">
+              <TabsList className="w-full mb-4 glass-tile p-1 h-auto gap-1 bg-transparent">
+                <TabsTrigger value="posts" className="flex-1 rounded-xl data-[state=active]:gradient-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-glow">
                   <Grid3X3 className="h-4 w-4 mr-2" />
                   Posts
                 </TabsTrigger>
-                <TabsTrigger value="reels" className="flex-1">
+                <TabsTrigger value="reels" className="flex-1 rounded-xl data-[state=active]:gradient-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-glow">
                   <Film className="h-4 w-4 mr-2" />
                   Reels
                 </TabsTrigger>
-                <TabsTrigger value="trending" className="flex-1">
+                <TabsTrigger value="trending" className="flex-1 rounded-xl data-[state=active]:gradient-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-glow">
                   <TrendingUp className="h-4 w-4 mr-2" />
                   Trending
                 </TabsTrigger>
