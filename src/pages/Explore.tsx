@@ -279,39 +279,38 @@ export default function ExplorePage() {
 
               <TabsContent value="posts">
                 {loading ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                     {Array.from({ length: 12 }).map((_, i) => (
-                      <Skeleton key={i} className="aspect-square" />
+                      <Skeleton key={i} className="aspect-square rounded-2xl" />
                     ))}
                   </div>
                 ) : posts.length > 0 ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                     {posts.map(post => (
                       <Link
                         key={post.id}
                         to={`/post/${post.id}`}
-                        className="aspect-square relative group overflow-hidden rounded-sm"
+                        className="aspect-square relative group overflow-hidden rounded-2xl border border-border/40 hover:shadow-glow hover:-translate-y-0.5 transition-all"
                       >
                         <ProtectedMedia
                           src={post.media_url}
                           type={post.media_type}
                           className="w-full h-full object-cover"
                         />
-                        <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/30 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                          <div className="flex items-center gap-2 sm:gap-4 text-primary-foreground font-semibold text-xs sm:text-sm">
-                            <span className="flex items-center gap-1">
-                              ❤️ {post.likes_count}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              💬 {post.comments_count}
-                            </span>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/0 to-black/0 opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-3">
+                          <div className="flex items-center gap-3 text-white font-semibold text-xs sm:text-sm">
+                            <span className="flex items-center gap-1">❤️ {post.likes_count}</span>
+                            <span className="flex items-center gap-1">💬 {post.comments_count}</span>
                           </div>
                         </div>
                       </Link>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-12">
+                  <div className="text-center py-16 glass-card">
+                    <div className="w-16 h-16 rounded-3xl gradient-primary mx-auto mb-4 flex items-center justify-center shadow-glow">
+                      <Grid3X3 className="w-8 h-8 text-primary-foreground" />
+                    </div>
                     <p className="text-muted-foreground">No posts to explore yet</p>
                   </div>
                 )}
@@ -319,25 +318,23 @@ export default function ExplorePage() {
 
               <TabsContent value="reels">
                 {reels.length > 0 ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-1">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {reels.map(reel => (
                       <Link
                         key={reel.id}
                         to={`/reels?id=${reel.id}`}
-                        className="aspect-[9/16] relative group overflow-hidden rounded-sm"
+                        className="aspect-[9/16] relative group overflow-hidden rounded-2xl border border-border/40 hover:shadow-glow hover:-translate-y-0.5 transition-all"
                       >
                         <ProtectedMedia
                           src={reel.thumbnail_url || reel.video_url}
                           type={reel.thumbnail_url ? 'image' : 'video'}
                           className="w-full h-full object-cover"
                         />
-                        <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/30 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                          <div className="flex items-center gap-2 text-primary-foreground font-semibold text-xs">
-                            <span>▶️ {reel.view_count || 0}</span>
-                            <span>❤️ {reel.likes_count}</span>
-                          </div>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+                        <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider text-white bg-black/40 backdrop-blur-md border border-white/20">
+                          REEL
                         </div>
-                        <div className="absolute bottom-2 left-2 flex items-center gap-1 text-white text-xs">
+                        <div className="absolute bottom-2 left-2 flex items-center gap-1 text-white text-xs font-medium">
                           <Film className="w-3 h-3" />
                           <span>{reel.view_count || 0}</span>
                         </div>
@@ -345,16 +342,20 @@ export default function ExplorePage() {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-12">
-                    <Film className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <div className="text-center py-16 glass-card">
+                    <div className="w-16 h-16 rounded-3xl gradient-primary mx-auto mb-4 flex items-center justify-center shadow-glow">
+                      <Film className="w-8 h-8 text-primary-foreground" />
+                    </div>
                     <p className="text-muted-foreground">No reels to explore yet</p>
                   </div>
                 )}
               </TabsContent>
 
               <TabsContent value="trending">
-                <div className="text-center py-12">
-                  <TrendingUp className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <div className="text-center py-16 glass-card">
+                  <div className="w-16 h-16 rounded-3xl gradient-primary mx-auto mb-4 flex items-center justify-center shadow-glow">
+                    <TrendingUp className="w-8 h-8 text-primary-foreground" />
+                  </div>
                   <p className="text-muted-foreground">Trending content will appear here</p>
                 </div>
               </TabsContent>
