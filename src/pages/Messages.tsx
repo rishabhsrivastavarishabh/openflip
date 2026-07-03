@@ -35,9 +35,10 @@ interface ConversationItem {
   group_name?: string;
   group_avatar_url?: string;
   is_pinned?: boolean;
+  is_archived?: boolean;
 }
 
-type Filter = 'all' | 'unread' | 'groups';
+type Filter = 'all' | 'unread' | 'groups' | 'archived';
 
 export default function MessagesPage() {
   const { user } = useAuth();
