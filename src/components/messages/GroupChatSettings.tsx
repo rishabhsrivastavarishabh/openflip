@@ -51,6 +51,11 @@ export function GroupChatSettings({
   const [newName, setNewName] = useState(groupName);
   const [timer, setTimer] = useState(disappearingTimer?.toString() || 'off');
   const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [showAddMembers, setShowAddMembers] = useState(false);
+  const [addSearch, setAddSearch] = useState('');
+  const [addResults, setAddResults] = useState<Array<{ id: string; username: string; avatar_url: string | null }>>([]);
+  const [addSelected, setAddSelected] = useState<Array<{ id: string; username: string; avatar_url: string | null }>>([]);
+  const [addLoading, setAddLoading] = useState(false);
 
   useEffect(() => {
     if (open) {
