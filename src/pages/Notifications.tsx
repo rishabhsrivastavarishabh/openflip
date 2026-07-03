@@ -370,10 +370,10 @@ export default function NotificationsPage() {
           </TabsContent>
 
           <TabsContent value="requests" className="mt-0">
-            <div className="divide-y divide-border">
+            <div className="px-4 py-2 space-y-2">
               {requestsLoading ? (
                 Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-3 p-4">
+                  <div key={i} className="flex items-center gap-3 p-3 glass-tile">
                     <Skeleton className="h-12 w-12 rounded-full" />
                     <div className="flex-1 space-y-2">
                       <Skeleton className="h-4 w-32" />
@@ -384,14 +384,16 @@ export default function NotificationsPage() {
                 ))
               ) : followRequests.length > 0 ? (
                 followRequests.map(request => (
-                  <div key={request.id} className="flex items-center gap-3 p-4">
+                  <div key={request.id} className="flex items-center gap-3 p-3 glass-tile hover:shadow-glow transition-all">
                     <Link to={`/profile/${request.requester.username}`}>
-                      <Avatar className="h-12 w-12">
-                        <AvatarImage src={request.requester.avatar_url || undefined} />
-                        <AvatarFallback className="bg-primary/10 text-primary">
-                          {request.requester.username.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
+                      <div className="p-[2px] rounded-full gradient-primary">
+                        <Avatar className="h-12 w-12 border-2 border-background">
+                          <AvatarImage src={request.requester.avatar_url || undefined} />
+                          <AvatarFallback className="bg-primary/10 text-primary">
+                            {request.requester.username.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                      </div>
                     </Link>
                     <div className="flex-1 min-w-0">
                       <Link to={`/profile/${request.requester.username}`}>
@@ -407,7 +409,8 @@ export default function NotificationsPage() {
                     <div className="flex items-center gap-2">
                       <Button
                         size="sm"
-                        variant="default"
+                        variant="gradient"
+                        className="rounded-full shadow-glow"
                         onClick={() => handleAcceptRequest(request.id, request.requester_id)}
                       >
                         <Check className="h-4 w-4" />
@@ -415,6 +418,7 @@ export default function NotificationsPage() {
                       <Button
                         size="sm"
                         variant="outline"
+                        className="rounded-full"
                         onClick={() => handleRejectRequest(request.id)}
                       >
                         <X className="h-4 w-4" />
@@ -423,10 +427,12 @@ export default function NotificationsPage() {
                   </div>
                 ))
               ) : (
-                <div className="text-center py-12">
-                  <UserPlus className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <div className="text-center py-16 glass-card mt-4">
+                  <div className="w-16 h-16 rounded-3xl gradient-primary mx-auto mb-4 flex items-center justify-center shadow-glow">
+                    <UserPlus className="w-8 h-8 text-primary-foreground" />
+                  </div>
                   <h2 className="font-semibold mb-2">No follow requests</h2>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground px-6">
                     When someone requests to follow you, you'll see it here
                   </p>
                 </div>
