@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { House, Search, SquarePlus, Heart, MessagesSquare, User, Menu, LogOut, Settings, Users, Clapperboard } from 'lucide-react';
+import { Home, Compass, PlusCircle, Bell, MessagesSquare, User, Menu, LogOut, Cog, Users, Clapperboard } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -27,11 +27,12 @@ export function Sidebar() {
   const hasMultipleAccounts = accounts.length > 1;
 
   const navItems = [
-    { icon: House, href: '/', label: 'Home', badge: 0 },
-    { icon: Search, href: '/explore', label: 'Explore', badge: 0 },
+    { icon: Home, href: '/', label: 'Home', badge: 0 },
+    { icon: Compass, href: '/explore', label: 'Explore', badge: 0 },
+    { icon: PlusCircle, href: '/create', label: 'Create', badge: 0 },
     { icon: Clapperboard, href: '/reels', label: 'Reels', badge: 0 },
     { icon: MessagesSquare, href: '/messages', label: 'Messages', badge: unreadMessages },
-    { icon: Heart, href: '/notifications', label: 'Notifications', badge: unreadNotifications },
+    { icon: Bell, href: '/notifications', label: 'Notifications', badge: unreadNotifications },
     { icon: User, href: profile ? `/profile/${profile.username}` : '/auth', label: 'Profile', badge: 0 },
   ];
 
@@ -131,7 +132,7 @@ export function Sidebar() {
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link to="/settings" className="flex items-center gap-2">
-                  <Settings className="h-4 w-4" />
+                  <Cog className="h-4 w-4" />
                   Settings
                 </Link>
               </DropdownMenuItem>
