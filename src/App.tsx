@@ -46,6 +46,7 @@ import PrivacyPage from "./pages/settings/PrivacyPage";
 import NotificationsPage from "./pages/settings/NotificationsPage";
 import AppearancePage from "./pages/settings/AppearancePage";
 import TwoFactorPage from "./pages/settings/TwoFactorPage";
+import AdminPage from "./pages/settings/AdminPage";
 
 import Reels from "./pages/Reels";
 import Followers from "./pages/Followers";
@@ -109,6 +110,7 @@ const App = () => (
                 <Route path="notifications" element={<NotificationsPage />} />
                 <Route path="appearance" element={<AppearancePage />} />
                 <Route path="more" element={<Settings />} />
+                <Route path="admin" element={<AdminPage />} />
               </Route>
               <Route path="/account-center" element={<AccountCenter />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />

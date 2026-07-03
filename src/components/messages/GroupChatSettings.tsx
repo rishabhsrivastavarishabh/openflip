@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Settings, Camera, UserPlus, UserMinus, Crown, LogOut, Bell, Clock, Trash2, Loader2 } from 'lucide-react';
+import { Settings, Camera, UserPlus, UserMinus, Crown, LogOut, Bell, Clock, Trash2, Loader2, Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -50,6 +51,11 @@ export function GroupChatSettings({
   const [newName, setNewName] = useState(groupName);
   const [timer, setTimer] = useState(disappearingTimer?.toString() || 'off');
   const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [showAddMembers, setShowAddMembers] = useState(false);
+  const [addSearch, setAddSearch] = useState('');
+  const [addResults, setAddResults] = useState<Array<{ id: string; username: string; avatar_url: string | null }>>([]);
+  const [addSelected, setAddSelected] = useState<Array<{ id: string; username: string; avatar_url: string | null }>>([]);
+  const [addLoading, setAddLoading] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -204,6 +210,46 @@ export function GroupChatSettings({
     }
   };
 
+  useEffect(() => {
+    if (!showAddMembers) return;
+    if (addSearch.trim().length < 2) {
+      setAddResults([]);
+      return;
+    }
+    const t = setTimeout(async () => {
+      const memberIds = members.map(m => m.user_id);
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .ilike('username', `%${addSearch.trim()}%`)
+        .limit(15);
+      setAddResults((data || []).filter(p => !memberIds.includes(p.id)));
+    }, 250);
+    return () => clearTimeout(t);
+  }, [addSearch, showAddMembers, members]);
+
+  const handleAddMembers = async () => {
+    if (addSelected.length === 0) return;
+    setAddLoading(true);
+    try {
+      const { error } = await supabase.from('conversation_participants').insert(
+        addSelected.map(u => ({ conversation_id: conversationId, user_id: u.id }))
+      );
+      if (error) throw error;
+      toast.success(`Added ${addSelected.length} member${addSelected.length > 1 ? 's' : ''}`);
+      setAddSelected([]);
+      setAddSearch('');
+      setAddResults([]);
+      setShowAddMembers(false);
+      fetchMembers();
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to add members');
+    } finally {
+      setAddLoading(false);
+    }
+  };
+
+
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
@@ -289,7 +335,7 @@ export function GroupChatSettings({
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">{members.length} Members</span>
               {isAdmin && (
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" onClick={() => setShowAddMembers(true)}>
                   <UserPlus className="w-4 h-4 mr-1" />
                   Add
                 </Button>
@@ -349,6 +395,68 @@ export function GroupChatSettings({
           </Button>
         </div>
       </SheetContent>
+
+      <Dialog open={showAddMembers} onOpenChange={(o) => { setShowAddMembers(o); if (!o) { setAddSearch(''); setAddResults([]); setAddSelected([]); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add members</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                autoFocus
+                placeholder="Search by username"
+                value={addSearch}
+                onChange={(e) => setAddSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            {addSelected.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {addSelected.map(u => (
+                  <button
+                    key={u.id}
+                    className="flex items-center gap-1 px-2 py-1 rounded-full bg-primary/10 text-primary text-xs"
+                    onClick={() => setAddSelected(s => s.filter(x => x.id !== u.id))}
+                  >
+                    {u.username}
+                    <X className="w-3 h-3" />
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="max-h-64 overflow-y-auto space-y-1">
+              {addResults.map(u => {
+                const picked = !!addSelected.find(s => s.id === u.id);
+                return (
+                  <button
+                    key={u.id}
+                    onClick={() => setAddSelected(s => picked ? s.filter(x => x.id !== u.id) : [...s, u])}
+                    className={`w-full flex items-center gap-3 p-2 rounded-lg text-left transition-colors ${picked ? 'bg-primary/10' : 'hover:bg-muted'}`}
+                  >
+                    <Avatar className="w-9 h-9">
+                      <AvatarImage src={u.avatar_url || undefined} />
+                      <AvatarFallback>{u.username.charAt(0).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <span className="font-medium text-sm flex-1">{u.username}</span>
+                    {picked && <span className="text-xs text-primary">Selected</span>}
+                  </button>
+                );
+              })}
+              {addSearch.trim().length >= 2 && addResults.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">No users found</p>
+              )}
+              {addSearch.trim().length < 2 && (
+                <p className="text-sm text-muted-foreground text-center py-4">Type at least 2 characters</p>
+              )}
+            </div>
+            <Button className="w-full" disabled={addSelected.length === 0 || addLoading} onClick={handleAddMembers}>
+              {addLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : `Add ${addSelected.length || ''} member${addSelected.length === 1 ? '' : 's'}`}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Sheet>
   );
 }
