@@ -492,9 +492,12 @@ export default function ProfilePage() {
         ]}
       />
       <div className="max-w-4xl mx-auto">
-        {/* Gradient cover strip */}
-        <div className="relative h-24 md:h-36 gradient-primary overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/30" aria-hidden />
+        {/* Cover picture */}
+        <div
+          className="relative h-32 md:h-52 gradient-primary overflow-hidden bg-cover bg-center"
+          style={(profile as any).cover_url ? { backgroundImage: `url(${(profile as any).cover_url})` } : undefined}
+        >
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/40" aria-hidden />
         </div>
 
         {/* Profile Header */}

@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AvatarCropDialog } from '@/components/settings/AvatarCropDialog';
-import { Camera } from 'lucide-react';
+import { Camera, ImagePlus, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function AccountPage() {
@@ -16,6 +16,7 @@ export default function AccountPage() {
   const [cropFile, setCropFile] = useState<File | null>(null);
   const [showCropDialog, setShowCropDialog] = useState(false);
   const [savingAvatar, setSavingAvatar] = useState(false);
+  const [savingCover, setSavingCover] = useState(false);
 
   const [form, setForm] = useState({
     username: profile?.username || '',
@@ -67,6 +68,46 @@ export default function AccountPage() {
     }
   };
 
+  const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !user) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      toast.error('Cover image must be under 8MB');
+      return;
+    }
+    setSavingCover(true);
+    try {
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const fileName = `${user.id}/cover.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from('media')
+        .upload(fileName, file, { upsert: true, contentType: file.type });
+      if (uploadError) throw uploadError;
+      const { data: { publicUrl } } = supabase.storage.from('media').getPublicUrl(fileName);
+      await updateProfile({ cover_url: `${publicUrl}?t=${Date.now()}` } as any);
+      toast.success('Cover updated');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update cover');
+    } finally {
+      setSavingCover(false);
+    }
+  };
+
+  const handleRemoveCover = async () => {
+    setSavingCover(true);
+    try {
+      await updateProfile({ cover_url: null } as any);
+      toast.success('Cover removed');
+    } finally {
+      setSavingCover(false);
+    }
+  };
+
   const handleSave = async () => {
     setLoading(true);
     const { error } = await updateProfile({
@@ -85,6 +126,39 @@ export default function AccountPage() {
       <section>
         <h2 className="text-xl font-semibold mb-1">Account</h2>
         <p className="text-sm text-muted-foreground">Update your profile and account details.</p>
+      </section>
+
+      <section>
+        <Label className="mb-2 block">Cover picture</Label>
+        <div
+          className="relative w-full h-40 rounded-2xl overflow-hidden bg-gradient-to-r from-primary/20 to-primary/10 border border-border/50"
+          style={(profile as any)?.cover_url ? { backgroundImage: `url(${(profile as any).cover_url})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
+        >
+          <div className="absolute inset-0 bg-black/20" />
+          <div className="absolute bottom-3 right-3 flex gap-2">
+            {(profile as any)?.cover_url && (
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={handleRemoveCover}
+                disabled={savingCover}
+              >
+                <X className="w-4 h-4 mr-1" /> Remove
+              </Button>
+            )}
+            <label>
+              <Button asChild size="sm" disabled={savingCover}>
+                <span className="cursor-pointer">
+                  <ImagePlus className="w-4 h-4 mr-1" />
+                  {savingCover ? 'Uploading…' : ((profile as any)?.cover_url ? 'Change cover' : 'Add cover')}
+                </span>
+              </Button>
+              <input type="file" accept="image/*" className="hidden" onChange={handleCoverChange} />
+            </label>
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground mt-2">Recommended 1500×500. Max 8MB.</p>
       </section>
 
       <section className="flex items-center gap-4">

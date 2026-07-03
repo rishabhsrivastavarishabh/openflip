@@ -41,23 +41,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    let mounted = true;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        if (!mounted) return;
         setSession(session);
         setUser(session?.user ?? null);
-        
+
         if (session?.user) {
-          setTimeout(() => {
-            fetchProfile(session.user.id);
-          }, 0);
+          // Only refetch profile on real sign-in/user-update events, not on
+          // every silent TOKEN_REFRESHED (which fires ~hourly and was churning
+          // state, making the app feel like it lost the session).
+          if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'INITIAL_SESSION') {
+            setTimeout(() => {
+              fetchProfile(session.user.id);
+            }, 0);
+          }
         } else {
           setProfile(null);
         }
-        setLoading(false);
+        if (event !== 'TOKEN_REFRESHED') {
+          setLoading(false);
+        }
       }
     );
 
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted) return;
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
@@ -66,7 +77,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    // Proactively refresh the session when the tab regains focus so mobile
+    // browsers / background tabs don't leave us on a stale expired token.
+    const refreshIfNeeded = () => {
+      if (document.visibilityState === 'visible') {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (!session) return;
+          const expiresAt = (session.expires_at ?? 0) * 1000;
+          if (expiresAt - Date.now() < 5 * 60 * 1000) {
+            supabase.auth.refreshSession();
+          }
+        });
+      }
+    };
+    document.addEventListener('visibilitychange', refreshIfNeeded);
+    window.addEventListener('focus', refreshIfNeeded);
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+      document.removeEventListener('visibilitychange', refreshIfNeeded);
+      window.removeEventListener('focus', refreshIfNeeded);
+    };
   }, []);
 
   const signUp = async (email: string, password: string, username: string, fullName?: string) => {
