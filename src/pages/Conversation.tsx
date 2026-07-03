@@ -22,6 +22,7 @@ import { VoiceRecordButton } from '@/components/messages/VoiceRecordButton';
 import { VoiceMessage } from '@/components/messages/VoiceMessage';
 import { SharedPostPreview } from '@/components/messages/SharedPostPreview';
 import { ChatMediaInput } from '@/components/messages/ChatMediaInput';
+import { EmojiPickerButton } from '@/components/messages/EmojiPickerButton';
 import { ViewOnceMedia } from '@/components/messages/ViewOnceMedia';
 import { MediaMessage } from '@/components/messages/MediaMessage';
 import { DisappearingMessagesIndicator } from '@/components/messages/DisappearingMessagesIndicator';
