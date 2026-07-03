@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
-import { SquarePen, Search, Users, HelpCircle, MessagesSquare, Sparkles, Video, Copy } from 'lucide-react';
+import { SquarePen, Search, Users, HelpCircle, MessagesSquare, Sparkles, Video, Copy, Pin, PinOff, Trash2, MoreVertical } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Seo } from '@/components/seo/Seo';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { OnlineIndicator } from '@/components/messages/OnlineIndicator';
