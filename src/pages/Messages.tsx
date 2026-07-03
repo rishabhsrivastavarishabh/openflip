@@ -148,6 +148,7 @@ export default function MessagesPage() {
         group_name: convo?.group_name || null,
         group_avatar_url: convo?.group_avatar_url || null,
         is_pinned: !!p.is_pinned,
+        is_archived: !!p.is_archived,
       } as ConversationItem;
     });
 
