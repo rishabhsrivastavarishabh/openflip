@@ -34,6 +34,7 @@ interface ConversationItem {
   is_group?: boolean;
   group_name?: string;
   group_avatar_url?: string;
+  is_pinned?: boolean;
 }
 
 type Filter = 'all' | 'unread' | 'groups';
