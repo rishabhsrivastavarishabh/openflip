@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AvatarCropDialog } from '@/components/settings/AvatarCropDialog';
-import { Camera } from 'lucide-react';
+import { Camera, ImagePlus, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function AccountPage() {
@@ -16,6 +16,7 @@ export default function AccountPage() {
   const [cropFile, setCropFile] = useState<File | null>(null);
   const [showCropDialog, setShowCropDialog] = useState(false);
   const [savingAvatar, setSavingAvatar] = useState(false);
+  const [savingCover, setSavingCover] = useState(false);
 
   const [form, setForm] = useState({
     username: profile?.username || '',
