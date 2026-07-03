@@ -360,7 +360,7 @@ export default function MessagesPage() {
 
           <div className="px-4 pb-3">
             <Tabs value={filter} onValueChange={(v) => setFilter(v as Filter)}>
-              <TabsList className="grid grid-cols-3 w-full h-9 bg-secondary/60 rounded-full p-1">
+              <TabsList className="grid grid-cols-4 w-full h-9 bg-secondary/60 rounded-full p-1">
                 <TabsTrigger value="all" className="rounded-full text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
                   All
                 </TabsTrigger>
@@ -369,6 +369,9 @@ export default function MessagesPage() {
                 </TabsTrigger>
                 <TabsTrigger value="groups" className="rounded-full text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
                   Groups
+                </TabsTrigger>
+                <TabsTrigger value="archived" className="rounded-full text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                  Archived {archivedCount > 0 && <span className="ml-1 text-primary">·{archivedCount}</span>}
                 </TabsTrigger>
               </TabsList>
             </Tabs>
