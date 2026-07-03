@@ -58,6 +58,7 @@ import { CreateReel } from "./components/reels/CreateReel";
 import AccountCenter from "./pages/AccountCenter";
 import ResetPassword from "./pages/ResetPassword";
 import Call from "./pages/Call";
+import Meet from "./pages/Meet";
 import { IncomingCallDialog } from "./components/calls/IncomingCallDialog";
 import { useAuth as useAuthForCall } from "@/contexts/AuthContext";
 import NotFound from "./pages/NotFound";
