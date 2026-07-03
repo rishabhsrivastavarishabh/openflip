@@ -649,22 +649,24 @@ export default function ProfilePage() {
         {/* Posts Grid - only show if can view content */}
         {canViewContent ? (
           <Tabs defaultValue="posts" className="w-full">
-            <TabsList className="w-full justify-center border-t border-border rounded-none bg-transparent h-12">
-              <TabsTrigger value="posts" className="flex items-center gap-2">
-                <Grid3X3 className="h-4 w-4" />
-                <span className="hidden sm:inline">Posts</span>
-              </TabsTrigger>
-              <TabsTrigger value="reels" className="flex items-center gap-2">
-                <Film className="h-4 w-4" />
-                <span className="hidden sm:inline">Reels</span>
-              </TabsTrigger>
-              {isOwnProfile && (
-                <TabsTrigger value="saved" className="flex items-center gap-2">
-                  <Bookmark className="h-4 w-4" />
-                  <span className="hidden sm:inline">Saved</span>
+            <div className="sticky top-0 z-30 backdrop-blur-xl bg-background/70 border-y border-border/60 px-4 py-2">
+              <TabsList className="w-full max-w-md mx-auto justify-center bg-secondary/60 rounded-full p-1 h-11">
+                <TabsTrigger value="posts" className="flex-1 flex items-center gap-2 rounded-full data-[state=active]:gradient-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
+                  <Grid3X3 className="h-4 w-4" />
+                  <span className="hidden sm:inline">Posts</span>
                 </TabsTrigger>
-              )}
-            </TabsList>
+                <TabsTrigger value="reels" className="flex-1 flex items-center gap-2 rounded-full data-[state=active]:gradient-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
+                  <Film className="h-4 w-4" />
+                  <span className="hidden sm:inline">Reels</span>
+                </TabsTrigger>
+                {isOwnProfile && (
+                  <TabsTrigger value="saved" className="flex-1 flex items-center gap-2 rounded-full data-[state=active]:gradient-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
+                    <Bookmark className="h-4 w-4" />
+                    <span className="hidden sm:inline">Saved</span>
+                  </TabsTrigger>
+                )}
+              </TabsList>
+            </div>
 
             <TabsContent value="posts" className="mt-0">
               {posts.length > 0 ? (
