@@ -16,6 +16,7 @@ export default function AdminPage() {
   const [showVerification, setShowVerification] = useState(false);
   const [showPromos, setShowPromos] = useState(false);
   const [showSubs, setShowSubs] = useState(false);
+  const [showAccounts, setShowAccounts] = useState(false);
 
   useEffect(() => {
     if (!user) { setChecking(false); return; }
