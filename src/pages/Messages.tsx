@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
-import { SquarePen, Search, Users, HelpCircle, MessagesSquare, Sparkles } from 'lucide-react';
+import { SquarePen, Search, Users, HelpCircle, MessagesSquare, Sparkles, Video, Copy } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Seo } from '@/components/seo/Seo';
 import { Button } from '@/components/ui/button';
