@@ -269,14 +269,22 @@ export default function NotificationsPage() {
     <MainLayout>
       <Seo title="Notifications — Openflip" description="Likes, comments, follows and mentions on your Openflip account." path="/notifications" noindex />
       <div className="max-w-2xl mx-auto">
-        <header className="sticky top-0 z-40 glass-strong border-b px-4 py-4">
-          <h1 className="font-semibold text-lg">Notifications</h1>
+        <header className="sticky top-0 z-40 header-glow px-4 py-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-2xl gradient-primary flex items-center justify-center shadow-glow">
+              <Heart className="w-4 h-4 text-primary-foreground fill-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="font-display font-bold text-lg leading-tight">Notifications</h1>
+              <p className="text-xs text-muted-foreground">Activity from your community</p>
+            </div>
+          </div>
         </header>
 
         <Tabs defaultValue="all" className="w-full">
-          <TabsList className="w-full justify-start px-4 pt-2 bg-transparent">
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="requests" className="relative">
+          <TabsList className="mx-4 mt-4 mb-2 glass-tile p-1 h-auto gap-1 bg-transparent">
+            <TabsTrigger value="all" className="rounded-xl data-[state=active]:gradient-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-glow">All</TabsTrigger>
+            <TabsTrigger value="requests" className="relative rounded-xl data-[state=active]:gradient-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-glow">
               Requests
               {followRequests.length > 0 && (
                 <span className="ml-2 w-5 h-5 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center">
