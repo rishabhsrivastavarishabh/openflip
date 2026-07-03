@@ -68,7 +68,8 @@ export function PaymentCheckout({
     ? promoResult.final_price
     : amount;
 
-  const gst = Math.round(displayAmount * 0.18);
+  const skipGst = type === 'tip' || type === 'creator_subscription';
+  const gst = skipGst ? 0 : Math.round(displayAmount * 0.18);
   const totalAmount = displayAmount + gst;
 
   const validatePromo = async () => {
