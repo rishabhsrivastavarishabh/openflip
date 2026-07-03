@@ -574,6 +574,14 @@ export default function ProfilePage() {
                           Message
                         </Button>
                       )}
+                      <Button variant="outline" size="sm" onClick={() => setShowTipDialog(true)} className="border-pink-500/30 text-pink-500 hover:bg-pink-500/10">
+                        <Heart className="h-4 w-4 mr-1 fill-current" />
+                        Tip
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => setShowSubscribeDialog(true)} className="border-primary/30 text-primary hover:bg-primary/10">
+                        <Crown className="h-4 w-4 mr-1" />
+                        Subscribe
+                      </Button>
                       <Button variant="ghost" size="icon-sm" onClick={() => setShowShareSheet(true)}>
                         <Share2 className="h-4 w-4" />
                       </Button>
