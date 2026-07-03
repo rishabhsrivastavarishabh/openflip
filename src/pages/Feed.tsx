@@ -366,18 +366,20 @@ export default function FeedPage() {
     <Link
       key={reel.id}
       to={`/reels?id=${reel.id}`}
-      className="block border-b border-border"
+      className="block mx-3 my-3 rounded-3xl overflow-hidden border border-border/60 bg-card shadow-sm hover:shadow-lg hover:border-primary/40 transition-all"
     >
       <div className="p-3 flex items-center gap-3">
-        <Avatar className="w-8 h-8">
-          <AvatarImage src={reel.profiles.avatar_url || undefined} />
-          <AvatarFallback>{reel.profiles.username.charAt(0).toUpperCase()}</AvatarFallback>
-        </Avatar>
+        <div className="p-[2px] rounded-full gradient-primary">
+          <Avatar className="w-8 h-8 ring-2 ring-background">
+            <AvatarImage src={reel.profiles.avatar_url || undefined} />
+            <AvatarFallback>{reel.profiles.username.charAt(0).toUpperCase()}</AvatarFallback>
+          </Avatar>
+        </div>
         <span className="font-medium text-sm flex items-center gap-1">
           {reel.profiles.username}
           {reel.profiles.is_verified && <VerifiedBadge size="sm" />}
         </span>
-        <span className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full ml-auto">Reel</span>
+        <span className="text-[10px] font-semibold text-primary-foreground gradient-primary px-2 py-0.5 rounded-full ml-auto tracking-wide uppercase">Reel</span>
       </div>
       <div className="relative aspect-[9/16] max-h-[500px] bg-black">
         {reel.thumbnail_url ? (
@@ -385,8 +387,9 @@ export default function FeedPage() {
         ) : (
           <video src={reel.video_url} className="w-full h-full object-cover" />
         )}
-        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-          <div className="w-16 h-16 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center">
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center ring-1 ring-white/30">
             <Play className="w-8 h-8 text-white fill-white" />
           </div>
         </div>
