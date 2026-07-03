@@ -831,6 +831,22 @@ export default function ProfilePage() {
           />
         )}
 
+        {!isOwnProfile && profile && userId && (
+          <>
+            <TipDialog
+              open={showTipDialog}
+              onOpenChange={setShowTipDialog}
+              creatorId={userId}
+              creatorName={profile.username}
+            />
+            <CreatorSubscribeDialog
+              open={showSubscribeDialog}
+              onOpenChange={setShowSubscribeDialog}
+              creatorId={userId}
+              creatorName={profile.username}
+            />
+          </>
+
         {/* Full-screen Profile Photo Viewer */}
         <ProfilePhotoViewer
           open={showPhotoViewer}
