@@ -442,23 +442,26 @@ export default function FeedPage() {
 
         <div style={{ transform: `translateY(${pullDistance}px)`, transition: pullDistance === 0 ? 'transform 0.2s' : 'none' }}>
           {/* Header */}
-          <header className="sticky top-0 z-40 glass-strong border-b px-4 py-4 md:hidden">
+          <header className="sticky top-0 z-40 backdrop-blur-xl bg-background/70 border-b border-border/60 px-4 py-3 md:hidden">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <img src={openflipLogo} alt="Openflip - Secure Social Media" fetchPriority="high" decoding="async" className="w-8 h-8 rounded-lg object-cover" />
-                <span className="text-xl font-display font-bold gradient-text">Openflip</span>
+              <div className="flex items-center gap-2.5">
+                <div className="relative">
+                  <div className="absolute inset-0 gradient-primary rounded-xl blur-md opacity-60" aria-hidden />
+                  <img src={openflipLogo} alt="Openflip" fetchPriority="high" decoding="async" className="relative w-9 h-9 rounded-xl object-cover ring-1 ring-border/50" />
+                </div>
+                <span className="text-2xl font-display font-bold gradient-text tracking-tight">openflip</span>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5">
                 <Link to="/search" aria-label="Search">
-                  <Button variant="ghost" size="icon" aria-label="Search">
+                  <Button variant="ghost" size="icon" aria-label="Search" className="rounded-full hover:bg-primary/10">
                     <Search aria-hidden="true" className="w-5 h-5" />
                   </Button>
                 </Link>
                 <Link to="/notifications" aria-label="Notifications">
-                  <Button variant="ghost" size="icon" aria-label="Notifications" className="relative">
+                  <Button variant="ghost" size="icon" aria-label="Notifications" className="relative rounded-full hover:bg-primary/10">
                     <Bell aria-hidden="true" className="w-5 h-5" />
                     {unreadNotifications > 0 && (
-                      <span aria-label={`${unreadNotifications} unread notifications`} className="absolute top-1 right-1 min-w-[16px] h-4 px-1 flex items-center justify-center bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full">
+                      <span aria-label={`${unreadNotifications} unread notifications`} className="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center gradient-primary text-primary-foreground text-[10px] font-bold rounded-full shadow-md ring-2 ring-background">
                         {unreadNotifications > 99 ? '99+' : unreadNotifications}
                       </span>
                     )}
