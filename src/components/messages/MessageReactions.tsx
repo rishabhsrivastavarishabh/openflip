@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import EmojiPicker, { EmojiStyle, Theme } from 'emoji-picker-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
-import { Smile } from 'lucide-react';
+import { Smile, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTheme } from '@/hooks/useTheme';
 
 interface Reaction {
   id: string;
@@ -24,6 +26,9 @@ export function MessageReactions({ messageId, isMine, onReactionAdded }: Message
   const { user } = useAuth();
   const [reactions, setReactions] = useState<Reaction[]>([]);
   const [open, setOpen] = useState(false);
+  const [showFullPicker, setShowFullPicker] = useState(false);
+  const { theme } = useTheme();
+  const emojiTheme = theme === 'dark' ? Theme.DARK : theme === 'light' ? Theme.LIGHT : Theme.AUTO;
 
   useEffect(() => {
     fetchReactions();
@@ -110,21 +115,40 @@ export function MessageReactions({ messageId, isMine, onReactionAdded }: Message
             <Smile className="h-3.5 w-3.5" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-2" align={isMine ? "end" : "start"}>
-          <div className="flex gap-1">
-            {EMOJI_OPTIONS.map(emoji => (
+        <PopoverContent className="w-auto p-0 border-0" align={isMine ? "end" : "start"}>
+          {showFullPicker ? (
+            <EmojiPicker
+              theme={emojiTheme}
+              emojiStyle={EmojiStyle.NATIVE}
+              width={320}
+              height={380}
+              searchPlaceholder="Search emoji"
+              previewConfig={{ showPreview: false }}
+              onEmojiClick={(e) => { toggleReaction(e.emoji); setShowFullPicker(false); }}
+            />
+          ) : (
+            <div className="flex gap-1 p-2 items-center">
+              {EMOJI_OPTIONS.map(emoji => (
+                <button
+                  key={emoji}
+                  onClick={() => toggleReaction(emoji)}
+                  className={cn(
+                    "p-1.5 text-lg hover:bg-muted rounded transition-colors",
+                    reactions.some(r => r.emoji === emoji && r.user_id === user?.id) && "bg-primary/10"
+                  )}
+                >
+                  {emoji}
+                </button>
+              ))}
               <button
-                key={emoji}
-                onClick={() => toggleReaction(emoji)}
-                className={cn(
-                  "p-1.5 text-lg hover:bg-muted rounded transition-colors",
-                  reactions.some(r => r.emoji === emoji && r.user_id === user?.id) && "bg-primary/10"
-                )}
+                onClick={() => setShowFullPicker(true)}
+                className="p-1.5 hover:bg-muted rounded transition-colors"
+                aria-label="More emoji"
               >
-                {emoji}
+                <Plus className="h-4 w-4" />
               </button>
-            ))}
-          </div>
+            </div>
+          )}
         </PopoverContent>
       </Popover>
     </div>

@@ -22,6 +22,7 @@ import { VoiceRecordButton } from '@/components/messages/VoiceRecordButton';
 import { VoiceMessage } from '@/components/messages/VoiceMessage';
 import { SharedPostPreview } from '@/components/messages/SharedPostPreview';
 import { ChatMediaInput } from '@/components/messages/ChatMediaInput';
+import { EmojiPickerButton } from '@/components/messages/EmojiPickerButton';
 import { ViewOnceMedia } from '@/components/messages/ViewOnceMedia';
 import { MediaMessage } from '@/components/messages/MediaMessage';
 import { DisappearingMessagesIndicator } from '@/components/messages/DisappearingMessagesIndicator';
@@ -736,6 +737,7 @@ export default function ConversationPage() {
       <div className="sticky bottom-0 bg-background border-t border-border p-3">
         <div className="flex items-center gap-2">
           <ChatMediaInput onSend={handleMediaSend} disabled={sending} />
+          <EmojiPickerButton onSelect={(emoji) => setNewMessage(prev => prev + emoji)} disabled={sending} />
           <Input ref={inputRef} placeholder={encryptionReady ? "🔒 Encrypted message..." : "Message..."} value={newMessage} onChange={(e) => { setNewMessage(e.target.value); handleTyping(); }} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }}} className="flex-1" />
           {newMessage.trim() ? <Button size="icon" onClick={() => handleSendMessage()} disabled={sending}><Send className="w-5 h-5" /></Button> : <VoiceRecordButton onSend={handleVoiceSend} disabled={sending} />}
         </div>

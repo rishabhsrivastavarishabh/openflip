@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Shield, Tag, BadgeCheck, Users, Loader2 } from 'lucide-react';
+import { Shield, Tag, BadgeCheck, Users, Loader2, UserX } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { VerificationPanel } from '@/components/admin/VerificationPanel';
 import { AdminPromoManager } from '@/components/admin/AdminPromoManager';
 import { AdminSubscribersPanel } from '@/components/admin/AdminSubscribersPanel';
+import { AdminAccountsPanel } from '@/components/admin/AdminAccountsPanel';
 
 export default function AdminPage() {
   const { user } = useAuth();
@@ -15,6 +16,7 @@ export default function AdminPage() {
   const [showVerification, setShowVerification] = useState(false);
   const [showPromos, setShowPromos] = useState(false);
   const [showSubs, setShowSubs] = useState(false);
+  const [showAccounts, setShowAccounts] = useState(false);
 
   useEffect(() => {
     if (!user) { setChecking(false); return; }
@@ -63,6 +65,12 @@ export default function AdminPage() {
       description: 'View active and past subscribers',
       action: () => setShowSubs(true),
     },
+    {
+      icon: UserX,
+      title: 'Account lifecycle',
+      description: 'Suspend, ban, or reactivate accounts',
+      action: () => setShowAccounts(true),
+    },
   ];
 
   return (
@@ -106,6 +114,14 @@ export default function AdminPage() {
           <div className="max-w-3xl mx-auto p-4">
             <Button variant="ghost" onClick={() => setShowSubs(false)} className="mb-3">← Back</Button>
             <AdminSubscribersPanel />
+          </div>
+        </div>
+      )}
+      {showAccounts && (
+        <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
+          <div className="max-w-3xl mx-auto p-4">
+            <Button variant="ghost" onClick={() => setShowAccounts(false)} className="mb-3">← Back</Button>
+            <AdminAccountsPanel />
           </div>
         </div>
       )}

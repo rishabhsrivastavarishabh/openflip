@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
-import { SquarePen, Search, Users, HelpCircle, MessagesSquare, Sparkles, Video, Copy, Pin, PinOff, Trash2, MoreVertical } from 'lucide-react';
+import { SquarePen, Search, Users, HelpCircle, MessagesSquare, Sparkles, Video, Copy, Pin, PinOff, Trash2, MoreVertical, Archive, ArchiveRestore } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Seo } from '@/components/seo/Seo';
 import { Button } from '@/components/ui/button';
@@ -35,9 +35,10 @@ interface ConversationItem {
   group_name?: string;
   group_avatar_url?: string;
   is_pinned?: boolean;
+  is_archived?: boolean;
 }
 
-type Filter = 'all' | 'unread' | 'groups';
+type Filter = 'all' | 'unread' | 'groups' | 'archived';
 
 export default function MessagesPage() {
   const { user } = useAuth();
@@ -55,7 +56,7 @@ export default function MessagesPage() {
 
     const { data: participations, error } = await supabase
       .from('conversation_participants')
-      .select(`conversation_id, is_pinned, conversations(id, updated_at, is_group, group_name, group_avatar_url)`)
+      .select(`conversation_id, is_pinned, is_archived, conversations(id, updated_at, is_group, group_name, group_avatar_url)`)
       .eq('user_id', user.id);
 
     if (error || !participations) {
@@ -147,6 +148,7 @@ export default function MessagesPage() {
         group_name: convo?.group_name || null,
         group_avatar_url: convo?.group_avatar_url || null,
         is_pinned: !!p.is_pinned,
+        is_archived: !!p.is_archived,
       } as ConversationItem;
     });
 
@@ -187,15 +189,25 @@ export default function MessagesPage() {
   }, [conversations, subscribeToOnlineStatus]);
 
   const totalUnread = useMemo(
-    () => conversations.reduce((sum, c) => sum + c.unread_count, 0),
+    () => conversations.filter(c => !c.is_archived).reduce((sum, c) => sum + c.unread_count, 0),
+    [conversations]
+  );
+
+  const archivedCount = useMemo(
+    () => conversations.filter(c => c.is_archived).length,
     [conversations]
   );
 
   const filteredConversations = useMemo(() => {
     const term = searchQuery.toLowerCase().trim();
     return conversations.filter(c => {
-      if (filter === 'unread' && c.unread_count === 0) return false;
-      if (filter === 'groups' && !c.is_group) return false;
+      if (filter === 'archived') {
+        if (!c.is_archived) return false;
+      } else {
+        if (c.is_archived) return false;
+        if (filter === 'unread' && c.unread_count === 0) return false;
+        if (filter === 'groups' && !c.is_group) return false;
+      }
       if (!term) return true;
       if (c.is_group) return c.group_name?.toLowerCase().includes(term);
       return c.participant.username.toLowerCase().includes(term);
@@ -243,6 +255,23 @@ export default function MessagesPage() {
       fetchConversations();
     } else {
       toast.success('Chat deleted');
+    }
+  };
+
+  const toggleArchive = async (c: ConversationItem) => {
+    if (!user) return;
+    const nextArchived = !c.is_archived;
+    setConversations(prev => prev.map(x => x.id === c.id ? { ...x, is_archived: nextArchived } : x));
+    const { error } = await (supabase as any)
+      .from('conversation_participants')
+      .update({ is_archived: nextArchived, archived_at: nextArchived ? new Date().toISOString() : null })
+      .eq('conversation_id', c.id)
+      .eq('user_id', user.id);
+    if (error) {
+      toast.error('Failed to update archive');
+      fetchConversations();
+    } else {
+      toast.success(nextArchived ? 'Chat archived' : 'Chat unarchived');
     }
   };
 
@@ -331,7 +360,7 @@ export default function MessagesPage() {
 
           <div className="px-4 pb-3">
             <Tabs value={filter} onValueChange={(v) => setFilter(v as Filter)}>
-              <TabsList className="grid grid-cols-3 w-full h-9 bg-secondary/60 rounded-full p-1">
+              <TabsList className="grid grid-cols-4 w-full h-9 bg-secondary/60 rounded-full p-1">
                 <TabsTrigger value="all" className="rounded-full text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
                   All
                 </TabsTrigger>
@@ -340,6 +369,9 @@ export default function MessagesPage() {
                 </TabsTrigger>
                 <TabsTrigger value="groups" className="rounded-full text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
                   Groups
+                </TabsTrigger>
+                <TabsTrigger value="archived" className="rounded-full text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                  Archived {archivedCount > 0 && <span className="ml-1 text-primary">·{archivedCount}</span>}
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -472,6 +504,13 @@ export default function MessagesPage() {
                           <><Pin className="h-4 w-4 mr-2" />Pin chat</>
                         )}
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => toggleArchive(conversation)}>
+                        {conversation.is_archived ? (
+                          <><ArchiveRestore className="h-4 w-4 mr-2" />Unarchive</>
+                        ) : (
+                          <><Archive className="h-4 w-4 mr-2" />Archive chat</>
+                        )}
+                      </DropdownMenuItem>
                       <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setPendingDelete(conversation)}>
                         <Trash2 className="h-4 w-4 mr-2" />Delete chat
                       </DropdownMenuItem>
@@ -486,7 +525,7 @@ export default function MessagesPage() {
                 <MessagesSquare className="w-8 h-8 text-primary" />
               </div>
               <h2 className="font-semibold mb-1">
-                {filter === 'unread' ? 'No unread messages' : filter === 'groups' ? 'No group chats' : 'No messages yet'}
+                {filter === 'unread' ? 'No unread messages' : filter === 'groups' ? 'No group chats' : filter === 'archived' ? 'No archived chats' : 'No messages yet'}
               </h2>
               <p className="text-sm text-muted-foreground mb-5">
                 {filter === 'all' ? 'Start a conversation with someone' : 'Try switching to another tab'}
