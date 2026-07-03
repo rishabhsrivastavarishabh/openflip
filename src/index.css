@@ -150,6 +150,21 @@
     @apply bg-background/95 backdrop-blur-2xl border border-border/30;
   }
 
+  .glass-card {
+    @apply bg-background/60 backdrop-blur-xl border border-border/40 rounded-3xl;
+  }
+
+  .glass-tile {
+    @apply bg-background/50 backdrop-blur-lg border border-border/40 rounded-2xl;
+  }
+
+  .header-glow {
+    background:
+      radial-gradient(60% 100% at 50% 0%, hsl(var(--primary) / 0.10), transparent 70%),
+      hsl(var(--background) / 0.85);
+    @apply backdrop-blur-2xl border-b border-border/40;
+  }
+
   .animate-fade-in {
     animation: fadeIn 0.3s ease-out forwards;
   }

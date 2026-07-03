@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface NotificationItem {
   id: string;
@@ -269,14 +270,22 @@ export default function NotificationsPage() {
     <MainLayout>
       <Seo title="Notifications — Openflip" description="Likes, comments, follows and mentions on your Openflip account." path="/notifications" noindex />
       <div className="max-w-2xl mx-auto">
-        <header className="sticky top-0 z-40 glass-strong border-b px-4 py-4">
-          <h1 className="font-semibold text-lg">Notifications</h1>
+        <header className="sticky top-0 z-40 header-glow px-4 py-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-2xl gradient-primary flex items-center justify-center shadow-glow">
+              <Heart className="w-4 h-4 text-primary-foreground fill-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="font-display font-bold text-lg leading-tight">Notifications</h1>
+              <p className="text-xs text-muted-foreground">Activity from your community</p>
+            </div>
+          </div>
         </header>
 
         <Tabs defaultValue="all" className="w-full">
-          <TabsList className="w-full justify-start px-4 pt-2 bg-transparent">
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="requests" className="relative">
+          <TabsList className="mx-4 mt-4 mb-2 glass-tile p-1 h-auto gap-1 bg-transparent">
+            <TabsTrigger value="all" className="rounded-xl data-[state=active]:gradient-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-glow">All</TabsTrigger>
+            <TabsTrigger value="requests" className="relative rounded-xl data-[state=active]:gradient-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-glow">
               Requests
               {followRequests.length > 0 && (
                 <span className="ml-2 w-5 h-5 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center">
@@ -287,10 +296,10 @@ export default function NotificationsPage() {
           </TabsList>
 
           <TabsContent value="all" className="mt-0">
-            <div className="divide-y divide-border">
+            <div className="px-4 py-2 space-y-2">
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="flex items-start gap-3 p-4">
+                  <div key={i} className="flex items-start gap-3 p-3 glass-tile">
                     <Skeleton className="h-11 w-11 rounded-full" />
                     <div className="flex-1 space-y-2">
                       <Skeleton className="h-4 w-3/4" />
@@ -302,17 +311,24 @@ export default function NotificationsPage() {
                 notifications.map(notification => (
                   <div
                     key={notification.id}
-                    className="flex items-start gap-3 p-4 hover:bg-secondary/50 transition-colors group"
+                    className={cn(
+                      'flex items-start gap-3 p-3 rounded-2xl border transition-all group hover:shadow-glow',
+                      notification.is_read
+                        ? 'bg-background/40 border-border/40'
+                        : 'bg-gradient-to-r from-primary/5 via-accent/5 to-transparent border-primary/20',
+                    )}
                   >
                     <Link to={getNotificationLink(notification)} className="flex items-start gap-3 flex-1">
                       <div className="relative">
-                        <Avatar className="h-11 w-11">
-                          <AvatarImage src={notification.actor.avatar_url || undefined} />
-                          <AvatarFallback className="bg-primary/10 text-primary">
-                            {notification.actor.username.charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-background flex items-center justify-center">
+                        <div className="p-[2px] rounded-full gradient-primary">
+                          <Avatar className="h-11 w-11 border-2 border-background">
+                            <AvatarImage src={notification.actor.avatar_url || undefined} />
+                            <AvatarFallback className="bg-primary/10 text-primary">
+                              {notification.actor.username.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                        </div>
+                        <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-background border border-border/60 flex items-center justify-center shadow-sm">
                           {getNotificationIcon(notification.type)}
                         </div>
                       </div>
@@ -321,12 +337,12 @@ export default function NotificationsPage() {
                           <span className="font-semibold">{notification.actor.username}</span>{' '}
                           {getNotificationText(notification.type)}
                         </p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground mt-0.5">
                           {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
                         </p>
                       </div>
                       {!notification.is_read && (
-                        <div className="w-2 h-2 rounded-full bg-accent" />
+                        <div className="w-2.5 h-2.5 rounded-full gradient-primary shadow-glow shrink-0 mt-2" />
                       )}
                     </Link>
                     <Button
@@ -340,10 +356,12 @@ export default function NotificationsPage() {
                   </div>
                 ))
               ) : (
-                <div className="text-center py-12">
-                  <Heart className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <div className="text-center py-16 glass-card mt-4">
+                  <div className="w-16 h-16 rounded-3xl gradient-primary mx-auto mb-4 flex items-center justify-center shadow-glow">
+                    <Heart className="w-8 h-8 text-primary-foreground fill-primary-foreground" />
+                  </div>
                   <h2 className="font-semibold mb-2">No notifications yet</h2>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground px-6">
                     When someone likes or comments on your posts, you'll see it here
                   </p>
                 </div>
@@ -352,10 +370,10 @@ export default function NotificationsPage() {
           </TabsContent>
 
           <TabsContent value="requests" className="mt-0">
-            <div className="divide-y divide-border">
+            <div className="px-4 py-2 space-y-2">
               {requestsLoading ? (
                 Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-3 p-4">
+                  <div key={i} className="flex items-center gap-3 p-3 glass-tile">
                     <Skeleton className="h-12 w-12 rounded-full" />
                     <div className="flex-1 space-y-2">
                       <Skeleton className="h-4 w-32" />
@@ -366,14 +384,16 @@ export default function NotificationsPage() {
                 ))
               ) : followRequests.length > 0 ? (
                 followRequests.map(request => (
-                  <div key={request.id} className="flex items-center gap-3 p-4">
+                  <div key={request.id} className="flex items-center gap-3 p-3 glass-tile hover:shadow-glow transition-all">
                     <Link to={`/profile/${request.requester.username}`}>
-                      <Avatar className="h-12 w-12">
-                        <AvatarImage src={request.requester.avatar_url || undefined} />
-                        <AvatarFallback className="bg-primary/10 text-primary">
-                          {request.requester.username.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
+                      <div className="p-[2px] rounded-full gradient-primary">
+                        <Avatar className="h-12 w-12 border-2 border-background">
+                          <AvatarImage src={request.requester.avatar_url || undefined} />
+                          <AvatarFallback className="bg-primary/10 text-primary">
+                            {request.requester.username.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                      </div>
                     </Link>
                     <div className="flex-1 min-w-0">
                       <Link to={`/profile/${request.requester.username}`}>
@@ -389,7 +409,8 @@ export default function NotificationsPage() {
                     <div className="flex items-center gap-2">
                       <Button
                         size="sm"
-                        variant="default"
+                        variant="gradient"
+                        className="rounded-full shadow-glow"
                         onClick={() => handleAcceptRequest(request.id, request.requester_id)}
                       >
                         <Check className="h-4 w-4" />
@@ -397,6 +418,7 @@ export default function NotificationsPage() {
                       <Button
                         size="sm"
                         variant="outline"
+                        className="rounded-full"
                         onClick={() => handleRejectRequest(request.id)}
                       >
                         <X className="h-4 w-4" />
@@ -405,10 +427,12 @@ export default function NotificationsPage() {
                   </div>
                 ))
               ) : (
-                <div className="text-center py-12">
-                  <UserPlus className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <div className="text-center py-16 glass-card mt-4">
+                  <div className="w-16 h-16 rounded-3xl gradient-primary mx-auto mb-4 flex items-center justify-center shadow-glow">
+                    <UserPlus className="w-8 h-8 text-primary-foreground" />
+                  </div>
                   <h2 className="font-semibold mb-2">No follow requests</h2>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground px-6">
                     When someone requests to follow you, you'll see it here
                   </p>
                 </div>
