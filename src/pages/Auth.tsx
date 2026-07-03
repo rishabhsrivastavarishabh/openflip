@@ -92,24 +92,24 @@ export default function AuthPage() {
 
   const handleSignIn = async (data: SignInForm) => {
     setLoading(true);
-    let email = data.identifier;
-    if (!data.identifier.includes('@')) {
-      const { data: lookupId } = await supabase.rpc('lookup_user_id_by_identifier' as any, {
-        _identifier: data.identifier,
-      });
-      if (lookupId) {
-        const { data: userData } = await supabase.auth.admin?.getUserById?.(lookupId as string) || { data: null };
-        if (userData?.user?.email) {
-          email = userData.user.email;
-        } else {
-          toast.error('User not found. Please use your email to sign in.');
-          setLoading(false);
-          return;
-        }
-      } else {
-        email = data.identifier;
+    let email = data.identifier.trim();
+    if (!email.includes('@')) {
+      // Look up the email for a username or phone number via a secure RPC.
+      // The old flow tried supabase.auth.admin.getUserById from the client, which
+      // requires the service_role key and always fails in the browser — that's
+      // what broke sign-in for anyone not using their email address.
+      const { data: foundEmail, error: lookupErr } = await supabase.rpc(
+        'lookup_email_by_identifier' as any,
+        { _identifier: email },
+      );
+      if (lookupErr || !foundEmail) {
+        toast.error("We couldn't find an account with that username or phone number.");
+        setLoading(false);
+        return;
       }
+      email = foundEmail as string;
     }
+
     const { error } = await signIn(email, data.password);
     if (error) {
       setLoading(false);

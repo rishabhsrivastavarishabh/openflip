@@ -2024,6 +2024,10 @@ export type Database = {
         Args: { _conversation_id: string; _user_id: string }
         Returns: boolean
       }
+      lookup_email_by_identifier: {
+        Args: { _identifier: string }
+        Returns: string
+      }
       lookup_user_id_by_identifier: {
         Args: { _identifier: string }
         Returns: string

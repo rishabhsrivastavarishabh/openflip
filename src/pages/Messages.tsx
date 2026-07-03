@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
-import { SquarePen, Search, Users, HelpCircle, MessagesSquare, Sparkles } from 'lucide-react';
+import { SquarePen, Search, Users, HelpCircle, MessagesSquare, Sparkles, Video, Copy } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Seo } from '@/components/seo/Seo';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ import { OnlineIndicator } from '@/components/messages/OnlineIndicator';
 import { NewMessageModal } from '@/components/messages/NewMessageModal';
 import { MessageSearch } from '@/components/messages/MessageSearch';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { toast } from 'sonner';
 
 interface ConversationItem {
   id: string;
@@ -238,6 +239,26 @@ export default function MessagesPage() {
                 </Link>
                 <Button variant="ghost" size="icon" onClick={() => setShowMessageSearch(true)} aria-label="Search messages">
                   <Search className="h-5 w-5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Start a group meeting"
+                  onClick={() => {
+                    const roomId =
+                      (globalThis.crypto as any)?.randomUUID?.() ??
+                      Math.random().toString(36).slice(2) + Date.now().toString(36);
+                    const url = `${window.location.origin}/meet/${roomId}`;
+                    try {
+                      navigator.clipboard.writeText(url);
+                      toast.success('Meeting link copied — share it to invite people');
+                    } catch {
+                      toast.message(url);
+                    }
+                    window.location.href = `/meet/${roomId}`;
+                  }}
+                >
+                  <Video className="h-5 w-5" />
                 </Button>
                 <Button
                   size="icon"

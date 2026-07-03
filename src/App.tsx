@@ -58,6 +58,7 @@ import { CreateReel } from "./components/reels/CreateReel";
 import AccountCenter from "./pages/AccountCenter";
 import ResetPassword from "./pages/ResetPassword";
 import Call from "./pages/Call";
+import Meet from "./pages/Meet";
 import { IncomingCallDialog } from "./components/calls/IncomingCallDialog";
 import { useAuth as useAuthForCall } from "@/contexts/AuthContext";
 import NotFound from "./pages/NotFound";
@@ -97,6 +98,7 @@ const App = () => (
               <Route path="/messages" element={<Messages />} />
               <Route path="/messages/:conversationId" element={<Conversation />} />
               <Route path="/call/:callId" element={<Call />} />
+              <Route path="/meet/:roomId" element={<Meet />} />
               <Route path="/settings" element={<SettingsLayout />}>
                 <Route index element={<Navigate to="/settings/account" replace />} />
                 <Route path="account" element={<AccountPage />} />
