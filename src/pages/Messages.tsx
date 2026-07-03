@@ -56,7 +56,7 @@ export default function MessagesPage() {
 
     const { data: participations, error } = await supabase
       .from('conversation_participants')
-      .select(`conversation_id, is_pinned, conversations(id, updated_at, is_group, group_name, group_avatar_url)`)
+      .select(`conversation_id, is_pinned, is_archived, conversations(id, updated_at, is_group, group_name, group_avatar_url)`)
       .eq('user_id', user.id);
 
     if (error || !participations) {
