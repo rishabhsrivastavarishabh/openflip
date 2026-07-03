@@ -21,7 +21,7 @@ declare global {
 interface PaymentCheckoutProps {
   amount: number;
   description: string;
-  type: 'subscription' | 'boost';
+  type: 'subscription' | 'boost' | 'tip' | 'creator_subscription';
   metadata?: Record<string, string>;
   billingCycle?: string;
   promoCode?: string;
