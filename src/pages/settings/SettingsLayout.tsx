@@ -26,6 +26,27 @@ const baseSections = [
 
 export default function SettingsLayout() {
   const location = useLocation();
+  const { user } = useAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .maybeSingle()
+      .then(({ data }) => setIsAdmin(!!data));
+  }, [user]);
+
+  const sections = isAdmin
+    ? [
+        ...baseSections,
+        { to: '/settings/admin', label: 'Admin', icon: ShieldCheck, desc: 'Verifications, promos, subscribers' },
+      ]
+    : baseSections;
+
 
   return (
     <MainLayout>
