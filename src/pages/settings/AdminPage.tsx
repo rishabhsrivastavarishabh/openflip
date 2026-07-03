@@ -133,6 +133,15 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+      {showReports && (
+        <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
+          <div className="max-w-3xl mx-auto p-4">
+            <Button variant="ghost" onClick={() => setShowReports(false)} className="mb-3">← Back</Button>
+            <h2 className="text-lg font-bold mb-3">Reports & moderation</h2>
+            <AdminReportsPanel />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
