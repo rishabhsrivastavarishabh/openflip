@@ -152,23 +152,23 @@ export function SuggestedUsers() {
   }
 
   return (
-    <div className="py-4 border-b border-border">
+    <div className="py-4 border-b border-border/60">
       <div className="flex items-center justify-between px-4 mb-3">
-        <h3 className="font-semibold text-sm text-muted-foreground">Suggested for you</h3>
-        <button 
+        <h3 className="font-semibold text-sm tracking-tight">People to follow</h3>
+        <button
           onClick={() => setHidden(true)}
-          className="text-xs text-primary font-medium"
+          className="text-xs text-primary font-medium hover:opacity-80"
         >
           Hide
         </button>
       </div>
 
       <ScrollArea className="w-full">
-        <div className="flex gap-3 px-4">
+        <div className="flex gap-3 px-4 snap-x snap-mandatory">
           {visibleUsers.map(suggestedUser => (
             <div
               key={suggestedUser.id}
-              className="flex-shrink-0 w-36 bg-card rounded-xl border border-border p-4 relative"
+              className="flex-shrink-0 w-36 bg-card rounded-2xl border border-border/60 shadow-sm hover:shadow-lg hover:border-primary/40 hover:-translate-y-0.5 transition-all p-4 relative snap-start"
             >
               <button
                 onClick={() => handleHideUser(suggestedUser.id)}
@@ -177,16 +177,18 @@ export function SuggestedUsers() {
                 <X className="w-4 h-4" />
               </button>
 
-              <Link 
+              <Link
                 to={`/profile/${suggestedUser.username}`}
                 className="flex flex-col items-center gap-2"
               >
-                <Avatar className="w-14 h-14">
-                  <AvatarImage src={suggestedUser.avatar_url || undefined} />
-                  <AvatarFallback className="bg-primary/10 text-primary">
-                    {suggestedUser.username.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
+                <div className="p-[2px] rounded-full gradient-primary">
+                  <Avatar className="w-14 h-14 ring-2 ring-background">
+                    <AvatarImage src={suggestedUser.avatar_url || undefined} />
+                    <AvatarFallback className="bg-primary/10 text-primary">
+                      {suggestedUser.username.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
 
                 <div className="text-center">
                   <p className="font-semibold text-sm truncate max-w-[120px]">

@@ -120,18 +120,20 @@ export function SuggestedPosts() {
   if (posts.length === 0) return null;
 
   return (
-    <section className="py-4 border-b border-border" aria-label="Suggested posts">
+    <section className="py-4 border-b border-border/60" aria-label="Suggested posts">
       <div className="flex items-center gap-2 px-4 mb-3">
-        <Sparkles className="w-4 h-4 text-primary" aria-hidden />
-        <h3 className="font-semibold text-sm">Suggested for you</h3>
+        <div className="w-6 h-6 rounded-lg gradient-primary flex items-center justify-center">
+          <Sparkles className="w-3.5 h-3.5 text-primary-foreground" aria-hidden />
+        </div>
+        <h3 className="font-semibold text-sm tracking-tight">Suggested for you</h3>
       </div>
       <ScrollArea className="w-full">
-        <div className="flex gap-3 px-4 pb-2">
+        <div className="flex gap-3 px-4 pb-2 snap-x snap-mandatory">
           {posts.map(p => (
             <Link
               key={p.id}
               to={`/post/${p.id}`}
-              className="flex-shrink-0 w-40 rounded-xl overflow-hidden border border-border bg-card hover:border-primary/50 transition-colors"
+              className="flex-shrink-0 w-40 rounded-2xl overflow-hidden border border-border/60 bg-card shadow-sm hover:shadow-lg hover:border-primary/40 hover:-translate-y-0.5 transition-all snap-start"
             >
               <div className="aspect-square bg-muted">
                 <img

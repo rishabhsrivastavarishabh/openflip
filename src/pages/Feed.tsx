@@ -366,18 +366,20 @@ export default function FeedPage() {
     <Link
       key={reel.id}
       to={`/reels?id=${reel.id}`}
-      className="block border-b border-border"
+      className="block mx-3 my-3 rounded-3xl overflow-hidden border border-border/60 bg-card shadow-sm hover:shadow-lg hover:border-primary/40 transition-all"
     >
       <div className="p-3 flex items-center gap-3">
-        <Avatar className="w-8 h-8">
-          <AvatarImage src={reel.profiles.avatar_url || undefined} />
-          <AvatarFallback>{reel.profiles.username.charAt(0).toUpperCase()}</AvatarFallback>
-        </Avatar>
+        <div className="p-[2px] rounded-full gradient-primary">
+          <Avatar className="w-8 h-8 ring-2 ring-background">
+            <AvatarImage src={reel.profiles.avatar_url || undefined} />
+            <AvatarFallback>{reel.profiles.username.charAt(0).toUpperCase()}</AvatarFallback>
+          </Avatar>
+        </div>
         <span className="font-medium text-sm flex items-center gap-1">
           {reel.profiles.username}
           {reel.profiles.is_verified && <VerifiedBadge size="sm" />}
         </span>
-        <span className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full ml-auto">Reel</span>
+        <span className="text-[10px] font-semibold text-primary-foreground gradient-primary px-2 py-0.5 rounded-full ml-auto tracking-wide uppercase">Reel</span>
       </div>
       <div className="relative aspect-[9/16] max-h-[500px] bg-black">
         {reel.thumbnail_url ? (
@@ -385,8 +387,9 @@ export default function FeedPage() {
         ) : (
           <video src={reel.video_url} className="w-full h-full object-cover" />
         )}
-        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-          <div className="w-16 h-16 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center">
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center ring-1 ring-white/30">
             <Play className="w-8 h-8 text-white fill-white" />
           </div>
         </div>
@@ -442,23 +445,26 @@ export default function FeedPage() {
 
         <div style={{ transform: `translateY(${pullDistance}px)`, transition: pullDistance === 0 ? 'transform 0.2s' : 'none' }}>
           {/* Header */}
-          <header className="sticky top-0 z-40 glass-strong border-b px-4 py-4 md:hidden">
+          <header className="sticky top-0 z-40 backdrop-blur-xl bg-background/70 border-b border-border/60 px-4 py-3 md:hidden">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <img src={openflipLogo} alt="Openflip - Secure Social Media" fetchPriority="high" decoding="async" className="w-8 h-8 rounded-lg object-cover" />
-                <span className="text-xl font-display font-bold gradient-text">Openflip</span>
+              <div className="flex items-center gap-2.5">
+                <div className="relative">
+                  <div className="absolute inset-0 gradient-primary rounded-xl blur-md opacity-60" aria-hidden />
+                  <img src={openflipLogo} alt="Openflip" fetchPriority="high" decoding="async" className="relative w-9 h-9 rounded-xl object-cover ring-1 ring-border/50" />
+                </div>
+                <span className="text-2xl font-display font-bold gradient-text tracking-tight">openflip</span>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5">
                 <Link to="/search" aria-label="Search">
-                  <Button variant="ghost" size="icon" aria-label="Search">
+                  <Button variant="ghost" size="icon" aria-label="Search" className="rounded-full hover:bg-primary/10">
                     <Search aria-hidden="true" className="w-5 h-5" />
                   </Button>
                 </Link>
                 <Link to="/notifications" aria-label="Notifications">
-                  <Button variant="ghost" size="icon" aria-label="Notifications" className="relative">
+                  <Button variant="ghost" size="icon" aria-label="Notifications" className="relative rounded-full hover:bg-primary/10">
                     <Bell aria-hidden="true" className="w-5 h-5" />
                     {unreadNotifications > 0 && (
-                      <span aria-label={`${unreadNotifications} unread notifications`} className="absolute top-1 right-1 min-w-[16px] h-4 px-1 flex items-center justify-center bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full">
+                      <span aria-label={`${unreadNotifications} unread notifications`} className="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center gradient-primary text-primary-foreground text-[10px] font-bold rounded-full shadow-md ring-2 ring-background">
                         {unreadNotifications > 99 ? '99+' : unreadNotifications}
                       </span>
                     )}
@@ -526,19 +532,19 @@ export default function FeedPage() {
                 )}
               </>
             ) : (
-              <div className="p-8 text-center">
-                <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-                  <Camera className="w-8 h-8 text-muted-foreground" />
+              <div className="mx-4 my-6 p-8 text-center rounded-3xl border border-border/60 bg-card/60 backdrop-blur-sm">
+                <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center mx-auto mb-4 shadow-lg">
+                  <Camera className="w-8 h-8 text-primary-foreground" />
                 </div>
-                <h3 className="font-semibold text-lg mb-2">No posts yet</h3>
-                <p className="text-muted-foreground mb-4">
-                  Follow some users to see their posts here, or create your first post!
+                <h3 className="font-semibold text-lg mb-2">Your feed is waiting</h3>
+                <p className="text-muted-foreground mb-4 text-sm">
+                  Follow creators to fill your feed, or share your first moment.
                 </p>
                 <div className="flex gap-2 justify-center">
                   <Button asChild variant="gradient">
                     <Link to="/create">Create Post</Link>
                   </Button>
-                  <Button asChild variant="outline">
+                  <Button asChild variant="outline" className="rounded-lg">
                     <Link to="/explore">Explore</Link>
                   </Button>
                 </div>

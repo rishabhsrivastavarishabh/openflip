@@ -492,22 +492,29 @@ export default function ProfilePage() {
         ]}
       />
       <div className="max-w-4xl mx-auto">
+        {/* Gradient cover strip */}
+        <div className="relative h-24 md:h-36 gradient-primary overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/30" aria-hidden />
+        </div>
+
         {/* Profile Header */}
-        <div className="p-4 md:py-8">
+        <div className="px-4 -mt-12 md:-mt-16 md:py-0 pb-4">
           <div className="flex items-start gap-6 md:gap-12">
             <div className="relative">
-              <button onClick={() => setShowPhotoViewer(true)}>
-                <Avatar className="w-20 h-20 md:w-36 md:h-36 ring-2 ring-border cursor-pointer hover:opacity-90 transition-opacity">
-                  <AvatarImage src={profile.avatar_url || undefined} />
-                  <AvatarFallback className="text-2xl md:text-4xl bg-primary/10 text-primary">
-                    {profile.username.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
+              <button onClick={() => setShowPhotoViewer(true)} className="block">
+                <div className="p-[3px] rounded-full gradient-primary shadow-lg">
+                  <Avatar className="w-24 h-24 md:w-36 md:h-36 ring-4 ring-background cursor-pointer hover:opacity-90 transition-opacity">
+                    <AvatarImage src={profile.avatar_url || undefined} />
+                    <AvatarFallback className="text-2xl md:text-4xl bg-primary/10 text-primary">
+                      {profile.username.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
               </button>
               {isOwnProfile && (
                 <button
                   onClick={() => setShowCreateStory(true)}
-                  className="absolute -bottom-1 -right-1 w-7 h-7 md:w-8 md:h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center border-2 border-background hover:bg-primary/90 transition-colors"
+                  className="absolute bottom-0 right-0 w-8 h-8 md:w-9 md:h-9 rounded-full gradient-primary text-primary-foreground flex items-center justify-center border-2 border-background hover:scale-105 shadow-md transition-transform"
                 >
                   <Plus className="w-4 h-4 md:w-5 md:h-5" />
                 </button>
@@ -571,25 +578,25 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {/* Stats */}
-              <div className="flex gap-6 text-sm">
-                <div>
-                  <span className="font-semibold">{posts.length}</span>{' '}
-                  <span className="text-muted-foreground">posts</span>
+              {/* Stats tiles */}
+              <div className="grid grid-cols-3 gap-2 md:gap-3 text-sm">
+                <div className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm px-3 py-2.5 text-center">
+                  <div className="font-bold text-base md:text-lg">{posts.length}</div>
+                  <div className="text-[11px] md:text-xs text-muted-foreground uppercase tracking-wide">Posts</div>
                 </div>
-                <Link 
+                <Link
                   to={`/profile/${username}/followers`}
-                  className="hover:opacity-70 transition-opacity"
+                  className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm px-3 py-2.5 text-center hover:border-primary/40 hover:bg-card transition-all"
                 >
-                  <span className="font-semibold">{followersCount}</span>{' '}
-                  <span className="text-muted-foreground">followers</span>
+                  <div className="font-bold text-base md:text-lg">{followersCount}</div>
+                  <div className="text-[11px] md:text-xs text-muted-foreground uppercase tracking-wide">Followers</div>
                 </Link>
-                <Link 
+                <Link
                   to={`/profile/${username}/following`}
-                  className="hover:opacity-70 transition-opacity"
+                  className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm px-3 py-2.5 text-center hover:border-primary/40 hover:bg-card transition-all"
                 >
-                  <span className="font-semibold">{followingCount}</span>{' '}
-                  <span className="text-muted-foreground">following</span>
+                  <div className="font-bold text-base md:text-lg">{followingCount}</div>
+                  <div className="text-[11px] md:text-xs text-muted-foreground uppercase tracking-wide">Following</div>
                 </Link>
               </div>
 
@@ -642,28 +649,30 @@ export default function ProfilePage() {
         {/* Posts Grid - only show if can view content */}
         {canViewContent ? (
           <Tabs defaultValue="posts" className="w-full">
-            <TabsList className="w-full justify-center border-t border-border rounded-none bg-transparent h-12">
-              <TabsTrigger value="posts" className="flex items-center gap-2">
-                <Grid3X3 className="h-4 w-4" />
-                <span className="hidden sm:inline">Posts</span>
-              </TabsTrigger>
-              <TabsTrigger value="reels" className="flex items-center gap-2">
-                <Film className="h-4 w-4" />
-                <span className="hidden sm:inline">Reels</span>
-              </TabsTrigger>
-              {isOwnProfile && (
-                <TabsTrigger value="saved" className="flex items-center gap-2">
-                  <Bookmark className="h-4 w-4" />
-                  <span className="hidden sm:inline">Saved</span>
+            <div className="sticky top-0 z-30 backdrop-blur-xl bg-background/70 border-y border-border/60 px-4 py-2">
+              <TabsList className="w-full max-w-md mx-auto justify-center bg-secondary/60 rounded-full p-1 h-11">
+                <TabsTrigger value="posts" className="flex-1 flex items-center gap-2 rounded-full data-[state=active]:gradient-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
+                  <Grid3X3 className="h-4 w-4" />
+                  <span className="hidden sm:inline">Posts</span>
                 </TabsTrigger>
-              )}
-            </TabsList>
+                <TabsTrigger value="reels" className="flex-1 flex items-center gap-2 rounded-full data-[state=active]:gradient-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
+                  <Film className="h-4 w-4" />
+                  <span className="hidden sm:inline">Reels</span>
+                </TabsTrigger>
+                {isOwnProfile && (
+                  <TabsTrigger value="saved" className="flex-1 flex items-center gap-2 rounded-full data-[state=active]:gradient-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
+                    <Bookmark className="h-4 w-4" />
+                    <span className="hidden sm:inline">Saved</span>
+                  </TabsTrigger>
+                )}
+              </TabsList>
+            </div>
 
             <TabsContent value="posts" className="mt-0">
               {posts.length > 0 ? (
-                <div className="grid grid-cols-3 gap-0.5 sm:gap-1">
+                <div className="grid grid-cols-3 gap-1 sm:gap-2 p-2 sm:p-3">
                   {posts.map(post => (
-                    <div key={post.id} className="aspect-square relative group overflow-hidden">
+                    <div key={post.id} className="aspect-square relative group overflow-hidden rounded-xl sm:rounded-2xl">
                       <Link to={`/post/${post.id}`} className="block w-full h-full">
                         <ProtectedMedia
                           src={post.media_url}
@@ -705,12 +714,12 @@ export default function ProfilePage() {
 
           <TabsContent value="reels" className="mt-0">
             {reels.length > 0 ? (
-              <div className="grid grid-cols-3 gap-0.5 sm:gap-1">
+              <div className="grid grid-cols-3 gap-1 sm:gap-2 p-2 sm:p-3">
                 {reels.map(reel => (
                   <Link
                     key={reel.id}
                     to={`/reels?id=${reel.id}`}
-                    className="aspect-[9/16] relative group overflow-hidden"
+                    className="aspect-[9/16] relative group overflow-hidden rounded-xl sm:rounded-2xl"
                   >
                     <ProtectedMedia
                       src={reel.thumbnail_url || reel.video_url}
@@ -740,12 +749,12 @@ export default function ProfilePage() {
           {isOwnProfile && (
             <TabsContent value="saved" className="mt-0">
               {savedPosts.length > 0 ? (
-                <div className="grid grid-cols-3 gap-0.5 sm:gap-1">
+                <div className="grid grid-cols-3 gap-1 sm:gap-2 p-2 sm:p-3">
                   {savedPosts.map(post => (
                     <Link
                       key={post.id}
                       to={`/post/${post.id}`}
-                      className="aspect-square relative group overflow-hidden"
+                      className="aspect-square relative group overflow-hidden rounded-xl sm:rounded-2xl"
                     >
                       <ProtectedMedia
                         src={post.media_url}
