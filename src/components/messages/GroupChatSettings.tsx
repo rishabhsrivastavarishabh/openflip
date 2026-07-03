@@ -335,7 +335,7 @@ export function GroupChatSettings({
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">{members.length} Members</span>
               {isAdmin && (
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" onClick={() => setShowAddMembers(true)}>
                   <UserPlus className="w-4 h-4 mr-1" />
                   Add
                 </Button>
