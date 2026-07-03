@@ -532,19 +532,19 @@ export default function FeedPage() {
                 )}
               </>
             ) : (
-              <div className="p-8 text-center">
-                <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-                  <Camera className="w-8 h-8 text-muted-foreground" />
+              <div className="mx-4 my-6 p-8 text-center rounded-3xl border border-border/60 bg-card/60 backdrop-blur-sm">
+                <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center mx-auto mb-4 shadow-lg">
+                  <Camera className="w-8 h-8 text-primary-foreground" />
                 </div>
-                <h3 className="font-semibold text-lg mb-2">No posts yet</h3>
-                <p className="text-muted-foreground mb-4">
-                  Follow some users to see their posts here, or create your first post!
+                <h3 className="font-semibold text-lg mb-2">Your feed is waiting</h3>
+                <p className="text-muted-foreground mb-4 text-sm">
+                  Follow creators to fill your feed, or share your first moment.
                 </p>
                 <div className="flex gap-2 justify-center">
                   <Button asChild variant="gradient">
                     <Link to="/create">Create Post</Link>
                   </Button>
-                  <Button asChild variant="outline">
+                  <Button asChild variant="outline" className="rounded-lg">
                     <Link to="/explore">Explore</Link>
                   </Button>
                 </div>
