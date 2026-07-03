@@ -525,7 +525,7 @@ export default function MessagesPage() {
                 <MessagesSquare className="w-8 h-8 text-primary" />
               </div>
               <h2 className="font-semibold mb-1">
-                {filter === 'unread' ? 'No unread messages' : filter === 'groups' ? 'No group chats' : 'No messages yet'}
+                {filter === 'unread' ? 'No unread messages' : filter === 'groups' ? 'No group chats' : filter === 'archived' ? 'No archived chats' : 'No messages yet'}
               </h2>
               <p className="text-sm text-muted-foreground mb-5">
                 {filter === 'all' ? 'Start a conversation with someone' : 'Try switching to another tab'}
