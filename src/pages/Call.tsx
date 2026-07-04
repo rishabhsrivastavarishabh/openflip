@@ -216,21 +216,38 @@ export default function Call() {
           } catch {}
         })
         .on('broadcast', { event: 'ready' }, async ({ payload }) => {
-          if (!isCaller || payload.from === user.id) return;
-          if (hasOfferedRef.current || !pcRef.current) return;
-          hasOfferedRef.current = true;
-          const offer = await pcRef.current.createOffer();
-          await pcRef.current.setLocalDescription(offer);
-          chan.send({
-            type: 'broadcast',
-            event: 'offer',
-            payload: { from: user.id, sdp: offer },
-          });
+          if (payload.from === user.id || !pcRef.current) return;
+          if (isCaller) {
+            if (hasOfferedRef.current) return;
+            hasOfferedRef.current = true;
+            const offer = await pcRef.current.createOffer();
+            await pcRef.current.setLocalDescription(offer);
+            chan.send({
+              type: 'broadcast',
+              event: 'offer',
+              payload: { from: user.id, sdp: offer },
+            });
+          } else if (!remoteSetRef.current) {
+            // Caller just arrived (or missed our first ready) — re-announce so
+            // they know we're here and can send the offer.
+            chan.send({ type: 'broadcast', event: 'ready', payload: { from: user.id } });
+          }
         })
         .subscribe(async (status) => {
           if (status !== 'SUBSCRIBED' || disposed) return;
-          // Announce arrival. Caller answers `ready` with an offer.
-          chan.send({ type: 'broadcast', event: 'ready', payload: { from: user.id } });
+          // Announce arrival, then keep re-announcing briefly to cover late joiners.
+          const announce = () =>
+            chan.send({ type: 'broadcast', event: 'ready', payload: { from: user.id } });
+          announce();
+          let n = 0;
+          const iv = setInterval(() => {
+            n += 1;
+            if (disposed || remoteSetRef.current || n > 8) {
+              clearInterval(iv);
+              return;
+            }
+            announce();
+          }, 1000);
         });
     };
 
