@@ -860,7 +860,10 @@ export default function ProfilePage() {
             />
             <CreatorSubscribeDialog
               open={showSubscribeDialog}
-              onOpenChange={setShowSubscribeDialog}
+              onOpenChange={(o) => {
+                setShowSubscribeDialog(o);
+                if (!o) checkCreatorSubscription();
+              }}
               creatorId={userId}
               creatorName={profile.username}
             />
