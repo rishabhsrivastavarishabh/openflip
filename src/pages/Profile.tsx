@@ -74,6 +74,7 @@ export default function ProfilePage() {
   const [isFollowBack, setIsFollowBack] = useState(false);
   const [showTipDialog, setShowTipDialog] = useState(false);
   const [showSubscribeDialog, setShowSubscribeDialog] = useState(false);
+  const [isSubscribedToCreator, setIsSubscribedToCreator] = useState(false);
 
   const isOwnProfile = !!user && !!userId && user.id === userId;
 
@@ -105,9 +106,22 @@ export default function ProfilePage() {
         checkIsFollowing();
         checkPendingRequest();
         checkFollowBack();
+        checkCreatorSubscription();
       }
     }
   }, [userId, user]);
+
+  const checkCreatorSubscription = async () => {
+    if (!user || !userId || user.id === userId) return;
+    const { data } = await (supabase as any)
+      .from('creator_subscriptions')
+      .select('id, expires_at, status')
+      .eq('creator_id', userId)
+      .eq('subscriber_id', user.id)
+      .eq('status', 'active')
+      .maybeSingle();
+    setIsSubscribedToCreator(!!data && (!data.expires_at || new Date(data.expires_at) > new Date()));
+  };
 
   useEffect(() => {
     if (profile && userId) {
@@ -535,7 +549,7 @@ export default function ProfilePage() {
                   {profile.is_verified && <VerifiedBadge size="lg" />}
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {isOwnProfile ? (
                     <>
                       <Button asChild variant="secondary" size="sm">
@@ -578,9 +592,14 @@ export default function ProfilePage() {
                         <Heart className="h-4 w-4 mr-1 fill-current" />
                         Tip
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => setShowSubscribeDialog(true)} className="border-primary/30 text-primary hover:bg-primary/10">
-                        <Crown className="h-4 w-4 mr-1" />
-                        Subscribe
+                      <Button
+                        variant={isSubscribedToCreator ? 'secondary' : 'outline'}
+                        size="sm"
+                        onClick={() => setShowSubscribeDialog(true)}
+                        className={isSubscribedToCreator ? '' : 'border-primary/30 text-primary hover:bg-primary/10'}
+                      >
+                        <Crown className={`h-4 w-4 mr-1 ${isSubscribedToCreator ? 'fill-current text-primary' : ''}`} />
+                        {isSubscribedToCreator ? 'Subscribed' : 'Subscribe'}
                       </Button>
                       <Button variant="ghost" size="icon-sm" onClick={() => setShowShareSheet(true)}>
                         <Share2 className="h-4 w-4" />
@@ -841,7 +860,10 @@ export default function ProfilePage() {
             />
             <CreatorSubscribeDialog
               open={showSubscribeDialog}
-              onOpenChange={setShowSubscribeDialog}
+              onOpenChange={(o) => {
+                setShowSubscribeDialog(o);
+                if (!o) checkCreatorSubscription();
+              }}
               creatorId={userId}
               creatorName={profile.username}
             />
