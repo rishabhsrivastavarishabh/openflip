@@ -106,9 +106,22 @@ export default function ProfilePage() {
         checkIsFollowing();
         checkPendingRequest();
         checkFollowBack();
+        checkCreatorSubscription();
       }
     }
   }, [userId, user]);
+
+  const checkCreatorSubscription = async () => {
+    if (!user || !userId || user.id === userId) return;
+    const { data } = await (supabase as any)
+      .from('creator_subscriptions')
+      .select('id, expires_at, status')
+      .eq('creator_id', userId)
+      .eq('subscriber_id', user.id)
+      .eq('status', 'active')
+      .maybeSingle();
+    setIsSubscribedToCreator(!!data && (!data.expires_at || new Date(data.expires_at) > new Date()));
+  };
 
   useEffect(() => {
     if (profile && userId) {
