@@ -480,6 +480,8 @@ export default function FeedPage() {
             onCreateStory={() => setShowCreateStory(true)}
           />
 
+          <MemoriesCard />
+
           <SuggestedUsers />
           <SuggestedPosts />
 
