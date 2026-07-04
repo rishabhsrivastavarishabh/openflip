@@ -592,9 +592,14 @@ export default function ProfilePage() {
                         <Heart className="h-4 w-4 mr-1 fill-current" />
                         Tip
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => setShowSubscribeDialog(true)} className="border-primary/30 text-primary hover:bg-primary/10">
-                        <Crown className="h-4 w-4 mr-1" />
-                        Subscribe
+                      <Button
+                        variant={isSubscribedToCreator ? 'secondary' : 'outline'}
+                        size="sm"
+                        onClick={() => setShowSubscribeDialog(true)}
+                        className={isSubscribedToCreator ? '' : 'border-primary/30 text-primary hover:bg-primary/10'}
+                      >
+                        <Crown className={`h-4 w-4 mr-1 ${isSubscribedToCreator ? 'fill-current text-primary' : ''}`} />
+                        {isSubscribedToCreator ? 'Subscribed' : 'Subscribe'}
                       </Button>
                       <Button variant="ghost" size="icon-sm" onClick={() => setShowShareSheet(true)}>
                         <Share2 className="h-4 w-4" />
