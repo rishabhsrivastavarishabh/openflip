@@ -17,6 +17,7 @@ import { StoryGroup } from '@/types/database';
 import { useUnreadCounts } from '@/hooks/useUnreadCounts';
 import { SuggestedUsers } from '@/components/feed/SuggestedUsers';
 import { SuggestedPosts } from '@/components/feed/SuggestedPosts';
+import { MemoriesCard } from '@/components/feed/MemoriesCard';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { VerifiedBadge } from '@/components/common/VerifiedBadge';
 import openflipLogo from '@/assets/openflip-logo.png';
