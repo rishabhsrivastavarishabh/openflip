@@ -535,7 +535,7 @@ export default function ProfilePage() {
                   {profile.is_verified && <VerifiedBadge size="lg" />}
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {isOwnProfile ? (
                     <>
                       <Button asChild variant="secondary" size="sm">
