@@ -74,6 +74,7 @@ export default function ProfilePage() {
   const [isFollowBack, setIsFollowBack] = useState(false);
   const [showTipDialog, setShowTipDialog] = useState(false);
   const [showSubscribeDialog, setShowSubscribeDialog] = useState(false);
+  const [isSubscribedToCreator, setIsSubscribedToCreator] = useState(false);
 
   const isOwnProfile = !!user && !!userId && user.id === userId;
 
