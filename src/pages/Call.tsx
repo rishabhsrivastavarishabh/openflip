@@ -612,18 +612,23 @@ export default function Call() {
     try {
       // Prefer exact so we actually flip; fall back to ideal, then unconstrained.
       try {
-        newStream = await acquire({ facingMode: { exact: next }, width: 640, height: 480 });
+        newStream = await acquire({ facingMode: { exact: next }, ...VIDEO_CONSTRAINTS_4K });
       } catch {
         try {
-          newStream = await acquire({ facingMode: { ideal: next }, width: 640, height: 480 });
+          newStream = await acquire({ facingMode: { ideal: next }, ...VIDEO_CONSTRAINTS_4K });
         } catch {
-          newStream = await acquire({ width: 640, height: 480 });
+          newStream = await acquire({ ...VIDEO_CONSTRAINTS_4K });
         }
       }
       const newTrack = newStream.getVideoTracks()[0];
       if (!newTrack) throw new Error('No camera track');
-      if (sender) await sender.replaceTrack(newTrack);
-      else pcRef.current.addTrack(newTrack, localStreamRef.current);
+      if (sender) {
+        await sender.replaceTrack(newTrack);
+        tuneVideoSender(sender);
+      } else {
+        const s = pcRef.current.addTrack(newTrack, localStreamRef.current);
+        tuneVideoSender(s);
+      }
       localStreamRef.current.addTrack(newTrack);
       if (localVideoRef.current) localVideoRef.current.srcObject = localStreamRef.current;
       setFacingMode(next);
@@ -631,7 +636,7 @@ export default function Call() {
       toast.error(e?.message || 'Could not switch camera');
       // Try to restore something so the local preview isn't blank.
       try {
-        const fallback = await acquire({ facingMode: { ideal: facingMode }, width: 640, height: 480 });
+        const fallback = await acquire({ facingMode: { ideal: facingMode }, ...VIDEO_CONSTRAINTS_4K });
         const t = fallback.getVideoTracks()[0];
         if (t) {
           if (sender) await sender.replaceTrack(t);
