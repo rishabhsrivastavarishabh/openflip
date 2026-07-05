@@ -25,6 +25,66 @@ const ICE_SERVERS: RTCIceServer[] = [
   },
 ];
 
+type CallTheme = {
+  id: string;
+  label: string;
+  base: string; // solid fallback color
+  gradient: string; // full css background value
+  swatch: string; // small preview color
+};
+
+const CALL_THEMES: CallTheme[] = [
+  {
+    id: 'midnight',
+    label: 'Midnight',
+    base: '#000000',
+    gradient:
+      'radial-gradient(1200px 600px at 50% -10%, hsl(var(--primary) / 0.35), transparent 60%), radial-gradient(800px 500px at 80% 100%, hsl(var(--accent) / 0.25), transparent 60%)',
+    swatch: 'linear-gradient(135deg, #0f172a, #6d28d9)',
+  },
+  {
+    id: 'ocean',
+    label: 'Ocean',
+    base: '#031b2e',
+    gradient:
+      'radial-gradient(1200px 600px at 50% -10%, rgba(14,165,233,0.45), transparent 60%), radial-gradient(800px 500px at 80% 100%, rgba(16,185,129,0.35), transparent 60%)',
+    swatch: 'linear-gradient(135deg, #0ea5e9, #10b981)',
+  },
+  {
+    id: 'sunset',
+    label: 'Sunset',
+    base: '#2a0a12',
+    gradient:
+      'radial-gradient(1200px 600px at 50% -10%, rgba(244,63,94,0.5), transparent 60%), radial-gradient(800px 500px at 80% 100%, rgba(251,146,60,0.4), transparent 60%)',
+    swatch: 'linear-gradient(135deg, #f43f5e, #fb923c)',
+  },
+  {
+    id: 'forest',
+    label: 'Forest',
+    base: '#04140b',
+    gradient:
+      'radial-gradient(1200px 600px at 50% -10%, rgba(34,197,94,0.45), transparent 60%), radial-gradient(800px 500px at 80% 100%, rgba(20,184,166,0.35), transparent 60%)',
+    swatch: 'linear-gradient(135deg, #22c55e, #14b8a6)',
+  },
+  {
+    id: 'rose',
+    label: 'Rose',
+    base: '#1a0620',
+    gradient:
+      'radial-gradient(1200px 600px at 50% -10%, rgba(236,72,153,0.5), transparent 60%), radial-gradient(800px 500px at 80% 100%, rgba(168,85,247,0.4), transparent 60%)',
+    swatch: 'linear-gradient(135deg, #ec4899, #a855f7)',
+  },
+  {
+    id: 'mono',
+    label: 'Mono',
+    base: '#000000',
+    gradient: 'radial-gradient(1200px 600px at 50% -10%, rgba(255,255,255,0.15), transparent 60%)',
+    swatch: 'linear-gradient(135deg, #262626, #737373)',
+  },
+];
+
+const CALL_THEME_KEY = 'openflip_call_theme';
+
 export default function Call() {
   const { callId } = useParams<{ callId: string }>();
   const { user } = useAuth();
