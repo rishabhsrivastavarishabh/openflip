@@ -75,6 +75,7 @@ export default function ProfilePage() {
   const [showTipDialog, setShowTipDialog] = useState(false);
   const [showSubscribeDialog, setShowSubscribeDialog] = useState(false);
   const [isSubscribedToCreator, setIsSubscribedToCreator] = useState(false);
+  const [savingCover, setSavingCover] = useState(false);
 
   const isOwnProfile = !!user && !!userId && user.id === userId;
 
