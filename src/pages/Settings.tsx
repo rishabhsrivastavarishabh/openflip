@@ -714,13 +714,6 @@ export default function SettingsPage() {
     }
   };
 
-  const _settingsSectionsUnused = [
-    {
-      title: '__removed_placeholder__',
-      items: [] as any[],
-      ],
-    },
-  ];
 
   return (
     <>
