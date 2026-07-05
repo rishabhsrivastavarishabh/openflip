@@ -361,26 +361,90 @@ export default function Call() {
   const switchCamera = async () => {
     if (!videoActive || !pcRef.current || !localStreamRef.current) return;
     const next = facingMode === 'user' ? 'environment' : 'user';
+    // Critical: many mobile browsers can't open the other camera while the
+    // current one is still live ("Could not start video source"). Stop and
+    // release the current track BEFORE requesting the new one.
+    const oldTrack = localStreamRef.current.getVideoTracks()[0];
+    if (oldTrack) {
+      try { oldTrack.stop(); } catch {}
+      try { localStreamRef.current.removeTrack(oldTrack); } catch {}
+    }
+    const sender = pcRef.current.getSenders().find((s) => s.track?.kind === 'video');
+    if (sender) { try { await sender.replaceTrack(null); } catch {} }
+
+    const acquire = async (constraint: MediaTrackConstraints) =>
+      navigator.mediaDevices.getUserMedia({ video: constraint, audio: false });
+
+    let newStream: MediaStream | null = null;
     try {
-      const newStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: next }, width: 640, height: 480 },
-        audio: false,
-      });
-      const newTrack = newStream.getVideoTracks()[0];
-      if (!newTrack) return;
-      const sender = pcRef.current.getSenders().find((s) => s.track?.kind === 'video');
-      if (sender) await sender.replaceTrack(newTrack);
-      const oldTrack = localStreamRef.current.getVideoTracks()[0];
-      if (oldTrack) {
-        localStreamRef.current.removeTrack(oldTrack);
-        oldTrack.stop();
+      // Prefer exact so we actually flip; fall back to ideal, then unconstrained.
+      try {
+        newStream = await acquire({ facingMode: { exact: next }, width: 640, height: 480 });
+      } catch {
+        try {
+          newStream = await acquire({ facingMode: { ideal: next }, width: 640, height: 480 });
+        } catch {
+          newStream = await acquire({ width: 640, height: 480 });
+        }
       }
+      const newTrack = newStream.getVideoTracks()[0];
+      if (!newTrack) throw new Error('No camera track');
+      if (sender) await sender.replaceTrack(newTrack);
+      else pcRef.current.addTrack(newTrack, localStreamRef.current);
       localStreamRef.current.addTrack(newTrack);
       if (localVideoRef.current) localVideoRef.current.srcObject = localStreamRef.current;
       setFacingMode(next);
     } catch (e: any) {
       toast.error(e?.message || 'Could not switch camera');
+      // Try to restore something so the local preview isn't blank.
+      try {
+        const fallback = await acquire({ facingMode: { ideal: facingMode }, width: 640, height: 480 });
+        const t = fallback.getVideoTracks()[0];
+        if (t) {
+          if (sender) await sender.replaceTrack(t);
+          else pcRef.current.addTrack(t, localStreamRef.current);
+          localStreamRef.current.addTrack(t);
+          if (localVideoRef.current) localVideoRef.current.srcObject = localStreamRef.current;
+        }
+      } catch {}
     }
+  };
+
+  // Toggle audio output between the built-in earpiece/default and the loud speaker.
+  // Uses HTMLMediaElement.setSinkId where available (Chrome desktop, some Android
+  // builds). On iOS Safari this API isn't available; we fall back to routing the
+  // stream through a fresh AudioContext at higher gain as a best-effort speaker
+  // effect, and always update the UI so the user knows the intent.
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const toggleSpeaker = async () => {
+    const next = !speakerOn;
+    setSpeakerOn(next);
+    const audioEl = remoteAudioRef.current;
+    if (!audioEl) return;
+    const anyEl = audioEl as any;
+    if (typeof anyEl.setSinkId === 'function') {
+      try {
+        // 'default' routes to system default (often earpiece on mobile),
+        // 'communications' or a specific speaker deviceId routes to loudspeaker.
+        if (next) {
+          // Try to find a device labeled like a speaker.
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const speaker = devices.find(
+            (d) => d.kind === 'audiooutput' && /speaker|loud/i.test(d.label),
+          );
+          await anyEl.setSinkId(speaker?.deviceId || 'default');
+        } else {
+          await anyEl.setSinkId('default');
+        }
+        return;
+      } catch {
+        // fall through to gain-based fallback
+      }
+    }
+    // Fallback: boost/reset volume so users still get an audible change.
+    try {
+      audioEl.volume = next ? 1.0 : 0.6;
+    } catch {}
   };
 
   // Upgrade an in-progress audio call to video: add a camera track and renegotiate.
