@@ -126,6 +126,7 @@ const App = () => (
               <Route path="/privacy" element={<PrivacyPolicy />} />
               <Route path="/terms" element={<TermsOfService />} />
               <Route path="/how-it-works" element={<HowItWorks />} />
+              <Route path="/download" element={<Download />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             <GlobalCallOverlay />
