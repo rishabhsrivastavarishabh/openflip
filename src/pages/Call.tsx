@@ -290,6 +290,22 @@ export default function Call() {
           toast.message('Call moved to group meeting');
           navigate(`/meet/${payload.roomId}`);
         })
+        // ── Peer switched the call back to audio-only; mirror the UI locally. ──
+        .on('broadcast', { event: 'downgrade-to-audio' }, ({ payload }) => {
+          if (payload.from === user.id) return;
+          // Stop sending our own video too — it saves bandwidth and matches the peer's UI.
+          const videoTracks = localStreamRef.current?.getVideoTracks() ?? [];
+          videoTracks.forEach((t) => {
+            localStreamRef.current?.removeTrack(t);
+            t.stop();
+          });
+          const sender = pcRef.current?.getSenders().find((s) => s.track?.kind === 'video');
+          if (sender) { try { sender.replaceTrack(null); } catch {} }
+          if (localVideoRef.current) localVideoRef.current.srcObject = null;
+          setVideoActive(false);
+          setVideoOn(true);
+          toast.message('Call switched to audio only');
+        })
         .subscribe(async (status) => {
           if (status !== 'SUBSCRIBED' || disposed) return;
           // Announce arrival, then keep re-announcing until remote description is set.
