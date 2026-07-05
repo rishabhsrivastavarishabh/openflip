@@ -135,6 +135,11 @@ export default function AuthPage() {
       console.warn('MFA check failed, proceeding', e);
     }
 
+    // Explicitly save this account into the multi-account switcher list so
+    // the "Switch Account" flow works reliably even when the auth listener
+    // misses the SIGNED_IN event.
+    await saveCurrentSession();
+
     setLoading(false);
     toast.success('Welcome back!');
     navigate('/');
@@ -220,7 +225,9 @@ export default function AuthPage() {
     setSignupStep(4);
   };
 
-  const handleFinishSignup = () => {
+  const handleFinishSignup = async () => {
+    // Persist the newly-created account into the multi-account switcher.
+    await saveCurrentSession();
     toast.success('Welcome to Openflip! 🎉');
     navigate('/');
   };
