@@ -656,14 +656,6 @@ export default function SettingsPage() {
     },
 
     {
-      title: 'How you use Openflip',
-      items: [
-        { icon: User, label: 'Edit profile', action: () => setShowEditProfile(true) },
-        { icon: Bell, label: 'Notification details', action: () => setShowNotificationSettings(true) },
-        { icon: Palette, label: 'Appearance (legacy)', action: () => setShowAppearance(true) },
-      ],
-    },
-    {
       title: 'For professionals',
       items: [
         { icon: BarChart3, label: 'Creator Tools', description: 'Analytics, insights & growth', action: () => setShowCreatorTools(true), highlight: true },
