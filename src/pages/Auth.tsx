@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMultiAccount } from '@/contexts/MultiAccountContext';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable';
@@ -67,6 +68,7 @@ export default function AuthPage() {
   const [mfaChallenge, setMfaChallenge] = useState<{ factorId: string; userId: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { signIn, signUp } = useAuth();
+  const { saveCurrentSession } = useMultiAccount();
   const navigate = useNavigate();
 
   const signInForm = useForm<SignInForm>({ resolver: zodResolver(signInSchema) });

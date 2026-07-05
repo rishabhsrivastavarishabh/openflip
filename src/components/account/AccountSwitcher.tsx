@@ -21,8 +21,8 @@ interface AccountSwitcherProps {
 
 export function AccountSwitcher({ open, onOpenChange }: AccountSwitcherProps) {
   const navigate = useNavigate();
-  const { accounts, currentAccount, switchAccount, removeAccount } = useMultiAccount();
-  const { user, signOut } = useAuth();
+  const { accounts, currentAccount, switchAccount, removeAccount, saveCurrentSession } = useMultiAccount();
+  const { user, profile, signOut } = useAuth();
   const [switching, setSwitching] = useState(false);
 
   const handleSwitchAccount = async (accountId: string) => {
@@ -32,8 +32,12 @@ export function AccountSwitcher({ open, onOpenChange }: AccountSwitcherProps) {
     }
 
     setSwitching(true);
+    // Make sure the CURRENT account is persisted before we sign it out —
+    // otherwise, if the auth listener never got a chance to save it, we'd
+    // lose track of who was signed in.
+    await saveCurrentSession();
     const success = await switchAccount(accountId);
-    
+
     if (success) {
       toast.success('Please log in to switch accounts');
       onOpenChange(false);
@@ -45,6 +49,9 @@ export function AccountSwitcher({ open, onOpenChange }: AccountSwitcherProps) {
   };
 
   const handleAddAccount = async () => {
+    // Persist the currently-signed-in account BEFORE signing out so it stays
+    // in the switcher after the user finishes signing in as the new account.
+    await saveCurrentSession();
     await signOut();
     onOpenChange(false);
     navigate('/auth');
