@@ -9,6 +9,7 @@ import {
   Shield,
   Lock,
   Bell,
+  Phone,
   Palette,
   ChevronRight,
   Settings2,
@@ -20,6 +21,7 @@ const baseSections = [
   { to: '/settings/security', label: 'Security', icon: Shield, desc: 'Password, 2FA, delete account' },
   { to: '/settings/privacy', label: 'Privacy', icon: Lock, desc: 'Who can see and contact you' },
   { to: '/settings/notifications', label: 'Notifications', icon: Bell, desc: 'Push and email preferences' },
+  { to: '/settings/calls', label: 'Calls', icon: Phone, desc: 'Ringtone, caller tune, call behaviour' },
   { to: '/settings/appearance', label: 'Appearance', icon: Palette, desc: 'Theme and display' },
   { to: '/settings/more', label: 'More settings', icon: Settings2, desc: 'Creator tools, subscription, business' },
 ];
