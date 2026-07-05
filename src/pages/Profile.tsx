@@ -585,7 +585,38 @@ export default function ProfilePage() {
           style={(profile as any).cover_url ? { backgroundImage: `url(${(profile as any).cover_url})` } : undefined}
         >
           <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/40" aria-hidden />
+          {isOwnProfile && (
+            <div className="absolute right-3 top-3 z-10 flex gap-2">
+              <label
+                className="flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm hover:bg-black/70 cursor-pointer transition-colors"
+                aria-label={(profile as any).cover_url ? 'Change cover picture' : 'Add cover picture'}
+              >
+                <Camera className="h-3.5 w-3.5" />
+                <span>{savingCover ? 'Saving…' : (profile as any).cover_url ? 'Change cover' : 'Add cover'}</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  onChange={handleCoverUpload}
+                  disabled={savingCover}
+                />
+              </label>
+              {(profile as any).cover_url && (
+                <button
+                  type="button"
+                  onClick={handleCoverRemove}
+                  disabled={savingCover}
+                  className="flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm hover:bg-destructive/80 transition-colors disabled:opacity-50"
+                  aria-label="Remove cover picture"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  <span>Remove</span>
+                </button>
+              )}
+            </div>
+          )}
         </div>
+
 
         {/* Profile Header */}
         <div className="px-4 -mt-12 md:-mt-16 md:py-0 pb-4">
