@@ -626,6 +626,15 @@ export default function ProfilePage() {
         >
           <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/40" aria-hidden />
           {isOwnProfile && (
+            <Link
+              to="/settings"
+              aria-label="Settings"
+              className="absolute left-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm hover:bg-black/70 transition-colors"
+            >
+              <Menu className="h-5 w-5" />
+            </Link>
+          )}
+          {isOwnProfile && (
             <div className="absolute right-3 top-3 z-10 flex gap-2">
               <label
                 className="flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm hover:bg-black/70 cursor-pointer transition-colors"
