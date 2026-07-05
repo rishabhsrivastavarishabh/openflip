@@ -8,17 +8,33 @@ import { PhoneOff, Mic, MicOff, Video, VideoOff, SwitchCamera, UserPlus, Volume2
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
 
-// STUN for direct P2P + free public TURN relays for NAT/firewall traversal.
-// Without TURN, calls between users on symmetric NATs or restrictive networks
-// (mobile carriers, corporate Wi-Fi) fail with "Connection failed".
+// STUN for direct P2P + multiple free public TURN relays for NAT/firewall
+// traversal. Without TURN, calls between users on symmetric NATs or
+// restrictive networks (mobile carriers, corporate Wi-Fi) fail with
+// "Connection failed". We list several providers/ports so a block on one
+// still leaves working paths (UDP 3478, UDP/TCP 80, UDP/TCP 443).
 const ICE_SERVERS: RTCIceServer[] = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
+  { urls: 'stun:stun2.l.google.com:19302' },
+  { urls: 'stun:stun.cloudflare.com:3478' },
   {
     urls: [
       'turn:openrelay.metered.ca:80',
+      'turn:openrelay.metered.ca:80?transport=tcp',
       'turn:openrelay.metered.ca:443',
       'turn:openrelay.metered.ca:443?transport=tcp',
+      'turns:openrelay.metered.ca:443?transport=tcp',
+    ],
+    username: 'openrelayproject',
+    credential: 'openrelayproject',
+  },
+  {
+    urls: [
+      'turn:global.relay.metered.ca:80',
+      'turn:global.relay.metered.ca:80?transport=tcp',
+      'turn:global.relay.metered.ca:443',
+      'turns:global.relay.metered.ca:443?transport=tcp',
     ],
     username: 'openrelayproject',
     credential: 'openrelayproject',
