@@ -551,8 +551,13 @@ export default function Call() {
             ? format(elapsed)
             : (call?.status ?? '');
 
+  const ctlBtn = 'h-12 w-12 sm:h-14 sm:w-14 rounded-full border-0 bg-white/10 hover:bg-white/20';
+
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-between overflow-hidden bg-black p-8 text-white">
+    <div
+      className="fixed inset-0 z-50 flex flex-col items-center justify-between overflow-hidden bg-black text-white px-4 pt-[max(env(safe-area-inset-top),1rem)] pb-[max(env(safe-area-inset-bottom),1rem)] sm:px-8"
+      style={{ height: '100dvh' }}
+    >
       {/* soft radial glow to match glassmorphism language */}
       <div
         aria-hidden
@@ -573,16 +578,16 @@ export default function Call() {
       )}
       <audio ref={remoteAudioRef} autoPlay />
 
-      <div className="relative z-10 mt-16 flex flex-col items-center gap-4">
+      <div className="relative z-10 mt-6 sm:mt-16 flex flex-col items-center gap-3 sm:gap-4">
         {!videoActive && (
-          <Avatar className="h-32 w-32 ring-4 ring-white/20">
+          <Avatar className="h-24 w-24 sm:h-32 sm:w-32 ring-4 ring-white/20">
             <AvatarImage src={other?.avatar_url} />
-            <AvatarFallback className="bg-primary/20 text-4xl">
+            <AvatarFallback className="bg-primary/20 text-3xl sm:text-4xl">
               {displayName.charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
         )}
-        <h1 className="text-2xl font-semibold drop-shadow">{displayName}</h1>
+        <h1 className="text-xl sm:text-2xl font-semibold drop-shadow">{displayName}</h1>
         <p className="text-sm text-white/80">{statusLabel}</p>
       </div>
 
@@ -592,82 +597,41 @@ export default function Call() {
           autoPlay
           playsInline
           muted
-          className="absolute bottom-28 right-6 z-10 h-40 w-28 rounded-2xl border border-white/20 object-cover shadow-2xl"
+          className="absolute bottom-32 right-4 z-10 h-32 w-24 sm:h-40 sm:w-28 rounded-2xl border border-white/20 object-cover shadow-2xl"
         />
       )}
 
-      <div className="relative z-10 mb-8 flex items-center gap-2 rounded-full border border-white/10 bg-black/40 p-3 backdrop-blur-xl">
-        <Button
-          size="icon"
-          variant="secondary"
-          className="h-14 w-14 rounded-full border-0 bg-white/10 hover:bg-white/20"
-          onClick={toggleMute}
-          aria-label={muted ? 'Unmute microphone' : 'Mute microphone'}
-        >
+      <div className="relative z-10 mb-2 flex w-full max-w-md flex-wrap items-center justify-center gap-2 rounded-3xl border border-white/10 bg-black/40 p-2 sm:p-3 backdrop-blur-xl">
+        <Button size="icon" variant="secondary" className={ctlBtn} onClick={toggleMute} aria-label={muted ? 'Unmute microphone' : 'Mute microphone'}>
           {muted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
         </Button>
+        <Button size="icon" variant="secondary" className={ctlBtn} onClick={toggleSpeaker} aria-label={speakerOn ? 'Speaker on' : 'Speaker off'} title="Speaker">
+          {speakerOn ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
+        </Button>
         {videoActive && (
-          <Button
-            size="icon"
-            variant="secondary"
-            className="h-14 w-14 rounded-full border-0 bg-white/10 hover:bg-white/20"
-            onClick={downgradeToAudio}
-            aria-label="Switch to audio only"
-            title="Switch to audio only"
-          >
+          <Button size="icon" variant="secondary" className={ctlBtn} onClick={downgradeToAudio} aria-label="Switch to audio only" title="Switch to audio only">
             <VideoOff className="h-5 w-5" />
           </Button>
         )}
         {videoActive && (
-          <Button
-            size="icon"
-            variant="secondary"
-            className="h-14 w-14 rounded-full border-0 bg-white/10 hover:bg-white/20"
-            onClick={toggleVideo}
-            aria-label={videoOn ? 'Turn off camera' : 'Turn on camera'}
-          >
+          <Button size="icon" variant="secondary" className={ctlBtn} onClick={toggleVideo} aria-label={videoOn ? 'Turn off camera' : 'Turn on camera'}>
             {videoOn ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
           </Button>
         )}
         {videoActive && (
-          <Button
-            size="icon"
-            variant="secondary"
-            className="h-14 w-14 rounded-full border-0 bg-white/10 hover:bg-white/20"
-            onClick={switchCamera}
-            aria-label="Switch camera"
-          >
+          <Button size="icon" variant="secondary" className={ctlBtn} onClick={switchCamera} aria-label="Switch camera">
             <SwitchCamera className="h-5 w-5" />
           </Button>
         )}
         {!videoActive && (
-          <Button
-            size="icon"
-            variant="secondary"
-            className="h-14 w-14 rounded-full border-0 bg-white/10 hover:bg-white/20"
-            onClick={upgradeToVideo}
-            disabled={upgrading || connState !== 'connected'}
-            aria-label="Turn on video"
-          >
+          <Button size="icon" variant="secondary" className={ctlBtn} onClick={upgradeToVideo} disabled={upgrading || connState !== 'connected'} aria-label="Turn on video">
             <Video className="h-5 w-5" />
           </Button>
         )}
-        <Button
-          size="icon"
-          variant="secondary"
-          className="h-14 w-14 rounded-full border-0 bg-white/10 hover:bg-white/20"
-          onClick={addPeople}
-          aria-label="Add people to call"
-        >
+        <Button size="icon" variant="secondary" className={ctlBtn} onClick={addPeople} aria-label="Add people to call">
           <UserPlus className="h-5 w-5" />
         </Button>
-        <Button
-          size="icon"
-          variant="destructive"
-          className="h-16 w-16 rounded-full shadow-lg"
-          onClick={hangUp}
-          aria-label="End call"
-        >
+        <Button size="icon" variant="destructive" className="h-14 w-14 sm:h-16 sm:w-16 rounded-full shadow-lg" onClick={hangUp} aria-label="End call">
           <PhoneOff className="h-6 w-6" />
         </Button>
       </div>
