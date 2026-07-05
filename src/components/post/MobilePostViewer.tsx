@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
-import { X, Heart, MessageCircle, Send, Bookmark, ChevronDown, MoreHorizontal } from 'lucide-react';
+import { X, Heart, MessageCircle, Send, Bookmark, ChevronDown, ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
 import { MobileAppFrame } from '@/components/layout/MobileAppFrame';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
