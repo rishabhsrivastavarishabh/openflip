@@ -624,18 +624,16 @@ export default function Call() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-between overflow-hidden bg-black text-white px-4 pt-[max(env(safe-area-inset-top),1rem)] pb-[max(env(safe-area-inset-bottom),1rem)] sm:px-8"
-      style={{ height: '100dvh' }}
+      className="fixed inset-0 z-50 flex flex-col items-center justify-between overflow-hidden text-white px-4 pt-[max(env(safe-area-inset-top),1rem)] pb-[max(env(safe-area-inset-bottom),1rem)] sm:px-8"
+      style={{ height: '100dvh', backgroundColor: theme.base }}
     >
       {/* soft radial glow to match glassmorphism language */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-60"
-        style={{
-          background:
-            'radial-gradient(1200px 600px at 50% -10%, hsl(var(--primary) / 0.35), transparent 60%), radial-gradient(800px 500px at 80% 100%, hsl(var(--accent) / 0.25), transparent 60%)',
-        }}
+        className="pointer-events-none absolute inset-0 opacity-60 transition-[background] duration-500"
+        style={{ background: theme.gradient }}
       />
+
 
       {videoActive && (
         <video
