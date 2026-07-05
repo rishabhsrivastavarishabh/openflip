@@ -457,7 +457,7 @@ export default function Call() {
               return;
             }
             announce();
-          }, 1200);
+          }, 400);
         });
 
     };
