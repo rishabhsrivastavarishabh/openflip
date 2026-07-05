@@ -36,9 +36,10 @@ interface DeviceManagementProps {
 }
 
 export function DeviceManagement({ onBack }: DeviceManagementProps) {
-  const { deviceId, listDevices, removeDevice } = useDeviceKeys();
+  const { deviceId, listDevices, removeDevice, reinitialize } = useDeviceKeys();
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
+  const [resetting, setResetting] = useState(false);
 
   useEffect(() => {
     loadDevices();
@@ -58,6 +59,26 @@ export function DeviceManagement({ onBack }: DeviceManagementProps) {
     await removeDevice(id);
     toast.success('Device removed');
     loadDevices();
+  };
+
+  const handleResetEncryption = async () => {
+    setResetting(true);
+    try {
+      // Remove the current device (which also wipes its local keypair) and
+      // then reinitialize — that generates a fresh keypair and registers a
+      // brand-new device with the server.
+      if (deviceId) {
+        await removeDevice(deviceId);
+      } else {
+        await reinitialize();
+      }
+      toast.success('Encryption keys regenerated for this device');
+      await loadDevices();
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to reset encryption');
+    } finally {
+      setResetting(false);
+    }
   };
 
   return (
