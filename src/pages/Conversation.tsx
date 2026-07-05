@@ -580,14 +580,17 @@ export default function ConversationPage() {
   const displayAvatar = isGroupChat ? conversation?.group_avatar_url : participant?.avatar_url;
 
   return (
-    <div className="h-screen flex flex-col bg-background">
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border p-3 flex items-center gap-3">
-        <button onClick={() => navigate('/messages')}><ArrowLeft className="w-6 h-6" /></button>
-        
+    <div className="flex flex-col bg-background" style={{ height: '100dvh' }}>
+      <div
+        className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border px-3 py-3 flex items-center gap-2 sm:gap-3"
+        style={{ paddingTop: 'max(env(safe-area-inset-top), 0.75rem)' }}
+      >
+        <button onClick={() => navigate('/messages')} className="shrink-0"><ArrowLeft className="w-6 h-6" /></button>
+
         {participant || isGroupChat ? (
-          <button 
-            onClick={() => !isGroupChat && setShowProfileView(true)} 
-            className="flex items-center gap-3 flex-1 text-left"
+          <button
+            onClick={() => !isGroupChat && setShowProfileView(true)}
+            className="flex items-center gap-2 sm:gap-3 flex-1 text-left min-w-0"
           >
             <div className="relative">
               {isGroupChat ? (
@@ -624,7 +627,7 @@ export default function ConversationPage() {
           </button>
         ) : <Skeleton className="w-24 h-4" />}
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           {!isGroupChat && participant && (
             <>
               <Button
@@ -734,12 +737,24 @@ export default function ConversationPage() {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="sticky bottom-0 bg-background border-t border-border p-3">
-        <div className="flex items-center gap-2">
+      <div
+        className="sticky bottom-0 bg-background border-t border-border px-2 sm:px-3 py-2 sm:py-3"
+        style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 0.5rem)' }}
+      >
+        <div className="flex items-center gap-1 sm:gap-2">
           <ChatMediaInput onSend={handleMediaSend} disabled={sending} />
           <EmojiPickerButton onSelect={(emoji) => setNewMessage(prev => prev + emoji)} disabled={sending} />
-          <Input ref={inputRef} placeholder={encryptionReady ? "🔒 Encrypted message..." : "Message..."} value={newMessage} onChange={(e) => { setNewMessage(e.target.value); handleTyping(); }} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }}} className="flex-1" />
-          {newMessage.trim() ? <Button size="icon" onClick={() => handleSendMessage()} disabled={sending}><Send className="w-5 h-5" /></Button> : <VoiceRecordButton onSend={handleVoiceSend} disabled={sending} />}
+          <Input
+            ref={inputRef}
+            placeholder={encryptionReady ? "🔒 Encrypted message..." : "Message..."}
+            value={newMessage}
+            onChange={(e) => { setNewMessage(e.target.value); handleTyping(); }}
+            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }}}
+            className="flex-1 min-w-0"
+          />
+          {newMessage.trim()
+            ? <Button size="icon" className="shrink-0" onClick={() => handleSendMessage()} disabled={sending}><Send className="w-5 h-5" /></Button>
+            : <VoiceRecordButton onSend={handleVoiceSend} disabled={sending} />}
         </div>
       </div>
     </div>

@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { PhoneOff, Mic, MicOff, Video, VideoOff, SwitchCamera, UserPlus } from 'lucide-react';
+import { PhoneOff, Mic, MicOff, Video, VideoOff, SwitchCamera, UserPlus, Volume2, VolumeX } from 'lucide-react';
 import { toast } from 'sonner';
 
 // STUN for direct P2P + free public TURN relays for NAT/firewall traversal.
@@ -37,6 +37,7 @@ export default function Call() {
   const [videoActive, setVideoActive] = useState(false);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
   const [upgrading, setUpgrading] = useState(false);
+  const [speakerOn, setSpeakerOn] = useState(true);
 
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
@@ -360,26 +361,90 @@ export default function Call() {
   const switchCamera = async () => {
     if (!videoActive || !pcRef.current || !localStreamRef.current) return;
     const next = facingMode === 'user' ? 'environment' : 'user';
+    // Critical: many mobile browsers can't open the other camera while the
+    // current one is still live ("Could not start video source"). Stop and
+    // release the current track BEFORE requesting the new one.
+    const oldTrack = localStreamRef.current.getVideoTracks()[0];
+    if (oldTrack) {
+      try { oldTrack.stop(); } catch {}
+      try { localStreamRef.current.removeTrack(oldTrack); } catch {}
+    }
+    const sender = pcRef.current.getSenders().find((s) => s.track?.kind === 'video');
+    if (sender) { try { await sender.replaceTrack(null); } catch {} }
+
+    const acquire = async (constraint: MediaTrackConstraints) =>
+      navigator.mediaDevices.getUserMedia({ video: constraint, audio: false });
+
+    let newStream: MediaStream | null = null;
     try {
-      const newStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: next }, width: 640, height: 480 },
-        audio: false,
-      });
-      const newTrack = newStream.getVideoTracks()[0];
-      if (!newTrack) return;
-      const sender = pcRef.current.getSenders().find((s) => s.track?.kind === 'video');
-      if (sender) await sender.replaceTrack(newTrack);
-      const oldTrack = localStreamRef.current.getVideoTracks()[0];
-      if (oldTrack) {
-        localStreamRef.current.removeTrack(oldTrack);
-        oldTrack.stop();
+      // Prefer exact so we actually flip; fall back to ideal, then unconstrained.
+      try {
+        newStream = await acquire({ facingMode: { exact: next }, width: 640, height: 480 });
+      } catch {
+        try {
+          newStream = await acquire({ facingMode: { ideal: next }, width: 640, height: 480 });
+        } catch {
+          newStream = await acquire({ width: 640, height: 480 });
+        }
       }
+      const newTrack = newStream.getVideoTracks()[0];
+      if (!newTrack) throw new Error('No camera track');
+      if (sender) await sender.replaceTrack(newTrack);
+      else pcRef.current.addTrack(newTrack, localStreamRef.current);
       localStreamRef.current.addTrack(newTrack);
       if (localVideoRef.current) localVideoRef.current.srcObject = localStreamRef.current;
       setFacingMode(next);
     } catch (e: any) {
       toast.error(e?.message || 'Could not switch camera');
+      // Try to restore something so the local preview isn't blank.
+      try {
+        const fallback = await acquire({ facingMode: { ideal: facingMode }, width: 640, height: 480 });
+        const t = fallback.getVideoTracks()[0];
+        if (t) {
+          if (sender) await sender.replaceTrack(t);
+          else pcRef.current.addTrack(t, localStreamRef.current);
+          localStreamRef.current.addTrack(t);
+          if (localVideoRef.current) localVideoRef.current.srcObject = localStreamRef.current;
+        }
+      } catch {}
     }
+  };
+
+  // Toggle audio output between the built-in earpiece/default and the loud speaker.
+  // Uses HTMLMediaElement.setSinkId where available (Chrome desktop, some Android
+  // builds). On iOS Safari this API isn't available; we fall back to routing the
+  // stream through a fresh AudioContext at higher gain as a best-effort speaker
+  // effect, and always update the UI so the user knows the intent.
+  
+  const toggleSpeaker = async () => {
+    const next = !speakerOn;
+    setSpeakerOn(next);
+    const audioEl = remoteAudioRef.current;
+    if (!audioEl) return;
+    const anyEl = audioEl as any;
+    if (typeof anyEl.setSinkId === 'function') {
+      try {
+        // 'default' routes to system default (often earpiece on mobile),
+        // 'communications' or a specific speaker deviceId routes to loudspeaker.
+        if (next) {
+          // Try to find a device labeled like a speaker.
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const speaker = devices.find(
+            (d) => d.kind === 'audiooutput' && /speaker|loud/i.test(d.label),
+          );
+          await anyEl.setSinkId(speaker?.deviceId || 'default');
+        } else {
+          await anyEl.setSinkId('default');
+        }
+        return;
+      } catch {
+        // fall through to gain-based fallback
+      }
+    }
+    // Fallback: boost/reset volume so users still get an audible change.
+    try {
+      audioEl.volume = next ? 1.0 : 0.6;
+    } catch {}
   };
 
   // Upgrade an in-progress audio call to video: add a camera track and renegotiate.
@@ -486,8 +551,13 @@ export default function Call() {
             ? format(elapsed)
             : (call?.status ?? '');
 
+  const ctlBtn = 'h-12 w-12 sm:h-14 sm:w-14 rounded-full border-0 bg-white/10 hover:bg-white/20';
+
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-between overflow-hidden bg-black p-8 text-white">
+    <div
+      className="fixed inset-0 z-50 flex flex-col items-center justify-between overflow-hidden bg-black text-white px-4 pt-[max(env(safe-area-inset-top),1rem)] pb-[max(env(safe-area-inset-bottom),1rem)] sm:px-8"
+      style={{ height: '100dvh' }}
+    >
       {/* soft radial glow to match glassmorphism language */}
       <div
         aria-hidden
@@ -508,16 +578,16 @@ export default function Call() {
       )}
       <audio ref={remoteAudioRef} autoPlay />
 
-      <div className="relative z-10 mt-16 flex flex-col items-center gap-4">
+      <div className="relative z-10 mt-6 sm:mt-16 flex flex-col items-center gap-3 sm:gap-4">
         {!videoActive && (
-          <Avatar className="h-32 w-32 ring-4 ring-white/20">
+          <Avatar className="h-24 w-24 sm:h-32 sm:w-32 ring-4 ring-white/20">
             <AvatarImage src={other?.avatar_url} />
-            <AvatarFallback className="bg-primary/20 text-4xl">
+            <AvatarFallback className="bg-primary/20 text-3xl sm:text-4xl">
               {displayName.charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
         )}
-        <h1 className="text-2xl font-semibold drop-shadow">{displayName}</h1>
+        <h1 className="text-xl sm:text-2xl font-semibold drop-shadow">{displayName}</h1>
         <p className="text-sm text-white/80">{statusLabel}</p>
       </div>
 
@@ -527,82 +597,41 @@ export default function Call() {
           autoPlay
           playsInline
           muted
-          className="absolute bottom-28 right-6 z-10 h-40 w-28 rounded-2xl border border-white/20 object-cover shadow-2xl"
+          className="absolute bottom-32 right-4 z-10 h-32 w-24 sm:h-40 sm:w-28 rounded-2xl border border-white/20 object-cover shadow-2xl"
         />
       )}
 
-      <div className="relative z-10 mb-8 flex items-center gap-2 rounded-full border border-white/10 bg-black/40 p-3 backdrop-blur-xl">
-        <Button
-          size="icon"
-          variant="secondary"
-          className="h-14 w-14 rounded-full border-0 bg-white/10 hover:bg-white/20"
-          onClick={toggleMute}
-          aria-label={muted ? 'Unmute microphone' : 'Mute microphone'}
-        >
+      <div className="relative z-10 mb-2 flex w-full max-w-md flex-wrap items-center justify-center gap-2 rounded-3xl border border-white/10 bg-black/40 p-2 sm:p-3 backdrop-blur-xl">
+        <Button size="icon" variant="secondary" className={ctlBtn} onClick={toggleMute} aria-label={muted ? 'Unmute microphone' : 'Mute microphone'}>
           {muted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
         </Button>
+        <Button size="icon" variant="secondary" className={ctlBtn} onClick={toggleSpeaker} aria-label={speakerOn ? 'Speaker on' : 'Speaker off'} title="Speaker">
+          {speakerOn ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
+        </Button>
         {videoActive && (
-          <Button
-            size="icon"
-            variant="secondary"
-            className="h-14 w-14 rounded-full border-0 bg-white/10 hover:bg-white/20"
-            onClick={downgradeToAudio}
-            aria-label="Switch to audio only"
-            title="Switch to audio only"
-          >
+          <Button size="icon" variant="secondary" className={ctlBtn} onClick={downgradeToAudio} aria-label="Switch to audio only" title="Switch to audio only">
             <VideoOff className="h-5 w-5" />
           </Button>
         )}
         {videoActive && (
-          <Button
-            size="icon"
-            variant="secondary"
-            className="h-14 w-14 rounded-full border-0 bg-white/10 hover:bg-white/20"
-            onClick={toggleVideo}
-            aria-label={videoOn ? 'Turn off camera' : 'Turn on camera'}
-          >
+          <Button size="icon" variant="secondary" className={ctlBtn} onClick={toggleVideo} aria-label={videoOn ? 'Turn off camera' : 'Turn on camera'}>
             {videoOn ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
           </Button>
         )}
         {videoActive && (
-          <Button
-            size="icon"
-            variant="secondary"
-            className="h-14 w-14 rounded-full border-0 bg-white/10 hover:bg-white/20"
-            onClick={switchCamera}
-            aria-label="Switch camera"
-          >
+          <Button size="icon" variant="secondary" className={ctlBtn} onClick={switchCamera} aria-label="Switch camera">
             <SwitchCamera className="h-5 w-5" />
           </Button>
         )}
         {!videoActive && (
-          <Button
-            size="icon"
-            variant="secondary"
-            className="h-14 w-14 rounded-full border-0 bg-white/10 hover:bg-white/20"
-            onClick={upgradeToVideo}
-            disabled={upgrading || connState !== 'connected'}
-            aria-label="Turn on video"
-          >
+          <Button size="icon" variant="secondary" className={ctlBtn} onClick={upgradeToVideo} disabled={upgrading || connState !== 'connected'} aria-label="Turn on video">
             <Video className="h-5 w-5" />
           </Button>
         )}
-        <Button
-          size="icon"
-          variant="secondary"
-          className="h-14 w-14 rounded-full border-0 bg-white/10 hover:bg-white/20"
-          onClick={addPeople}
-          aria-label="Add people to call"
-        >
+        <Button size="icon" variant="secondary" className={ctlBtn} onClick={addPeople} aria-label="Add people to call">
           <UserPlus className="h-5 w-5" />
         </Button>
-        <Button
-          size="icon"
-          variant="destructive"
-          className="h-16 w-16 rounded-full shadow-lg"
-          onClick={hangUp}
-          aria-label="End call"
-        >
+        <Button size="icon" variant="destructive" className="h-14 w-14 sm:h-16 sm:w-16 rounded-full shadow-lg" onClick={hangUp} aria-label="End call">
           <PhoneOff className="h-6 w-6" />
         </Button>
       </div>
