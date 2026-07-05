@@ -42,6 +42,38 @@ const ICE_SERVERS: RTCIceServer[] = [
   },
 ];
 
+// High-quality video constraints: request up to 4K (2160p) at 30fps.
+// Browsers will negotiate down automatically if the camera/network can't handle it.
+const VIDEO_CONSTRAINTS_4K: MediaTrackConstraints = {
+  width: { ideal: 3840, max: 3840 },
+  height: { ideal: 2160, max: 2160 },
+  frameRate: { ideal: 30, max: 60 },
+};
+
+// Configure a video sender for 4K + low-latency: high bitrate cap and
+// prefer smooth framerate over resolution when bandwidth dips.
+const tuneVideoSender = async (sender: RTCRtpSender) => {
+  try {
+    const params = sender.getParameters();
+    if (!params.encodings || params.encodings.length === 0) {
+      params.encodings = [{}];
+    }
+    // ~15 Mbps ceiling supports 4K@30 comfortably; drops gracefully on weak links.
+    params.encodings[0].maxBitrate = 15_000_000;
+    params.encodings[0].maxFramerate = 30;
+    (params as any).degradationPreference = 'maintain-framerate';
+    await sender.setParameters(params);
+  } catch { /* older browsers ignore */ }
+};
+
+// Minimize the receiver jitter buffer to cut playout delay (lower latency).
+const tuneReceiver = (receiver: RTCRtpReceiver) => {
+  try {
+    (receiver as any).playoutDelayHint = 0;
+    (receiver as any).jitterBufferTarget = 0;
+  } catch {}
+};
+
 type CallTheme = {
   id: string;
   label: string;
