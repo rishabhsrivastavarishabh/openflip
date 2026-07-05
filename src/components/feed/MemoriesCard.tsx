@@ -133,13 +133,13 @@ export function MemoriesCard() {
             >
               {m.media_type === 'image' ? (
                 <img
-                  src={m.media_url}
+                  src={getFirstPostMediaUrl(m.media_url)}
                   alt=""
                   className="w-full h-full object-cover"
                   loading="lazy"
                 />
               ) : (
-                <video src={m.media_url} className="w-full h-full object-cover" muted />
+                <video src={getFirstPostMediaUrl(m.media_url)} className="w-full h-full object-cover" muted />
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
               <div className="absolute bottom-2 left-2 right-2">
