@@ -698,6 +698,45 @@ export default function Call() {
         <Button size="icon" variant="secondary" className={ctlBtn} onClick={addPeople} aria-label="Add people to call">
           <UserPlus className="h-5 w-5" />
         </Button>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button size="icon" variant="secondary" className={ctlBtn} aria-label="Change call color" title="Call color">
+              <Palette className="h-5 w-5" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent
+            side="top"
+            align="center"
+            className="w-64 border-white/10 bg-black/80 text-white backdrop-blur-xl"
+          >
+            <p className="mb-2 text-xs font-medium text-white/70">Call background</p>
+            <div className="grid grid-cols-3 gap-2">
+              {CALL_THEMES.map((t) => {
+                const active = t.id === themeId;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => chooseTheme(t.id)}
+                    className={`group relative flex h-14 flex-col items-center justify-end overflow-hidden rounded-xl border transition-all ${active ? 'border-white ring-2 ring-white/60' : 'border-white/10 hover:border-white/40'}`}
+                    style={{ background: t.swatch }}
+                    aria-label={`Use ${t.label} theme`}
+                    aria-pressed={active}
+                  >
+                    {active && (
+                      <span className="absolute right-1 top-1 rounded-full bg-black/50 p-0.5">
+                        <Check className="h-3 w-3 text-white" />
+                      </span>
+                    )}
+                    <span className="w-full bg-black/40 py-0.5 text-center text-[10px] font-medium">
+                      {t.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </PopoverContent>
+        </Popover>
+
         <Button size="icon" variant="destructive" className="h-14 w-14 sm:h-16 sm:w-16 rounded-full shadow-lg" onClick={hangUp} aria-label="End call">
           <PhoneOff className="h-6 w-6" />
         </Button>
