@@ -450,7 +450,7 @@ export default function Call() {
         }}
       />
 
-      {isVideo && (
+      {videoActive && (
         <video
           ref={remoteVideoRef}
           autoPlay
@@ -461,7 +461,7 @@ export default function Call() {
       <audio ref={remoteAudioRef} autoPlay />
 
       <div className="relative z-10 mt-16 flex flex-col items-center gap-4">
-        {!isVideo && (
+        {!videoActive && (
           <Avatar className="h-32 w-32 ring-4 ring-white/20">
             <AvatarImage src={other?.avatar_url} />
             <AvatarFallback className="bg-primary/20 text-4xl">
@@ -473,7 +473,7 @@ export default function Call() {
         <p className="text-sm text-white/80">{statusLabel}</p>
       </div>
 
-      {isVideo && videoOn && (
+      {videoActive && videoOn && (
         <video
           ref={localVideoRef}
           autoPlay
@@ -483,7 +483,7 @@ export default function Call() {
         />
       )}
 
-      <div className="relative z-10 mb-8 flex items-center gap-4 rounded-full border border-white/10 bg-black/40 p-3 backdrop-blur-xl">
+      <div className="relative z-10 mb-8 flex items-center gap-2 rounded-full border border-white/10 bg-black/40 p-3 backdrop-blur-xl">
         <Button
           size="icon"
           variant="secondary"
@@ -493,7 +493,7 @@ export default function Call() {
         >
           {muted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
         </Button>
-        {isVideo && (
+        {videoActive && (
           <Button
             size="icon"
             variant="secondary"
@@ -504,6 +504,38 @@ export default function Call() {
             {videoOn ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
           </Button>
         )}
+        {videoActive && (
+          <Button
+            size="icon"
+            variant="secondary"
+            className="h-14 w-14 rounded-full border-0 bg-white/10 hover:bg-white/20"
+            onClick={switchCamera}
+            aria-label="Switch camera"
+          >
+            <SwitchCamera className="h-5 w-5" />
+          </Button>
+        )}
+        {!videoActive && (
+          <Button
+            size="icon"
+            variant="secondary"
+            className="h-14 w-14 rounded-full border-0 bg-white/10 hover:bg-white/20"
+            onClick={upgradeToVideo}
+            disabled={upgrading || connState !== 'connected'}
+            aria-label="Turn on video"
+          >
+            <Video className="h-5 w-5" />
+          </Button>
+        )}
+        <Button
+          size="icon"
+          variant="secondary"
+          className="h-14 w-14 rounded-full border-0 bg-white/10 hover:bg-white/20"
+          onClick={addPeople}
+          aria-label="Add people to call"
+        >
+          <UserPlus className="h-5 w-5" />
+        </Button>
         <Button
           size="icon"
           variant="destructive"
