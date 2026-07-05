@@ -415,7 +415,7 @@ export default function Call() {
   // builds). On iOS Safari this API isn't available; we fall back to routing the
   // stream through a fresh AudioContext at higher gain as a best-effort speaker
   // effect, and always update the UI so the user knows the intent.
-  const audioCtxRef = useRef<AudioContext | null>(null);
+  
   const toggleSpeaker = async () => {
     const next = !speakerOn;
     setSpeakerOn(next);
