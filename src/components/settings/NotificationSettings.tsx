@@ -64,6 +64,7 @@ export function NotificationSettings({ onBack }: NotificationSettingsProps) {
           follow_notifications: data.follow_notifications ?? true,
           notification_sound: data.notification_sound ?? true,
           ringtone: data.ringtone ?? 'default',
+          message_ringtone: (data as any).message_ringtone ?? 'chime',
         });
       }
     } catch (error) {
