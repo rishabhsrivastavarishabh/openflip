@@ -704,6 +704,7 @@ export default function SettingsPage() {
     {
       title: 'More info & support',
       items: [
+        { icon: Bot, label: 'Agent integrations', description: 'MCP tools for ChatGPT, Claude & more', action: () => navigate('/settings/agent-integrations'), highlight: true },
         { icon: HelpCircle, label: 'Help', action: () => setShowHelp(true) },
         { icon: Info, label: 'About', description: 'Privacy Policy, Terms of Service', action: () => setShowHelp(true) },
         { icon: Settings2, label: 'Account Centre', description: 'Profile, security, payments', action: () => navigate('/account-center') },
