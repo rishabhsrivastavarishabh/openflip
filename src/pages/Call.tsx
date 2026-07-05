@@ -251,7 +251,12 @@ export default function Call() {
         localVideoRef.current.srcObject = stream;
       }
 
-      const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+      const pc = new RTCPeerConnection({
+        iceServers: ICE_SERVERS,
+        iceCandidatePoolSize: 4,
+        bundlePolicy: 'max-bundle',
+        rtcpMuxPolicy: 'require',
+      });
       pcRef.current = pc;
       stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
@@ -264,11 +269,48 @@ export default function Call() {
         if (remote.getVideoTracks().length > 0) setVideoActive(true);
       };
 
+      // Watchdog: if the connection drops or fails, try ICE restart before
+      // giving up. Only the caller triggers the restart (creates a new offer);
+      // the callee will answer it via the normal offer/answer handlers below.
+      let disconnectTimer: ReturnType<typeof setTimeout> | null = null;
+      let restartAttempts = 0;
+      const tryIceRestart = async () => {
+        if (!pcRef.current || !isCaller || !signalChanRef.current) return;
+        if (restartAttempts >= 3) { setConnState('failed'); return; }
+        restartAttempts++;
+        try {
+          const offer = await pcRef.current.createOffer({ iceRestart: true });
+          await pcRef.current.setLocalDescription(offer);
+          signalChanRef.current.send({
+            type: 'broadcast',
+            event: 'offer',
+            payload: { from: user.id, sdp: offer },
+          });
+        } catch { /* will retry on next state change */ }
+      };
+
       pc.onconnectionstatechange = () => {
         if (!pcRef.current) return;
         const s = pcRef.current.connectionState;
-        if (s === 'connected') setConnState('connected');
-        else if (s === 'failed') setConnState('failed');
+        if (s === 'connected') {
+          setConnState('connected');
+          restartAttempts = 0;
+          if (disconnectTimer) { clearTimeout(disconnectTimer); disconnectTimer = null; }
+        } else if (s === 'disconnected') {
+          setConnState('connecting');
+          if (disconnectTimer) clearTimeout(disconnectTimer);
+          // Give the network 3s to recover on its own; then restart ICE.
+          disconnectTimer = setTimeout(() => { tryIceRestart(); }, 3000);
+        } else if (s === 'failed') {
+          setConnState('connecting');
+          tryIceRestart();
+        }
+      };
+
+      pc.oniceconnectionstatechange = () => {
+        if (!pcRef.current) return;
+        const s = pcRef.current.iceConnectionState;
+        if (s === 'failed') tryIceRestart();
       };
 
       pc.onicecandidate = (ev) => {
