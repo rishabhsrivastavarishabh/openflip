@@ -99,10 +99,24 @@ export default function AccountPage() {
   };
 
   const handleRemoveCover = async () => {
+    if (!user) return;
     setSavingCover(true);
     try {
-      await updateProfile({ cover_url: null } as any);
+      // Best-effort cleanup of any previously uploaded cover files.
+      const { data: files } = await supabase.storage.from('media').list(user.id, { limit: 20 });
+      const coverFiles = (files || [])
+        .filter((f) => f.name.startsWith('cover.'))
+        .map((f) => `${user.id}/${f.name}`);
+      if (coverFiles.length > 0) {
+        await supabase.storage.from('media').remove(coverFiles);
+      }
+
+      const { error } = await updateProfile({ cover_url: null } as any);
+      if (error) throw error;
       toast.success('Cover removed');
+    } catch (err: any) {
+      console.error('Remove cover failed', err);
+      toast.error(err?.message || 'Failed to remove cover');
     } finally {
       setSavingCover(false);
     }
