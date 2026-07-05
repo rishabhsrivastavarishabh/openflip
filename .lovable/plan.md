@@ -1,62 +1,75 @@
 ## Goal
 
-Roll a bolder version of the Messages refresh across every page: stronger gradients, glassmorphism, softer motion, tighter typography, and rounded card surfaces — while keeping structure and business logic untouched.
+Give calls their own dedicated settings hub, add a caller-tune (what the caller hears while the other phone rings), and separate the message ringtone from the call ringtone so each can be chosen independently.
 
-## Design language (locked across all phases)
+## What the user gets
 
-- **Surfaces**: `rounded-2xl` / `rounded-3xl` cards, subtle 1px borders, `backdrop-blur-xl` on floating chrome, layered soft shadows.
-- **Headers**: gradient logo wordmark, sticky glass top bars with blurred backdrop, floating segmented tabs.
-- **Accents**: blue→purple gradient tokens already in the theme, tinted unread/active states, gradient badges and CTAs.
-- **Motion**: `transition-all` on interactive surfaces, subtle scale-on-press for buttons, fade/slide-in for lists (Tailwind + existing animate utilities — no new libs).
-- **Icons**: keep the modernized Lucide set (House, Clapperboard, etc.).
-- **Type**: heavier tracking on section titles, muted-foreground metadata, larger touch targets on mobile.
+**New "Calls" section in Settings** (`/settings/calls`), grouped as:
 
-New shared primitives added in phase 1 and reused everywhere:
+- Notifications
+  - Voice call notifications (on/off)
+  - Video call notifications (on/off)
+  - Vibrate on incoming call (on/off)
+- Ringtone (played when you receive a call)
+  - Choice: Default, Chime, Ding, Pop, Swoosh, Classic, None — with a Preview button per choice
+- Caller tune (played to you while the person you're calling is still ringing)
+  - Enable caller tune (on/off)
+  - Choice: Default (dial tone), Soft, Uplift, Retro, Lo-fi, Silent — with Preview
+- Call behaviour
+  - Turn on loudspeaker by default (on/off)
+  - Allow calls from people you don't follow (on/off)
 
-- `GlassHeader` — sticky blurred page header with title/back-button/actions slots.
-- `SectionCard` — rounded, bordered, hoverable content card.
-- `GradientBadge` — pill for counts/unread/status.
-- `EmptyState` — icon + copy + optional CTA.
+**Notifications page (existing)** gets a new "Message ringtone" selector, distinct from the call ringtone. The existing "Ringtone" row is renamed to "Notification sound" and now applies to non-message alerts (likes, comments, follows, etc.). Message previews use the new `message_ringtone`.
 
-## Phase 1 (this turn) — Feed + Profile
+**Actual call behaviour**
+- The incoming-call dialog uses the user's *call ringtone* choice.
+- The caller's Call page plays the chosen *caller tune* on loop until the callee accepts (or declines / times out).
+- Chat message notifications play the chosen *message ringtone*.
 
-**Feed (`src/pages/Feed.tsx` and its section components)**
-- New sticky glass top bar with gradient "openflip" wordmark, notification + messages icons.
-- Stories row: pill container with gradient rings on unseen stories, smoother horizontal scroll.
-- Post cards: `rounded-3xl`, thin border, elevated on hover, gradient action row.
-- `SuggestedUsers` and `SuggestedPosts`: retitled section headers, horizontal snap carousel with rounded avatars/thumbnails.
-- Modern empty state when feed is empty.
+## Technical details
 
-**Profile (`src/pages/Profile.tsx`)**
-- Gradient cover strip behind avatar, larger avatar with gradient ring for verified/live status.
-- Stats row as three rounded tiles with tap targets.
-- Action buttons (Follow / Message / Share) as gradient pill row.
-- Tabs (Posts / Reels / Tagged / Saved) as floating segmented control.
-- Grid tiles with rounded corners and hover overlay for like/comment counts.
+### Schema (migration)
 
-No changes to hooks, queries, RLS, routing, or data shapes — visuals only.
+Add columns to `public.notification_settings` (all with sensible defaults so existing users are unaffected):
 
-## Phase 2 (next turn) — Settings + Auth
+- `call_ringtone text default 'default'`
+- `caller_tune text default 'default'`
+- `caller_tune_enabled boolean default true`
+- `message_ringtone text default 'chime'`
+- `call_notifications boolean default true`
+- `video_call_notifications boolean default true`
+- `call_vibrate boolean default true`
+- `speaker_default_on boolean default false`
+- `allow_unknown_callers boolean default true`
 
-- Restyle `SettingsLayout` sidebar and every subpage (Account, Security, Privacy, Notifications, Appearance, 2FA, More) using `SectionCard` + `GlassHeader`.
-- Security checklist becomes a progress ring + tinted rows.
-- Auth pages (Sign in / Sign up / Reset / MFA challenge) get the gradient hero panel and glass card treatment.
+The existing `ringtone` column stays as the generic notification-sound choice (renamed in the UI only).
 
-## Phase 3 (following turn) — Explore, Notifications, Reels, misc.
+### Sound library (client-only, no assets)
 
-- Explore: trending grid as bento layout, search bar as glass pill, category chips.
-- Notifications: grouped cards, gradient unread indicator, swipe-friendly rows.
-- Reels overlay chrome: cleaner gradient scrims, rounded action rail.
-- Sweep remaining pages (Followers/Following, Highlights, Billing, etc.) for consistency.
+Create `src/lib/callSounds.ts` with WebAudio pattern definitions:
+- `RINGTONES` – for incoming-call ringing (already defined inline in `IncomingCallDialog`; move here and extend with "Classic").
+- `CALLER_TUNES` – looping patterns for outbound ring (dial-tone, soft arpeggio, uplift, retro, lo-fi, silent).
+- `MESSAGE_TONES` – single-shot chime patterns.
 
-## Out of scope
+Each exports `playPattern(ctx, name, { loop })` returning a `stop()` handle. This avoids shipping audio files and keeps the fix scoped to Tailwind + JS.
 
-- No backend, RLS, schema, routing, or business-logic changes.
-- No new dependencies.
-- No changes to Messages/Conversation (already done).
+### New files
 
-## Technical notes
+- `src/pages/settings/CallsPage.tsx` – the new page, wired to `notification_settings` with per-field autosave (mirrors existing NotificationSettings pattern) and a small "Preview" button next to each sound choice that plays the pattern for ~2s.
+- `src/lib/callSounds.ts` – shared sound patterns and `playPattern` helper.
 
-- All colors via existing semantic tokens in `index.css` / `tailwind.config.ts`. No hardcoded hex in components.
-- New primitives live in `src/components/ui/` (project-local, not shadcn overrides).
-- Verify each phase with a Playwright screenshot pass on Feed/Profile at mobile viewport before closing the turn.
+### Edits
+
+- `src/pages/settings/SettingsLayout.tsx` – add a "Calls" entry (Phone icon) between Notifications and Appearance.
+- `src/App.tsx` – register `/settings/calls` route.
+- `src/components/calls/IncomingCallDialog.tsx` – read `call_ringtone` (falling back to `ringtone`), respect `call_notifications` / `video_call_notifications`, and use the shared sound library. Fire `navigator.vibrate` when `call_vibrate` is true.
+- `src/pages/Call.tsx` – when the current user is the caller and `call.status === 'ringing'`, play the selected caller tune on loop; stop on accept / decline / cleanup. Apply `speaker_default_on` on mount.
+- `src/hooks/usePushNotifications.ts` – when the notification is a message, play the `message_ringtone`; otherwise play the existing generic sound. Both are gated by `notification_sound`.
+- `src/components/settings/NotificationSettings.tsx` – rename the "Ringtone" row to "Notification sound" (still writes to `ringtone`), and add a new "Message ringtone" row that writes to `message_ringtone`.
+
+### Not doing
+
+- No uploading of custom audio files. All tones are generated in-browser to keep the change dependency-free.
+- No changes to WebRTC signaling.
+
+Ask if you'd like custom audio-file uploads for caller tunes as a follow-up — that needs storage + a small edge function and is a bigger change.
