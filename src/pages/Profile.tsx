@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { getFirstPostMediaUrl } from '@/lib/utils';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Grid3X3, Bookmark, Settings, UserPlus, UserMinus, MessageCircle, Plus, Film, Lock, Clock, Share2, MoreHorizontal, Pin, PlusSquare, Heart, Crown, Camera, Trash2, LayoutDashboard } from 'lucide-react';
+import { Grid3X3, Bookmark, Menu, UserPlus, UserMinus, MessageCircle, Plus, Film, Lock, Clock, Share2, MoreHorizontal, Pin, Heart, Crown, Camera, Trash2, LayoutDashboard } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Seo } from '@/components/seo/Seo';
 import { Button } from '@/components/ui/button';
@@ -626,6 +626,15 @@ export default function ProfilePage() {
         >
           <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/40" aria-hidden />
           {isOwnProfile && (
+            <Link
+              to="/settings"
+              aria-label="Settings"
+              className="absolute left-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm hover:bg-black/70 transition-colors"
+            >
+              <Menu className="h-5 w-5" />
+            </Link>
+          )}
+          {isOwnProfile && (
             <div className="absolute right-3 top-3 z-10 flex gap-2">
               <label
                 className="flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm hover:bg-black/70 cursor-pointer transition-colors"
@@ -703,16 +712,6 @@ export default function ProfilePage() {
                       </Button>
                       <Button variant="ghost" size="icon-sm" onClick={() => setShowShareSheet(true)}>
                         <Share2 className="h-5 w-5" />
-                      </Button>
-                      <Button asChild variant="ghost" size="icon-sm">
-                        <Link to="/create">
-                          <PlusSquare className="h-5 w-5" />
-                        </Link>
-                      </Button>
-                      <Button asChild variant="ghost" size="icon-sm">
-                        <Link to="/settings">
-                          <Settings className="h-5 w-5" />
-                        </Link>
                       </Button>
                     </>
                   ) : (
