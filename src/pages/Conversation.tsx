@@ -36,6 +36,7 @@ import { useDeviceKeys } from '@/hooks/useDeviceKeys';
 import { toast } from 'sonner';
 import { useStartCall } from '@/hooks/useStartCall';
 import { setActiveConversation } from '@/hooks/useActiveConversation';
+import { Sidebar } from '@/components/layout/Sidebar';
 
 interface ChatMessage extends Message {
   isMine: boolean;
