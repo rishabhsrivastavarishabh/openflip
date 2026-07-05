@@ -4,7 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { PhoneOff, Mic, MicOff, Video, VideoOff, SwitchCamera, UserPlus, Volume2, VolumeX } from 'lucide-react';
+import { PhoneOff, Mic, MicOff, Video, VideoOff, SwitchCamera, UserPlus, Volume2, VolumeX, Palette, Check } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
 
 // STUN for direct P2P + free public TURN relays for NAT/firewall traversal.
@@ -24,6 +25,66 @@ const ICE_SERVERS: RTCIceServer[] = [
   },
 ];
 
+type CallTheme = {
+  id: string;
+  label: string;
+  base: string; // solid fallback color
+  gradient: string; // full css background value
+  swatch: string; // small preview color
+};
+
+const CALL_THEMES: CallTheme[] = [
+  {
+    id: 'midnight',
+    label: 'Midnight',
+    base: '#000000',
+    gradient:
+      'radial-gradient(1200px 600px at 50% -10%, hsl(var(--primary) / 0.35), transparent 60%), radial-gradient(800px 500px at 80% 100%, hsl(var(--accent) / 0.25), transparent 60%)',
+    swatch: 'linear-gradient(135deg, #0f172a, #6d28d9)',
+  },
+  {
+    id: 'ocean',
+    label: 'Ocean',
+    base: '#031b2e',
+    gradient:
+      'radial-gradient(1200px 600px at 50% -10%, rgba(14,165,233,0.45), transparent 60%), radial-gradient(800px 500px at 80% 100%, rgba(16,185,129,0.35), transparent 60%)',
+    swatch: 'linear-gradient(135deg, #0ea5e9, #10b981)',
+  },
+  {
+    id: 'sunset',
+    label: 'Sunset',
+    base: '#2a0a12',
+    gradient:
+      'radial-gradient(1200px 600px at 50% -10%, rgba(244,63,94,0.5), transparent 60%), radial-gradient(800px 500px at 80% 100%, rgba(251,146,60,0.4), transparent 60%)',
+    swatch: 'linear-gradient(135deg, #f43f5e, #fb923c)',
+  },
+  {
+    id: 'forest',
+    label: 'Forest',
+    base: '#04140b',
+    gradient:
+      'radial-gradient(1200px 600px at 50% -10%, rgba(34,197,94,0.45), transparent 60%), radial-gradient(800px 500px at 80% 100%, rgba(20,184,166,0.35), transparent 60%)',
+    swatch: 'linear-gradient(135deg, #22c55e, #14b8a6)',
+  },
+  {
+    id: 'rose',
+    label: 'Rose',
+    base: '#1a0620',
+    gradient:
+      'radial-gradient(1200px 600px at 50% -10%, rgba(236,72,153,0.5), transparent 60%), radial-gradient(800px 500px at 80% 100%, rgba(168,85,247,0.4), transparent 60%)',
+    swatch: 'linear-gradient(135deg, #ec4899, #a855f7)',
+  },
+  {
+    id: 'mono',
+    label: 'Mono',
+    base: '#000000',
+    gradient: 'radial-gradient(1200px 600px at 50% -10%, rgba(255,255,255,0.15), transparent 60%)',
+    swatch: 'linear-gradient(135deg, #262626, #737373)',
+  },
+];
+
+const CALL_THEME_KEY = 'openflip_call_theme';
+
 export default function Call() {
   const { callId } = useParams<{ callId: string }>();
   const { user } = useAuth();
@@ -38,6 +99,14 @@ export default function Call() {
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
   const [upgrading, setUpgrading] = useState(false);
   const [speakerOn, setSpeakerOn] = useState(true);
+  const [themeId, setThemeId] = useState<string>(() => {
+    try { return localStorage.getItem(CALL_THEME_KEY) || 'midnight'; } catch { return 'midnight'; }
+  });
+  const theme = CALL_THEMES.find(t => t.id === themeId) ?? CALL_THEMES[0];
+  const chooseTheme = (id: string) => {
+    setThemeId(id);
+    try { localStorage.setItem(CALL_THEME_KEY, id); } catch {}
+  };
 
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
@@ -555,18 +624,16 @@ export default function Call() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-between overflow-hidden bg-black text-white px-4 pt-[max(env(safe-area-inset-top),1rem)] pb-[max(env(safe-area-inset-bottom),1rem)] sm:px-8"
-      style={{ height: '100dvh' }}
+      className="fixed inset-0 z-50 flex flex-col items-center justify-between overflow-hidden text-white px-4 pt-[max(env(safe-area-inset-top),1rem)] pb-[max(env(safe-area-inset-bottom),1rem)] sm:px-8"
+      style={{ height: '100dvh', backgroundColor: theme.base }}
     >
       {/* soft radial glow to match glassmorphism language */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-60"
-        style={{
-          background:
-            'radial-gradient(1200px 600px at 50% -10%, hsl(var(--primary) / 0.35), transparent 60%), radial-gradient(800px 500px at 80% 100%, hsl(var(--accent) / 0.25), transparent 60%)',
-        }}
+        className="pointer-events-none absolute inset-0 opacity-60 transition-[background] duration-500"
+        style={{ background: theme.gradient }}
       />
+
 
       {videoActive && (
         <video
@@ -631,6 +698,45 @@ export default function Call() {
         <Button size="icon" variant="secondary" className={ctlBtn} onClick={addPeople} aria-label="Add people to call">
           <UserPlus className="h-5 w-5" />
         </Button>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button size="icon" variant="secondary" className={ctlBtn} aria-label="Change call color" title="Call color">
+              <Palette className="h-5 w-5" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent
+            side="top"
+            align="center"
+            className="w-64 border-white/10 bg-black/80 text-white backdrop-blur-xl"
+          >
+            <p className="mb-2 text-xs font-medium text-white/70">Call background</p>
+            <div className="grid grid-cols-3 gap-2">
+              {CALL_THEMES.map((t) => {
+                const active = t.id === themeId;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => chooseTheme(t.id)}
+                    className={`group relative flex h-14 flex-col items-center justify-end overflow-hidden rounded-xl border transition-all ${active ? 'border-white ring-2 ring-white/60' : 'border-white/10 hover:border-white/40'}`}
+                    style={{ background: t.swatch }}
+                    aria-label={`Use ${t.label} theme`}
+                    aria-pressed={active}
+                  >
+                    {active && (
+                      <span className="absolute right-1 top-1 rounded-full bg-black/50 p-0.5">
+                        <Check className="h-3 w-3 text-white" />
+                      </span>
+                    )}
+                    <span className="w-full bg-black/40 py-0.5 text-center text-[10px] font-medium">
+                      {t.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </PopoverContent>
+        </Popover>
+
         <Button size="icon" variant="destructive" className="h-14 w-14 sm:h-16 sm:w-16 rounded-full shadow-lg" onClick={hangUp} aria-label="End call">
           <PhoneOff className="h-6 w-6" />
         </Button>
