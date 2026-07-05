@@ -69,7 +69,11 @@ export default function SecurityPage() {
   const startEnroll = async () => {
     setEnrolling(true);
     try {
-      const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp' });
+      const { data, error } = await supabase.auth.mfa.enroll({
+        factorType: 'totp',
+        friendlyName: `Openflip.in (${new Date().toISOString().slice(0, 10)})`,
+        issuer: 'Openflip.in',
+      } as any);
       if (error) throw error;
       setFactorId(data.id);
       setQr(data.totp?.qr_code ?? null);
