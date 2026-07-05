@@ -4,7 +4,7 @@ import {
   ArrowLeft, User, Lock, Bell, HelpCircle, LogOut, Camera, ChevronRight,
   Shield, Ban, Trash2, Briefcase, Settings2, Crown, BarChart3, Tag, Moon,
   Sun, Monitor, Users, Eye, Heart, MessageCircle, Smartphone, Image,
-  Globe, UserCheck, Volume2, Palette, Info, FileText, Phone, Fingerprint, KeyRound
+  Globe, UserCheck, Volume2, Palette, Info, FileText, Phone, Fingerprint, KeyRound, Download
 } from 'lucide-react';
 
 import { AvatarCropDialog } from '@/components/settings/AvatarCropDialog';
@@ -698,6 +698,7 @@ export default function SettingsPage() {
       items: [
         { icon: HelpCircle, label: 'Help & About', description: 'Privacy Policy, Terms of Service', action: () => setShowHelp(true) },
         { icon: Settings2, label: 'Account Centre', description: 'Profile, security, payments', action: () => navigate('/account-center') },
+        { icon: Download, label: 'Download Android App', description: 'Get the Openflip APK', action: () => window.open('https://drive.google.com/file/d/1PmZwkpHk8aIYYLJPAI1C-0aK3OETm7cu/view?usp=drive_link', '_blank', 'noopener,noreferrer') },
       ],
     },
   ];
