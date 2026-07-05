@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Grid3X3, Bookmark, Settings, UserPlus, UserMinus, MessageCircle, Plus, Film, Lock, Clock, Share2, MoreHorizontal, Pin, PlusSquare, Heart, Crown } from 'lucide-react';
+import { Grid3X3, Bookmark, Settings, UserPlus, UserMinus, MessageCircle, Plus, Film, Lock, Clock, Share2, MoreHorizontal, Pin, PlusSquare, Heart, Crown, Camera, Trash2 } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Seo } from '@/components/seo/Seo';
 import { Button } from '@/components/ui/button';
@@ -75,6 +75,7 @@ export default function ProfilePage() {
   const [showTipDialog, setShowTipDialog] = useState(false);
   const [showSubscribeDialog, setShowSubscribeDialog] = useState(false);
   const [isSubscribedToCreator, setIsSubscribedToCreator] = useState(false);
+  const [savingCover, setSavingCover] = useState(false);
 
   const isOwnProfile = !!user && !!userId && user.id === userId;
 
@@ -153,6 +154,74 @@ export default function ProfilePage() {
       setProfile(data);
     }
   };
+
+  // Cover picture — upload/replace directly from the profile page (own profile only).
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !user) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      toast.error('Cover image must be under 8MB');
+      return;
+    }
+    setSavingCover(true);
+    try {
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const fileName = `${user.id}/cover.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from('media')
+        .upload(fileName, file, { upsert: true, contentType: file.type });
+      if (uploadError) throw uploadError;
+      const { data: { publicUrl } } = supabase.storage.from('media').getPublicUrl(fileName);
+      const cover_url = `${publicUrl}?t=${Date.now()}`;
+      const { error } = await supabase
+        .from('profiles')
+        .update({ cover_url } as any)
+        .eq('id', user.id);
+      if (error) throw error;
+      setProfile((prev) => (prev ? ({ ...prev, cover_url } as any) : prev));
+      toast.success('Cover updated');
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to update cover');
+    } finally {
+      setSavingCover(false);
+    }
+  };
+
+  const handleCoverRemove = async () => {
+    if (!user) return;
+    setSavingCover(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ cover_url: null } as any)
+        .eq('id', user.id);
+      if (error) throw error;
+      // Best-effort cleanup of stored cover files.
+      try {
+        const { data: files } = await supabase.storage.from('media').list(user.id, { limit: 20 });
+        const coverFiles = (files || [])
+          .filter((f) => f.name.startsWith('cover.'))
+          .map((f) => `${user.id}/${f.name}`);
+        if (coverFiles.length > 0) {
+          await supabase.storage.from('media').remove(coverFiles);
+        }
+      } catch (storageErr) {
+        console.warn('Cover storage cleanup skipped:', storageErr);
+      }
+      setProfile((prev) => (prev ? ({ ...prev, cover_url: null } as any) : prev));
+      toast.success('Cover removed');
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to remove cover');
+    } finally {
+      setSavingCover(false);
+    }
+  };
+
 
   const fetchPosts = async () => {
     const { data: postsData } = await supabase
@@ -516,7 +585,38 @@ export default function ProfilePage() {
           style={(profile as any).cover_url ? { backgroundImage: `url(${(profile as any).cover_url})` } : undefined}
         >
           <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/40" aria-hidden />
+          {isOwnProfile && (
+            <div className="absolute right-3 top-3 z-10 flex gap-2">
+              <label
+                className="flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm hover:bg-black/70 cursor-pointer transition-colors"
+                aria-label={(profile as any).cover_url ? 'Change cover picture' : 'Add cover picture'}
+              >
+                <Camera className="h-3.5 w-3.5" />
+                <span>{savingCover ? 'Saving…' : (profile as any).cover_url ? 'Change cover' : 'Add cover'}</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  onChange={handleCoverUpload}
+                  disabled={savingCover}
+                />
+              </label>
+              {(profile as any).cover_url && (
+                <button
+                  type="button"
+                  onClick={handleCoverRemove}
+                  disabled={savingCover}
+                  className="flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm hover:bg-destructive/80 transition-colors disabled:opacity-50"
+                  aria-label="Remove cover picture"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  <span>Remove</span>
+                </button>
+              )}
+            </div>
+          )}
         </div>
+
 
         {/* Profile Header */}
         <div className="px-4 -mt-12 md:-mt-16 md:py-0 pb-4">
