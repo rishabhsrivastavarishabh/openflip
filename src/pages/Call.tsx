@@ -42,6 +42,38 @@ const ICE_SERVERS: RTCIceServer[] = [
   },
 ];
 
+// High-quality video constraints: request up to 4K (2160p) at 30fps.
+// Browsers will negotiate down automatically if the camera/network can't handle it.
+const VIDEO_CONSTRAINTS_4K: MediaTrackConstraints = {
+  width: { ideal: 3840, max: 3840 },
+  height: { ideal: 2160, max: 2160 },
+  frameRate: { ideal: 30, max: 60 },
+};
+
+// Configure a video sender for 4K + low-latency: high bitrate cap and
+// prefer smooth framerate over resolution when bandwidth dips.
+const tuneVideoSender = async (sender: RTCRtpSender) => {
+  try {
+    const params = sender.getParameters();
+    if (!params.encodings || params.encodings.length === 0) {
+      params.encodings = [{}];
+    }
+    // ~15 Mbps ceiling supports 4K@30 comfortably; drops gracefully on weak links.
+    params.encodings[0].maxBitrate = 15_000_000;
+    params.encodings[0].maxFramerate = 30;
+    (params as any).degradationPreference = 'maintain-framerate';
+    await sender.setParameters(params);
+  } catch { /* older browsers ignore */ }
+};
+
+// Minimize the receiver jitter buffer to cut playout delay (lower latency).
+const tuneReceiver = (receiver: RTCRtpReceiver) => {
+  try {
+    (receiver as any).playoutDelayHint = 0;
+    (receiver as any).jitterBufferTarget = 0;
+  } catch {}
+};
+
 type CallTheme = {
   id: string;
   label: string;
@@ -267,8 +299,12 @@ export default function Call() {
       let stream: MediaStream;
       try {
         stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-          video: isVideo ? { width: 640, height: 480 } : false,
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+          video: isVideo ? VIDEO_CONSTRAINTS_4K : false,
         });
       } catch (err: any) {
         toast.error(err?.message || 'Could not access microphone. Check browser permissions.');
@@ -286,14 +322,18 @@ export default function Call() {
 
       const pc = new RTCPeerConnection({
         iceServers: ICE_SERVERS,
-        iceCandidatePoolSize: 4,
+        iceCandidatePoolSize: 10,
         bundlePolicy: 'max-bundle',
         rtcpMuxPolicy: 'require',
       });
       pcRef.current = pc;
-      stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+      stream.getTracks().forEach((track) => {
+        const sender = pc.addTrack(track, stream);
+        if (track.kind === 'video') tuneVideoSender(sender);
+      });
 
       pc.ontrack = (ev) => {
+        tuneReceiver(ev.receiver);
         const [remote] = ev.streams;
         if (!remote) return;
         // Always attach — even audio-only calls that later get upgraded reuse this ref.
@@ -423,37 +463,59 @@ export default function Call() {
         // ── Renegotiation: peer added video mid-call (audio→video upgrade). ──
         .on('broadcast', { event: 'renegotiate-offer' }, async ({ payload }) => {
           if (payload.from === user.id || !pcRef.current || !localStreamRef.current) return;
-          // Ensure we also start sending our camera so it's a two-way video call.
-          if (localStreamRef.current.getVideoTracks().length === 0) {
-            try {
-              const cam = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: { ideal: 'user' }, width: 640, height: 480 },
-              });
-              const v = cam.getVideoTracks()[0];
-              localStreamRef.current.addTrack(v);
-              pcRef.current.addTrack(v, localStreamRef.current);
-              if (localVideoRef.current) localVideoRef.current.srcObject = localStreamRef.current;
-            } catch {
-              // No camera / denied — still accept the incoming video (receive-only).
+          try {
+            // CRITICAL: apply remote SDP FIRST so the video m-line exists,
+            // then attach our camera onto that transceiver. Doing it in the
+            // opposite order created a stray m-line and the upgrade failed.
+            await pcRef.current.setRemoteDescription(new RTCSessionDescription(payload.sdp));
+
+            // Also start sending our camera so it's a two-way video call.
+            if (localStreamRef.current.getVideoTracks().length === 0) {
+              try {
+                const cam = await navigator.mediaDevices.getUserMedia({
+                  video: { facingMode: { ideal: 'user' }, ...VIDEO_CONSTRAINTS_4K },
+                });
+                const v = cam.getVideoTracks()[0];
+                localStreamRef.current.addTrack(v);
+                // Prefer reusing the transceiver the offer created (avoids new m-line).
+                const videoTx = pcRef.current
+                  .getTransceivers()
+                  .find((t) => t.receiver.track?.kind === 'video' && !t.sender.track);
+                if (videoTx) {
+                  await videoTx.sender.replaceTrack(v);
+                  try { videoTx.direction = 'sendrecv'; } catch {}
+                  tuneVideoSender(videoTx.sender);
+                } else {
+                  const s = pcRef.current.addTrack(v, localStreamRef.current);
+                  tuneVideoSender(s);
+                }
+                if (localVideoRef.current) localVideoRef.current.srcObject = localStreamRef.current;
+              } catch {
+                // No camera / denied — still accept the incoming video (receive-only).
+              }
             }
+
+            const ans = await pcRef.current.createAnswer();
+            await pcRef.current.setLocalDescription(ans);
+            chan.send({
+              type: 'broadcast',
+              event: 'renegotiate-answer',
+              payload: { from: user.id, sdp: ans },
+            });
+            setVideoActive(true);
+            toast.message('Call upgraded to video');
+          } catch (e) {
+            console.error('renegotiate-offer failed', e);
           }
-          await pcRef.current.setRemoteDescription(new RTCSessionDescription(payload.sdp));
-          const ans = await pcRef.current.createAnswer();
-          await pcRef.current.setLocalDescription(ans);
-          chan.send({
-            type: 'broadcast',
-            event: 'renegotiate-answer',
-            payload: { from: user.id, sdp: ans },
-          });
-          setVideoActive(true);
-          toast.message('Call upgraded to video');
         })
         .on('broadcast', { event: 'renegotiate-answer' }, async ({ payload }) => {
           if (payload.from === user.id || !pcRef.current) return;
-          if (pcRef.current.signalingState === 'stable') return;
+          if (pcRef.current.signalingState !== 'have-local-offer') return;
           try {
             await pcRef.current.setRemoteDescription(new RTCSessionDescription(payload.sdp));
-          } catch {}
+          } catch (e) {
+            console.error('renegotiate-answer failed', e);
+          }
         })
         // ── Convert 1:1 call to a group meeting so more people can join. ──
         .on('broadcast', { event: 'move-to-meet' }, ({ payload }) => {
@@ -550,18 +612,23 @@ export default function Call() {
     try {
       // Prefer exact so we actually flip; fall back to ideal, then unconstrained.
       try {
-        newStream = await acquire({ facingMode: { exact: next }, width: 640, height: 480 });
+        newStream = await acquire({ facingMode: { exact: next }, ...VIDEO_CONSTRAINTS_4K });
       } catch {
         try {
-          newStream = await acquire({ facingMode: { ideal: next }, width: 640, height: 480 });
+          newStream = await acquire({ facingMode: { ideal: next }, ...VIDEO_CONSTRAINTS_4K });
         } catch {
-          newStream = await acquire({ width: 640, height: 480 });
+          newStream = await acquire({ ...VIDEO_CONSTRAINTS_4K });
         }
       }
       const newTrack = newStream.getVideoTracks()[0];
       if (!newTrack) throw new Error('No camera track');
-      if (sender) await sender.replaceTrack(newTrack);
-      else pcRef.current.addTrack(newTrack, localStreamRef.current);
+      if (sender) {
+        await sender.replaceTrack(newTrack);
+        tuneVideoSender(sender);
+      } else {
+        const s = pcRef.current.addTrack(newTrack, localStreamRef.current);
+        tuneVideoSender(s);
+      }
       localStreamRef.current.addTrack(newTrack);
       if (localVideoRef.current) localVideoRef.current.srcObject = localStreamRef.current;
       setFacingMode(next);
@@ -569,7 +636,7 @@ export default function Call() {
       toast.error(e?.message || 'Could not switch camera');
       // Try to restore something so the local preview isn't blank.
       try {
-        const fallback = await acquire({ facingMode: { ideal: facingMode }, width: 640, height: 480 });
+        const fallback = await acquire({ facingMode: { ideal: facingMode }, ...VIDEO_CONSTRAINTS_4K });
         const t = fallback.getVideoTracks()[0];
         if (t) {
           if (sender) await sender.replaceTrack(t);
@@ -625,11 +692,27 @@ export default function Call() {
     setUpgrading(true);
     try {
       const cam = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: facingMode }, width: 640, height: 480 },
+        video: { facingMode: { ideal: facingMode }, ...VIDEO_CONSTRAINTS_4K },
       });
       const vTrack = cam.getVideoTracks()[0];
       localStreamRef.current.addTrack(vTrack);
-      pcRef.current.addTrack(vTrack, localStreamRef.current);
+
+      // Reuse an existing recv-only video transceiver if one exists; else add one.
+      // Using replaceTrack on an existing transceiver avoids creating a duplicate
+      // m-line, which was breaking the upgrade renegotiation.
+      const existingTx = pcRef.current
+        .getTransceivers()
+        .find((t) => (t.receiver.track?.kind === 'video' || t.sender.track?.kind === 'video') && !t.sender.track);
+      let vSender: RTCRtpSender;
+      if (existingTx) {
+        await existingTx.sender.replaceTrack(vTrack);
+        try { existingTx.direction = 'sendrecv'; } catch {}
+        vSender = existingTx.sender;
+      } else {
+        vSender = pcRef.current.addTrack(vTrack, localStreamRef.current);
+      }
+      tuneVideoSender(vSender);
+
       if (localVideoRef.current) localVideoRef.current.srcObject = localStreamRef.current;
       const offer = await pcRef.current.createOffer();
       await pcRef.current.setLocalDescription(offer);
@@ -641,6 +724,7 @@ export default function Call() {
       setVideoActive(true);
       setVideoOn(true);
     } catch (e: any) {
+      console.error('upgradeToVideo failed', e);
       toast.error(e?.message || 'Could not turn on video');
     } finally {
       setUpgrading(false);
