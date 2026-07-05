@@ -349,7 +349,7 @@ export default function PostPage() {
           headline: postTitle,
           articleBody: post.caption || undefined,
           datePublished: post.created_at,
-          image: post.media_type === 'image' ? post.media_url : undefined,
+          image: post.media_type === 'image' ? getPostMediaUrls(post.media_url)[0] : undefined,
           author: {
             '@type': 'Person',
             name: post.profiles.full_name || post.profiles.username,
