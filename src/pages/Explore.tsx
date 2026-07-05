@@ -294,7 +294,7 @@ export default function ExplorePage() {
                         className="aspect-square relative group overflow-hidden rounded-2xl border border-border/40 hover:shadow-glow hover:-translate-y-0.5 transition-all"
                       >
                         <ProtectedMedia
-                          src={post.media_url}
+                          src={getFirstPostMediaUrl(post.media_url)}
                           type={post.media_type}
                           className="w-full h-full object-cover"
                         />
