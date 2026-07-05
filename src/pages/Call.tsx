@@ -8,17 +8,33 @@ import { PhoneOff, Mic, MicOff, Video, VideoOff, SwitchCamera, UserPlus, Volume2
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
 
-// STUN for direct P2P + free public TURN relays for NAT/firewall traversal.
-// Without TURN, calls between users on symmetric NATs or restrictive networks
-// (mobile carriers, corporate Wi-Fi) fail with "Connection failed".
+// STUN for direct P2P + multiple free public TURN relays for NAT/firewall
+// traversal. Without TURN, calls between users on symmetric NATs or
+// restrictive networks (mobile carriers, corporate Wi-Fi) fail with
+// "Connection failed". We list several providers/ports so a block on one
+// still leaves working paths (UDP 3478, UDP/TCP 80, UDP/TCP 443).
 const ICE_SERVERS: RTCIceServer[] = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
+  { urls: 'stun:stun2.l.google.com:19302' },
+  { urls: 'stun:stun.cloudflare.com:3478' },
   {
     urls: [
       'turn:openrelay.metered.ca:80',
+      'turn:openrelay.metered.ca:80?transport=tcp',
       'turn:openrelay.metered.ca:443',
       'turn:openrelay.metered.ca:443?transport=tcp',
+      'turns:openrelay.metered.ca:443?transport=tcp',
+    ],
+    username: 'openrelayproject',
+    credential: 'openrelayproject',
+  },
+  {
+    urls: [
+      'turn:global.relay.metered.ca:80',
+      'turn:global.relay.metered.ca:80?transport=tcp',
+      'turn:global.relay.metered.ca:443',
+      'turns:global.relay.metered.ca:443?transport=tcp',
     ],
     username: 'openrelayproject',
     credential: 'openrelayproject',
@@ -235,7 +251,12 @@ export default function Call() {
         localVideoRef.current.srcObject = stream;
       }
 
-      const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+      const pc = new RTCPeerConnection({
+        iceServers: ICE_SERVERS,
+        iceCandidatePoolSize: 4,
+        bundlePolicy: 'max-bundle',
+        rtcpMuxPolicy: 'require',
+      });
       pcRef.current = pc;
       stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
@@ -248,11 +269,48 @@ export default function Call() {
         if (remote.getVideoTracks().length > 0) setVideoActive(true);
       };
 
+      // Watchdog: if the connection drops or fails, try ICE restart before
+      // giving up. Only the caller triggers the restart (creates a new offer);
+      // the callee will answer it via the normal offer/answer handlers below.
+      let disconnectTimer: ReturnType<typeof setTimeout> | null = null;
+      let restartAttempts = 0;
+      const tryIceRestart = async () => {
+        if (!pcRef.current || !isCaller || !signalChanRef.current) return;
+        if (restartAttempts >= 3) { setConnState('failed'); return; }
+        restartAttempts++;
+        try {
+          const offer = await pcRef.current.createOffer({ iceRestart: true });
+          await pcRef.current.setLocalDescription(offer);
+          signalChanRef.current.send({
+            type: 'broadcast',
+            event: 'offer',
+            payload: { from: user.id, sdp: offer },
+          });
+        } catch { /* will retry on next state change */ }
+      };
+
       pc.onconnectionstatechange = () => {
         if (!pcRef.current) return;
         const s = pcRef.current.connectionState;
-        if (s === 'connected') setConnState('connected');
-        else if (s === 'failed') setConnState('failed');
+        if (s === 'connected') {
+          setConnState('connected');
+          restartAttempts = 0;
+          if (disconnectTimer) { clearTimeout(disconnectTimer); disconnectTimer = null; }
+        } else if (s === 'disconnected') {
+          setConnState('connecting');
+          if (disconnectTimer) clearTimeout(disconnectTimer);
+          // Give the network 3s to recover on its own; then restart ICE.
+          disconnectTimer = setTimeout(() => { tryIceRestart(); }, 3000);
+        } else if (s === 'failed') {
+          setConnState('connecting');
+          tryIceRestart();
+        }
+      };
+
+      pc.oniceconnectionstatechange = () => {
+        if (!pcRef.current) return;
+        const s = pcRef.current.iceConnectionState;
+        if (s === 'failed') tryIceRestart();
       };
 
       pc.onicecandidate = (ev) => {

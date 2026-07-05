@@ -66,6 +66,7 @@ import { useAuth as useAuthForCall } from "@/contexts/AuthContext";
 import NotFound from "./pages/NotFound";
 import OAuthConsent from "./pages/OAuthConsent";
 import Creator from "./pages/Creator";
+import AgentIntegrations from "./pages/AgentIntegrations";
 
 function GlobalCallOverlay() {
   const { user } = useAuthForCall();
@@ -117,6 +118,7 @@ const App = () => (
                 <Route path="notifications" element={<NotificationsPage />} />
                 <Route path="appearance" element={<AppearancePage />} />
                 <Route path="more" element={<Settings />} />
+                <Route path="agent-integrations" element={<AgentIntegrations />} />
                 <Route path="admin" element={<AdminPage />} />
               </Route>
               <Route path="/account-center" element={<AccountCenter />} />
