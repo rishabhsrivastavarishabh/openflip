@@ -4,7 +4,7 @@ import {
   ArrowLeft, User, Lock, Bell, HelpCircle, LogOut, Camera, ChevronRight,
   Shield, Ban, Trash2, Briefcase, Settings2, Crown, BarChart3, Tag, Moon,
   Sun, Monitor, Users, Eye, Heart, MessageCircle, Smartphone, Image,
-  Globe, UserCheck, Volume2, Palette, Info, FileText, Phone, Fingerprint, KeyRound, Bot
+  Globe, UserCheck, Volume2, Palette, Info, FileText, Phone, Fingerprint, KeyRound
 } from 'lucide-react';
 
 import { AvatarCropDialog } from '@/components/settings/AvatarCropDialog';
@@ -656,14 +656,6 @@ export default function SettingsPage() {
     },
 
     {
-      title: 'How you use Openflip',
-      items: [
-        { icon: User, label: 'Edit profile', action: () => setShowEditProfile(true) },
-        { icon: Bell, label: 'Notification details', action: () => setShowNotificationSettings(true) },
-        { icon: Palette, label: 'Appearance (legacy)', action: () => setShowAppearance(true) },
-      ],
-    },
-    {
       title: 'For professionals',
       items: [
         { icon: BarChart3, label: 'Creator Tools', description: 'Analytics, insights & growth', action: () => setShowCreatorTools(true), highlight: true },
@@ -704,9 +696,7 @@ export default function SettingsPage() {
     {
       title: 'More info & support',
       items: [
-        { icon: Bot, label: 'Agent integrations', description: 'MCP tools for ChatGPT, Claude & more', action: () => navigate('/settings/agent-integrations'), highlight: true },
-        { icon: HelpCircle, label: 'Help', action: () => setShowHelp(true) },
-        { icon: Info, label: 'About', description: 'Privacy Policy, Terms of Service', action: () => setShowHelp(true) },
+        { icon: HelpCircle, label: 'Help & About', description: 'Privacy Policy, Terms of Service', action: () => setShowHelp(true) },
         { icon: Settings2, label: 'Account Centre', description: 'Profile, security, payments', action: () => navigate('/account-center') },
       ],
     },

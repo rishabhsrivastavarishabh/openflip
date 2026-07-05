@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Shield, Tag, BadgeCheck, Users, Loader2, UserX, Flag } from 'lucide-react';
+import { Shield, Tag, BadgeCheck, Users, Loader2, UserX, Flag, Activity } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { AdminPromoManager } from '@/components/admin/AdminPromoManager';
 import { AdminSubscribersPanel } from '@/components/admin/AdminSubscribersPanel';
 import { AdminAccountsPanel } from '@/components/admin/AdminAccountsPanel';
 import { AdminReportsPanel } from '@/components/admin/AdminReportsPanel';
+import { AdminModerationPanel } from '@/components/admin/AdminModerationPanel';
 
 export default function AdminPage() {
   const { user } = useAuth();
@@ -19,6 +20,7 @@ export default function AdminPage() {
   const [showSubs, setShowSubs] = useState(false);
   const [showAccounts, setShowAccounts] = useState(false);
   const [showReports, setShowReports] = useState(false);
+  const [showModeration, setShowModeration] = useState(false);
 
   useEffect(() => {
     if (!user) { setChecking(false); return; }
@@ -49,6 +51,12 @@ export default function AdminPage() {
   }
 
   const tiles = [
+    {
+      icon: Activity,
+      title: 'Moderation feed',
+      description: 'Recent campaigns, subscriptions & payouts with requester',
+      action: () => setShowModeration(true),
+    },
     {
       icon: BadgeCheck,
       title: 'Verification requests',
@@ -139,6 +147,14 @@ export default function AdminPage() {
             <Button variant="ghost" onClick={() => setShowReports(false)} className="mb-3">← Back</Button>
             <h2 className="text-lg font-bold mb-3">Reports & moderation</h2>
             <AdminReportsPanel />
+          </div>
+        </div>
+      )}
+      {showModeration && (
+        <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
+          <div className="max-w-3xl mx-auto p-4">
+            <Button variant="ghost" onClick={() => setShowModeration(false)} className="mb-3">← Back</Button>
+            <AdminModerationPanel />
           </div>
         </div>
       )}
