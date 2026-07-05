@@ -150,6 +150,14 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+      {showModeration && (
+        <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
+          <div className="max-w-3xl mx-auto p-4">
+            <Button variant="ghost" onClick={() => setShowModeration(false)} className="mb-3">← Back</Button>
+            <AdminModerationPanel />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
