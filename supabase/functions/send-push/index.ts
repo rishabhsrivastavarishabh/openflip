@@ -21,6 +21,7 @@ const BodySchema = z.object({
   tag: z.string().max(200).optional(),
   type: z.string().max(50).optional(),
   requireInteraction: z.boolean().optional(),
+  silent: z.boolean().optional(),
   icon: z.string().url().optional(),
 });
 
