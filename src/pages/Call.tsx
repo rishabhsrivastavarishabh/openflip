@@ -97,6 +97,11 @@ export default function Call() {
     return () => clearInterval(t);
   }, [call]);
 
+  // Initial video state derives from call type; renegotiation may flip it later.
+  useEffect(() => {
+    if (call?.call_type === 'video') setVideoActive(true);
+  }, [call?.call_type]);
+
   // Set up WebRTC once we know our role and the call is either ringing (caller waits)
   // or accepted (callee is here). We tear it all down on unmount / hangup.
   useEffect(() => {
