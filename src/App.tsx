@@ -45,6 +45,7 @@ import AccountPage from "./pages/settings/AccountPage";
 import SecurityPage from "./pages/settings/SecurityPage";
 import PrivacyPage from "./pages/settings/PrivacyPage";
 import NotificationsPage from "./pages/settings/NotificationsPage";
+import CallsPage from "./pages/settings/CallsPage";
 import AppearancePage from "./pages/settings/AppearancePage";
 import TwoFactorPage from "./pages/settings/TwoFactorPage";
 import AdminPage from "./pages/settings/AdminPage";
@@ -117,6 +118,7 @@ const App = () => (
 
                 <Route path="privacy" element={<PrivacyPage />} />
                 <Route path="notifications" element={<NotificationsPage />} />
+                <Route path="calls" element={<CallsPage />} />
                 <Route path="appearance" element={<AppearancePage />} />
                 <Route path="more" element={<Settings />} />
                 <Route path="agent-integrations" element={<AgentIntegrations />} />

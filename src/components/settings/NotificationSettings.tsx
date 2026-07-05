@@ -21,6 +21,7 @@ interface NotificationPreferences {
   follow_notifications: boolean;
   notification_sound: boolean;
   ringtone: string;
+  message_ringtone: string;
 }
 
 export function NotificationSettings({ onBack }: NotificationSettingsProps) {
@@ -34,6 +35,7 @@ export function NotificationSettings({ onBack }: NotificationSettingsProps) {
     follow_notifications: true,
     notification_sound: true,
     ringtone: 'default',
+    message_ringtone: 'chime',
   });
 
   useEffect(() => {
@@ -62,6 +64,7 @@ export function NotificationSettings({ onBack }: NotificationSettingsProps) {
           follow_notifications: data.follow_notifications ?? true,
           notification_sound: data.notification_sound ?? true,
           ringtone: data.ringtone ?? 'default',
+          message_ringtone: (data as any).message_ringtone ?? 'chime',
         });
       }
     } catch (error) {
@@ -250,8 +253,8 @@ export function NotificationSettings({ onBack }: NotificationSettingsProps) {
             <div className="flex items-center gap-3">
               <Bell className="w-5 h-5 text-muted-foreground" />
               <div>
-                <Label className="font-medium">Ringtone</Label>
-                <p className="text-sm text-muted-foreground">Select notification sound</p>
+                <Label className="font-medium">Notification sound</Label>
+                <p className="text-sm text-muted-foreground">For likes, comments and follows</p>
               </div>
             </div>
             <Select value={settings.ringtone} onValueChange={handleRingtoneChange}>
@@ -268,6 +271,44 @@ export function NotificationSettings({ onBack }: NotificationSettingsProps) {
               </SelectContent>
             </Select>
           </div>
+
+          <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/50">
+            <div className="flex items-center gap-3">
+              <MessageCircle className="w-5 h-5 text-muted-foreground" />
+              <div>
+                <Label className="font-medium">Message ringtone</Label>
+                <p className="text-sm text-muted-foreground">Sound played for new chat messages</p>
+              </div>
+            </div>
+            <Select
+              value={settings.message_ringtone}
+              onValueChange={async (value) => {
+                if (!user) return;
+                const next = { ...settings, message_ringtone: value };
+                setSettings(next);
+                setSaving(true);
+                const { error } = await (supabase as any)
+                  .from('notification_settings')
+                  .upsert({ user_id: user.id, ...next, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+                setSaving(false);
+                if (error) toast.error('Failed to update message ringtone');
+                else toast.success('Message ringtone updated');
+              }}
+            >
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="chime">Chime</SelectItem>
+                <SelectItem value="ding">Ding</SelectItem>
+                <SelectItem value="pop">Pop</SelectItem>
+                <SelectItem value="bubble">Bubble</SelectItem>
+                <SelectItem value="soft">Soft</SelectItem>
+                <SelectItem value="none">None</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
         </div>
       </motion.div>
     </div>

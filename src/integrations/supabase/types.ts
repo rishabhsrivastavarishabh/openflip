@@ -1159,40 +1159,67 @@ export type Database = {
       }
       notification_settings: {
         Row: {
+          allow_unknown_callers: boolean
+          call_notifications: boolean
+          call_ringtone: string
+          call_vibrate: boolean
+          caller_tune: string
+          caller_tune_enabled: boolean
           chat_notifications: boolean | null
           comment_notifications: boolean | null
           created_at: string | null
           follow_notifications: boolean | null
           id: string
+          message_ringtone: string
           notification_sound: boolean | null
           ringtone: string | null
+          speaker_default_on: boolean
           story_like_notifications: boolean | null
           updated_at: string | null
           user_id: string
+          video_call_notifications: boolean
         }
         Insert: {
+          allow_unknown_callers?: boolean
+          call_notifications?: boolean
+          call_ringtone?: string
+          call_vibrate?: boolean
+          caller_tune?: string
+          caller_tune_enabled?: boolean
           chat_notifications?: boolean | null
           comment_notifications?: boolean | null
           created_at?: string | null
           follow_notifications?: boolean | null
           id?: string
+          message_ringtone?: string
           notification_sound?: boolean | null
           ringtone?: string | null
+          speaker_default_on?: boolean
           story_like_notifications?: boolean | null
           updated_at?: string | null
           user_id: string
+          video_call_notifications?: boolean
         }
         Update: {
+          allow_unknown_callers?: boolean
+          call_notifications?: boolean
+          call_ringtone?: string
+          call_vibrate?: boolean
+          caller_tune?: string
+          caller_tune_enabled?: boolean
           chat_notifications?: boolean | null
           comment_notifications?: boolean | null
           created_at?: string | null
           follow_notifications?: boolean | null
           id?: string
+          message_ringtone?: string
           notification_sound?: boolean | null
           ringtone?: string | null
+          speaker_default_on?: boolean
           story_like_notifications?: boolean | null
           updated_at?: string | null
           user_id?: string
+          video_call_notifications?: boolean
         }
         Relationships: []
       }

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { PhoneOff, Mic, MicOff, Video, VideoOff, SwitchCamera, UserPlus, Volume2, VolumeX, Palette, Check } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
+import { CALLER_TUNES, playPattern, type ToneHandle } from '@/lib/callSounds';
 
 // STUN for direct P2P + multiple free public TURN relays for NAT/firewall
 // traversal. Without TURN, calls between users on symmetric NATs or
@@ -143,6 +144,38 @@ export default function Call() {
   const pendingIceRef = useRef<RTCIceCandidateInit[]>([]);
   const remoteSetRef = useRef(false);
   const hasOfferedRef = useRef(false);
+  const callerTuneRef = useRef<ToneHandle | null>(null);
+
+  // Play caller tune while dialing (caller-side only, until status flips).
+  useEffect(() => {
+    if (!call || !user) return;
+    const isCaller = call.caller_id === user.id;
+    const isRinging = call.status === 'ringing' || call.status === 'initiated' || !call.status;
+    if (!isCaller || !isRinging) {
+      callerTuneRef.current?.stop();
+      callerTuneRef.current = null;
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await (supabase as any)
+        .from('notification_settings')
+        .select('caller_tune, caller_tune_enabled, speaker_default_on')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      if (data?.speaker_default_on) setSpeakerOn(true);
+      if (data?.caller_tune_enabled === false) return;
+      const tune = data?.caller_tune || 'default';
+      callerTuneRef.current?.stop();
+      callerTuneRef.current = playPattern(CALLER_TUNES[tune], { loop: true, volume: 0.18 });
+    })();
+    return () => {
+      cancelled = true;
+      callerTuneRef.current?.stop();
+      callerTuneRef.current = null;
+    };
+  }, [call?.caller_id, call?.status, user]);
 
   // Load call + peer profile, subscribe to status changes.
   useEffect(() => {

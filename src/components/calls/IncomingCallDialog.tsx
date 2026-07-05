@@ -7,112 +7,98 @@ import { Phone, PhoneOff, Video } from 'lucide-react';
 import { useIncomingCalls } from '@/hooks/useIncomingCalls';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { RINGTONES, playPattern, type ToneHandle } from '@/lib/callSounds';
 
-// Distinct oscillator patterns per ringtone choice so the setting has an
-// audible effect. `freqs` cycles through notes each beat; `beat` is the
-// on-time in ms; `gap` is the silence between beats.
-const RINGTONE_PATTERNS: Record<
-  string,
-  { freqs: number[]; beat: number; gap: number; type: OscillatorType }
-> = {
-  default: { freqs: [440, 480], beat: 900, gap: 600, type: 'sine' },
-  chime:   { freqs: [660, 880, 990], beat: 220, gap: 120, type: 'sine' },
-  ding:    { freqs: [1200], beat: 180, gap: 900, type: 'triangle' },
-  pop:     { freqs: [520, 380], beat: 90, gap: 260, type: 'square' },
-  swoosh:  { freqs: [300, 500, 700, 900], beat: 90, gap: 60, type: 'sawtooth' },
+interface CallPrefs {
+  call_ringtone: string;
+  ringtone: string; // legacy fallback
+  notification_sound: boolean;
+  call_notifications: boolean;
+  video_call_notifications: boolean;
+  call_vibrate: boolean;
+}
+
+const DEFAULTS: CallPrefs = {
+  call_ringtone: 'default',
+  ringtone: 'default',
+  notification_sound: true,
+  call_notifications: true,
+  video_call_notifications: true,
+  call_vibrate: true,
 };
 
 export function IncomingCallDialog() {
   const { incomingCall, accept, decline } = useIncomingCalls();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [ringtone, setRingtone] = useState<string>('default');
-  const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
-  const ctxRef = useRef<AudioContext | null>(null);
-  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const [prefs, setPrefs] = useState<CallPrefs>(DEFAULTS);
+  const toneRef = useRef<ToneHandle | null>(null);
+  const vibrateRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Load user's ringtone preference so the setting actually applies.
+  // Load user's call/notification preferences.
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from('notification_settings')
-        .select('ringtone, notification_sound')
+        .select('call_ringtone, ringtone, notification_sound, call_notifications, video_call_notifications, call_vibrate')
         .eq('user_id', user.id)
         .maybeSingle();
       if (cancelled) return;
-      if (data?.ringtone) setRingtone(data.ringtone);
-      if (data?.notification_sound === false) setSoundEnabled(false);
+      if (data) setPrefs({ ...DEFAULTS, ...data });
     })();
     return () => { cancelled = true; };
   }, [user]);
 
   useEffect(() => {
-    // Stop any previous ring.
-    timersRef.current.forEach((t) => clearTimeout(t));
-    timersRef.current = [];
-    if (ctxRef.current) {
-      ctxRef.current.close().catch(() => {});
-      ctxRef.current = null;
+    // Stop any prior ring & vibration.
+    toneRef.current?.stop();
+    toneRef.current = null;
+    if (vibrateRef.current) {
+      clearInterval(vibrateRef.current);
+      vibrateRef.current = null;
     }
+    try { navigator.vibrate?.(0); } catch {}
 
     if (!incomingCall) return;
-    if (!soundEnabled || ringtone === 'none') return;
 
-    const AudioCtx =
-      (window as any).AudioContext || (window as any).webkitAudioContext;
-    if (!AudioCtx) return;
+    const isVideo = incomingCall.call_type === 'video';
+    // Respect per-type notification toggles: if disabled, silently auto-decline
+    // so the caller sees the missed state.
+    if ((isVideo && !prefs.video_call_notifications) || (!isVideo && !prefs.call_notifications)) {
+      decline();
+      return;
+    }
 
-    const pattern = RINGTONE_PATTERNS[ringtone] ?? RINGTONE_PATTERNS.default;
-    const ctx: AudioContext = new AudioCtx();
-    ctxRef.current = ctx;
-    // Autoplay policies leave AudioContext suspended until a user gesture.
-    // Try to resume proactively; if it stays suspended, the notification
-    // permission gesture (or the user tapping Accept/Decline) will unlock it.
-    ctx.resume().catch(() => {});
+    // Ringtone
+    if (prefs.notification_sound) {
+      const choice = prefs.call_ringtone || prefs.ringtone || 'default';
+      toneRef.current = playPattern(RINGTONES[choice], { loop: true, volume: 0.25 });
+    }
 
-    let cancelled = false;
-    let idx = 0;
-
-    const playOne = () => {
-      if (cancelled || ctx.state === 'closed') return;
-      const freq = pattern.freqs[idx % pattern.freqs.length];
-      idx += 1;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = pattern.type;
-      osc.frequency.value = freq;
-      gain.gain.value = 0.0001;
-      osc.connect(gain).connect(ctx.destination);
-      const now = ctx.currentTime;
-      const attack = 0.02;
-      const dur = pattern.beat / 1000;
-      gain.gain.exponentialRampToValueAtTime(0.2, now + attack);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
-      osc.start(now);
-      osc.stop(now + dur + 0.02);
-      const t = setTimeout(playOne, pattern.beat + pattern.gap);
-      timersRef.current.push(t);
-    };
-
-    playOne();
+    // Vibrate (mobile). Loop a short pattern until dismissed.
+    if (prefs.call_vibrate && 'vibrate' in navigator) {
+      try { navigator.vibrate([400, 250, 400, 250, 400]); } catch {}
+      vibrateRef.current = setInterval(() => {
+        try { navigator.vibrate([400, 250, 400, 250, 400]); } catch {}
+      }, 2000);
+    }
 
     return () => {
-      cancelled = true;
-      timersRef.current.forEach((t) => clearTimeout(t));
-      timersRef.current = [];
-      ctx.close().catch(() => {});
-      ctxRef.current = null;
+      toneRef.current?.stop();
+      toneRef.current = null;
+      if (vibrateRef.current) {
+        clearInterval(vibrateRef.current);
+        vibrateRef.current = null;
+      }
+      try { navigator.vibrate?.(0); } catch {}
     };
-  }, [incomingCall, ringtone, soundEnabled]);
+  }, [incomingCall, prefs, decline]);
 
   if (!incomingCall) return null;
 
   const handleAccept = async () => {
-    // Unlock AudioContext for the outbound call page as a side effect of the
-    // user gesture.
-    ctxRef.current?.resume().catch(() => {});
     const id = await accept();
     if (id) navigate(`/call/${id}`);
   };
