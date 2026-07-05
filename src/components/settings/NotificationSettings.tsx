@@ -21,6 +21,7 @@ interface NotificationPreferences {
   follow_notifications: boolean;
   notification_sound: boolean;
   ringtone: string;
+  message_ringtone: string;
 }
 
 export function NotificationSettings({ onBack }: NotificationSettingsProps) {
@@ -34,6 +35,7 @@ export function NotificationSettings({ onBack }: NotificationSettingsProps) {
     follow_notifications: true,
     notification_sound: true,
     ringtone: 'default',
+    message_ringtone: 'chime',
   });
 
   useEffect(() => {
