@@ -585,12 +585,12 @@ export default function ConversationPage() {
         className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border px-3 py-3 flex items-center gap-2 sm:gap-3"
         style={{ paddingTop: 'max(env(safe-area-inset-top), 0.75rem)' }}
       >
-        <button onClick={() => navigate('/messages')}><ArrowLeft className="w-6 h-6" /></button>
-        
+        <button onClick={() => navigate('/messages')} className="shrink-0"><ArrowLeft className="w-6 h-6" /></button>
+
         {participant || isGroupChat ? (
-          <button 
-            onClick={() => !isGroupChat && setShowProfileView(true)} 
-            className="flex items-center gap-3 flex-1 text-left"
+          <button
+            onClick={() => !isGroupChat && setShowProfileView(true)}
+            className="flex items-center gap-2 sm:gap-3 flex-1 text-left min-w-0"
           >
             <div className="relative">
               {isGroupChat ? (
