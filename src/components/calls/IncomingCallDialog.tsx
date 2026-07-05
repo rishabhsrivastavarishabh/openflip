@@ -1,63 +1,124 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Phone, PhoneOff, Video } from 'lucide-react';
 import { useIncomingCalls } from '@/hooks/useIncomingCalls';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+
+// Distinct oscillator patterns per ringtone choice so the setting has an
+// audible effect. `freqs` cycles through notes each beat; `beat` is the
+// on-time in ms; `gap` is the silence between beats.
+const RINGTONE_PATTERNS: Record<
+  string,
+  { freqs: number[]; beat: number; gap: number; type: OscillatorType }
+> = {
+  default: { freqs: [440, 480], beat: 900, gap: 600, type: 'sine' },
+  chime:   { freqs: [660, 880, 990], beat: 220, gap: 120, type: 'sine' },
+  ding:    { freqs: [1200], beat: 180, gap: 900, type: 'triangle' },
+  pop:     { freqs: [520, 380], beat: 90, gap: 260, type: 'square' },
+  swoosh:  { freqs: [300, 500, 700, 900], beat: 90, gap: 60, type: 'sawtooth' },
+};
 
 export function IncomingCallDialog() {
   const { incomingCall, accept, decline } = useIncomingCalls();
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [ringtone, setRingtone] = useState<string>('default');
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
+  const ctxRef = useRef<AudioContext | null>(null);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  // Load user's ringtone preference so the setting actually applies.
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('notification_settings')
+        .select('ringtone, notification_sound')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      if (data?.ringtone) setRingtone(data.ringtone);
+      if (data?.notification_sound === false) setSoundEnabled(false);
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
 
   useEffect(() => {
-    if (!incomingCall) {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      }
-      return;
+    // Stop any previous ring.
+    timersRef.current.forEach((t) => clearTimeout(t));
+    timersRef.current = [];
+    if (ctxRef.current) {
+      ctxRef.current.close().catch(() => {});
+      ctxRef.current = null;
     }
-    // Simple ringing tone via WebAudio (no external asset needed).
-    const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
-    let cancelled = false;
 
-    const playPattern = () => {
-      if (cancelled) return;
+    if (!incomingCall) return;
+    if (!soundEnabled || ringtone === 'none') return;
+
+    const AudioCtx =
+      (window as any).AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtx) return;
+
+    const pattern = RINGTONE_PATTERNS[ringtone] ?? RINGTONE_PATTERNS.default;
+    const ctx: AudioContext = new AudioCtx();
+    ctxRef.current = ctx;
+    // Autoplay policies leave AudioContext suspended until a user gesture.
+    // Try to resume proactively; if it stays suspended, the notification
+    // permission gesture (or the user tapping Accept/Decline) will unlock it.
+    ctx.resume().catch(() => {});
+
+    let cancelled = false;
+    let idx = 0;
+
+    const playOne = () => {
+      if (cancelled || ctx.state === 'closed') return;
+      const freq = pattern.freqs[idx % pattern.freqs.length];
+      idx += 1;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = 440;
+      osc.type = pattern.type;
+      osc.frequency.value = freq;
       gain.gain.value = 0.0001;
       osc.connect(gain).connect(ctx.destination);
       const now = ctx.currentTime;
-      gain.gain.exponentialRampToValueAtTime(0.15, now + 0.05);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.9);
+      const attack = 0.02;
+      const dur = pattern.beat / 1000;
+      gain.gain.exponentialRampToValueAtTime(0.2, now + attack);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
       osc.start(now);
-      osc.stop(now + 1.0);
+      osc.stop(now + dur + 0.02);
+      const t = setTimeout(playOne, pattern.beat + pattern.gap);
+      timersRef.current.push(t);
     };
 
-    playPattern();
-    const interval = setInterval(playPattern, 1500);
+    playOne();
 
     return () => {
       cancelled = true;
-      clearInterval(interval);
+      timersRef.current.forEach((t) => clearTimeout(t));
+      timersRef.current = [];
       ctx.close().catch(() => {});
+      ctxRef.current = null;
     };
-  }, [incomingCall]);
+  }, [incomingCall, ringtone, soundEnabled]);
 
   if (!incomingCall) return null;
 
   const handleAccept = async () => {
+    // Unlock AudioContext for the outbound call page as a side effect of the
+    // user gesture.
+    ctxRef.current?.resume().catch(() => {});
     const id = await accept();
     if (id) navigate(`/call/${id}`);
   };
 
-  const displayName = incomingCall.caller?.full_name || incomingCall.caller?.username || 'Unknown';
+  const displayName =
+    incomingCall.caller?.full_name || incomingCall.caller?.username || 'Unknown';
   const isVideo = incomingCall.call_type === 'video';
 
   return (
