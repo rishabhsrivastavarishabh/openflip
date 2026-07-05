@@ -69,6 +69,7 @@ export default function PostPage() {
   const [showShareSheet, setShowShareSheet] = useState(false);
   const [showBlockReport, setShowBlockReport] = useState(false);
   const [expandedCaption, setExpandedCaption] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const { isFollowing, loading: followLoading, refresh: refreshFollow } = useFollowRelationship(post?.user_id || '');
   const isOwnPost = user?.id === post?.user_id;
