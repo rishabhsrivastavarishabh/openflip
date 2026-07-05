@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getFirstPostMediaUrl } from '@/lib/utils';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Grid3X3, Bookmark, Settings, UserPlus, UserMinus, MessageCircle, Plus, Film, Lock, Clock, Share2, MoreHorizontal, Pin, PlusSquare, Heart, Crown, Camera, Trash2 } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -809,7 +810,7 @@ export default function ProfilePage() {
                     <div key={post.id} className="aspect-square relative group overflow-hidden rounded-xl sm:rounded-2xl">
                       <Link to={`/post/${post.id}`} className="block w-full h-full">
                         <ProtectedMedia
-                          src={post.media_url}
+                          src={getFirstPostMediaUrl(post.media_url)}
                           type={post.media_type}
                           className="w-full h-full object-cover"
                         />
@@ -891,7 +892,7 @@ export default function ProfilePage() {
                       className="aspect-square relative group overflow-hidden rounded-xl sm:rounded-2xl"
                     >
                       <ProtectedMedia
-                        src={post.media_url}
+                        src={getFirstPostMediaUrl(post.media_url)}
                         type={post.media_type}
                         className="w-full h-full object-cover"
                       />

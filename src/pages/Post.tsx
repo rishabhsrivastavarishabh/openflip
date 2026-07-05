@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Heart, MessageCircle, Send, Bookmark, MoreHorizontal, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Heart, MessageCircle, Send, Bookmark, MoreHorizontal, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { cn } from '@/lib/utils';
+import { cn, getPostMediaUrls } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -69,6 +69,7 @@ export default function PostPage() {
   const [showShareSheet, setShowShareSheet] = useState(false);
   const [showBlockReport, setShowBlockReport] = useState(false);
   const [expandedCaption, setExpandedCaption] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const { isFollowing, loading: followLoading, refresh: refreshFollow } = useFollowRelationship(post?.user_id || '');
   const isOwnPost = user?.id === post?.user_id;
@@ -342,14 +343,14 @@ export default function PostPage() {
         description={postDesc}
         path={`/post/${post.id}`}
         type="article"
-        image={post.media_type === 'image' ? post.media_url : undefined}
+        image={post.media_type === 'image' ? getPostMediaUrls(post.media_url)[0] : undefined}
         jsonLd={{
           '@context': 'https://schema.org',
           '@type': 'SocialMediaPosting',
           headline: postTitle,
           articleBody: post.caption || undefined,
           datePublished: post.created_at,
-          image: post.media_type === 'image' ? post.media_url : undefined,
+          image: post.media_type === 'image' ? getPostMediaUrls(post.media_url)[0] : undefined,
           author: {
             '@type': 'Person',
             name: post.profiles.full_name || post.profiles.username,
@@ -416,26 +417,60 @@ export default function PostPage() {
         </div>
 
         {/* Media */}
-        <div className="relative aspect-square bg-muted cursor-pointer" onDoubleClick={handleDoubleTap}>
-          <ProtectedMedia
-            src={post.media_url}
-            type={post.media_type}
-            alt={post.caption || 'Post media'}
-            className="w-full h-full object-cover"
-          />
-          <AnimatePresence>
-            {showHeart && (
-              <motion.div
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0, opacity: 0 }}
-                className="absolute inset-0 flex items-center justify-center pointer-events-none"
-              >
-                <Heart className="w-24 h-24 text-primary-foreground fill-primary drop-shadow-lg" />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+        {(() => {
+          const mediaUrls = getPostMediaUrls(post.media_url);
+          const isMultiPhoto = mediaUrls.length > 1;
+          return (
+            <div className="relative aspect-square bg-muted cursor-pointer overflow-hidden" onDoubleClick={handleDoubleTap}>
+              <ProtectedMedia
+                src={mediaUrls[currentImageIndex] || mediaUrls[0]}
+                type={post.media_type}
+                alt={post.caption || 'Post media'}
+                className="w-full h-full object-cover"
+              />
+              {isMultiPhoto && (
+                <>
+                  {currentImageIndex > 0 && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(i => i - 1); }}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 flex items-center justify-center text-white z-10"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                  )}
+                  {currentImageIndex < mediaUrls.length - 1 && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(i => i + 1); }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 flex items-center justify-center text-white z-10"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                  )}
+                  <div className="absolute top-3 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full z-10">
+                    {currentImageIndex + 1}/{mediaUrls.length}
+                  </div>
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+                    {mediaUrls.map((_, i) => (
+                      <div key={i} className={cn("w-1.5 h-1.5 rounded-full transition-all", i === currentImageIndex ? "bg-white w-3" : "bg-white/50")} />
+                    ))}
+                  </div>
+                </>
+              )}
+              <AnimatePresence>
+                {showHeart && (
+                  <motion.div
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0, opacity: 0 }}
+                    className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                  >
+                    <Heart className="w-24 h-24 text-primary-foreground fill-primary drop-shadow-lg" />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          );
+        })()}
 
         {/* Actions */}
         <div className="px-4 py-3 space-y-2 border-b border-border">

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { getFirstPostMediaUrl } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 import { Heart, MessageCircle, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -137,7 +138,7 @@ export function SuggestedPosts() {
             >
               <div className="aspect-square bg-muted">
                 <img
-                  src={p.media_url}
+                  src={getFirstPostMediaUrl(p.media_url)}
                   alt={p.caption || `Post by ${p.profiles.username}`}
                   loading="lazy"
                   className="w-full h-full object-cover"

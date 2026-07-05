@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Sparkles, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { cn } from '@/lib/utils';
+import { cn, getFirstPostMediaUrl } from '@/lib/utils';
 
 interface MemoryItem {
   id: string;
@@ -133,13 +133,13 @@ export function MemoriesCard() {
             >
               {m.media_type === 'image' ? (
                 <img
-                  src={m.media_url}
+                  src={getFirstPostMediaUrl(m.media_url)}
                   alt=""
                   className="w-full h-full object-cover"
                   loading="lazy"
                 />
               ) : (
-                <video src={m.media_url} className="w-full h-full object-cover" muted />
+                <video src={getFirstPostMediaUrl(m.media_url)} className="w-full h-full object-cover" muted />
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
               <div className="absolute bottom-2 left-2 right-2">
@@ -194,9 +194,9 @@ export function MemoriesCard() {
           >
             <div className="rounded-3xl overflow-hidden bg-card">
               {active.media_type === 'image' ? (
-                <img src={active.media_url} alt="" className="w-full max-h-[70vh] object-contain bg-black" />
+                <img src={getFirstPostMediaUrl(active.media_url)} alt="" className="w-full max-h-[70vh] object-contain bg-black" />
               ) : (
-                <video src={active.media_url} controls autoPlay className="w-full max-h-[70vh] bg-black" />
+                <video src={getFirstPostMediaUrl(active.media_url)} controls autoPlay className="w-full max-h-[70vh] bg-black" />
               )}
               <div className="p-4">
                 <div className="flex items-center gap-2 mb-2">

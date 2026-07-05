@@ -216,10 +216,20 @@ export default function MessagesPage() {
     });
   }, [conversations, searchQuery, filter]);
 
-  const onlineFriends = useMemo(
-    () => conversations.filter(c => !c.is_group && isUserOnline(c.participant.id)).slice(0, 10),
-    [conversations, isUserOnline]
-  );
+  const onlineFriends = useMemo(() => {
+    const seen = new Set<string>();
+    const out: ConversationItem[] = [];
+    for (const c of conversations) {
+      if (c.is_group) continue;
+      const pid = c.participant?.id;
+      if (!pid || seen.has(pid)) continue;
+      if (!isUserOnline(pid)) continue;
+      seen.add(pid);
+      out.push(c);
+      if (out.length >= 10) break;
+    }
+    return out;
+  }, [conversations, isUserOnline]);
 
   const togglePin = async (c: ConversationItem) => {
     if (!user) return;
