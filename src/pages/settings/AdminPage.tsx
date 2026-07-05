@@ -52,6 +52,12 @@ export default function AdminPage() {
 
   const tiles = [
     {
+      icon: Activity,
+      title: 'Moderation feed',
+      description: 'Recent campaigns, subscriptions & payouts with requester',
+      action: () => setShowModeration(true),
+    },
+    {
       icon: BadgeCheck,
       title: 'Verification requests',
       description: 'Review and approve verified accounts',
