@@ -134,7 +134,7 @@ export function usePushNotifications() {
 
           const { data: settings } = await supabase
             .from('notification_settings')
-            .select('chat_notifications, notification_sound')
+            .select('chat_notifications, notification_sound, message_ringtone')
             .eq('user_id', user.id)
             .maybeSingle();
           if (settings?.chat_notifications === false) return;
@@ -158,10 +158,17 @@ export function usePushNotifications() {
           showNotification(senderName, {
             body: preview,
             tag: `conv-${msg.conversation_id}`,
-            silent: !settings?.notification_sound,
+            silent: true, // we play our own message tone below so the OS tone doesn't overlap
             icon: sender?.avatar_url || '/favicon.ico',
             data: { url: `/messages/${msg.conversation_id}` },
           });
+          // Play the user's chosen message ringtone (distinct from call ringtone).
+          if ((settings as any)?.notification_sound !== false) {
+            const tone = (settings as any)?.message_ringtone || 'chime';
+            const { MESSAGE_TONES, playPattern } = await import('@/lib/callSounds');
+            const h = playPattern(MESSAGE_TONES[tone], { loop: false, volume: 0.25 });
+            setTimeout(() => h.stop(), 1500);
+          }
           // Background web push for other devices / when tab is closed is
           // dispatched by the sender in useSendEncryptedMessage.
         },
