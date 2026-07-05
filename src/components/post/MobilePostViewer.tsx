@@ -244,25 +244,59 @@ export function MobilePostViewer({ postId, isOpen, onClose }: MobilePostViewerPr
               </div>
 
               {/* Media */}
-              <div className="relative aspect-square" onDoubleClick={handleDoubleTap}>
-                <ProtectedMedia
-                  src={post.media_url}
-                  type={post.media_type}
-                  className="w-full h-full object-cover"
-                />
-                <AnimatePresence>
-                  {showHeart && (
-                    <motion.div
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0, opacity: 0 }}
-                      className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                    >
-                      <Heart className="w-24 h-24 text-white fill-white drop-shadow-lg" />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+              {(() => {
+                const mediaUrls = getPostMediaUrls(post.media_url);
+                const isMultiPhoto = mediaUrls.length > 1;
+                return (
+                  <div className="relative aspect-square overflow-hidden" onDoubleClick={handleDoubleTap}>
+                    <ProtectedMedia
+                      src={mediaUrls[currentImageIndex] || mediaUrls[0]}
+                      type={post.media_type}
+                      className="w-full h-full object-cover"
+                    />
+                    {isMultiPhoto && (
+                      <>
+                        {currentImageIndex > 0 && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(i => i - 1); }}
+                            className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 flex items-center justify-center text-white z-10"
+                          >
+                            <ChevronLeft className="w-5 h-5" />
+                          </button>
+                        )}
+                        {currentImageIndex < mediaUrls.length - 1 && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(i => i + 1); }}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 flex items-center justify-center text-white z-10"
+                          >
+                            <ChevronRight className="w-5 h-5" />
+                          </button>
+                        )}
+                        <div className="absolute top-3 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full z-10">
+                          {currentImageIndex + 1}/{mediaUrls.length}
+                        </div>
+                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+                          {mediaUrls.map((_, i) => (
+                            <div key={i} className={cn("w-1.5 h-1.5 rounded-full transition-all", i === currentImageIndex ? "bg-white w-3" : "bg-white/50")} />
+                          ))}
+                        </div>
+                      </>
+                    )}
+                    <AnimatePresence>
+                      {showHeart && (
+                        <motion.div
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          exit={{ scale: 0, opacity: 0 }}
+                          className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                        >
+                          <Heart className="w-24 h-24 text-white fill-white drop-shadow-lg" />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              })()}
 
               {/* Actions */}
               <div className="p-4 space-y-3">
