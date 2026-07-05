@@ -60,9 +60,11 @@ export default function MessagesPage() {
       .eq('user_id', user.id);
 
     if (error || !participations) {
+      if (error) console.error('Messages: failed to load conversations', error);
       setLoading(false);
       return;
     }
+
 
     const conversationIds = participations.map((p: any) => p.conversation_id);
 
