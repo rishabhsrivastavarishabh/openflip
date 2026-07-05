@@ -7,11 +7,21 @@ import { Button } from '@/components/ui/button';
 import { PhoneOff, Mic, MicOff, Video, VideoOff } from 'lucide-react';
 import { toast } from 'sonner';
 
-// Free public STUN — enough for peer-to-peer on most networks.
-// (Users behind symmetric NATs will need a TURN server; can be added later.)
+// STUN for direct P2P + free public TURN relays for NAT/firewall traversal.
+// Without TURN, calls between users on symmetric NATs or restrictive networks
+// (mobile carriers, corporate Wi-Fi) fail with "Connection failed".
 const ICE_SERVERS: RTCIceServer[] = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
+  {
+    urls: [
+      'turn:openrelay.metered.ca:80',
+      'turn:openrelay.metered.ca:443',
+      'turn:openrelay.metered.ca:443?transport=tcp',
+    ],
+    username: 'openrelayproject',
+    credential: 'openrelayproject',
+  },
 ];
 
 export default function Call() {
