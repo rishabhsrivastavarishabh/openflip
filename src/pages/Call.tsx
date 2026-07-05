@@ -235,20 +235,20 @@ export default function Call() {
         })
         .subscribe(async (status) => {
           if (status !== 'SUBSCRIBED' || disposed) return;
-          // Announce arrival, then keep re-announcing briefly to cover late joiners.
+          // Announce arrival, then keep re-announcing until remote description is set.
+          // Both sides announce so whichever subscribes last still triggers negotiation.
           const announce = () =>
             chan.send({ type: 'broadcast', event: 'ready', payload: { from: user.id } });
           announce();
-          let n = 0;
           const iv = setInterval(() => {
-            n += 1;
-            if (disposed || remoteSetRef.current || n > 8) {
+            if (disposed || remoteSetRef.current) {
               clearInterval(iv);
               return;
             }
             announce();
-          }, 1000);
+          }, 1200);
         });
+
     };
 
     // Caller starts negotiating only once the callee has accepted.

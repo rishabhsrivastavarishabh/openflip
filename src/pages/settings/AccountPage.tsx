@@ -102,17 +102,31 @@ export default function AccountPage() {
     if (!user) return;
     setSavingCover(true);
     try {
-      // Best-effort cleanup of any previously uploaded cover files.
-      const { data: files } = await supabase.storage.from('media').list(user.id, { limit: 20 });
-      const coverFiles = (files || [])
-        .filter((f) => f.name.startsWith('cover.'))
-        .map((f) => `${user.id}/${f.name}`);
-      if (coverFiles.length > 0) {
-        await supabase.storage.from('media').remove(coverFiles);
+      // Null out the cover directly in the DB — bypass the context helper so we
+      // can inspect the exact response instead of losing errors to a silent
+      // Partial<Profile> cast.
+      const { error } = await supabase
+        .from('profiles')
+        .update({ cover_url: null })
+        .eq('id', user.id);
+      if (error) throw error;
+
+      // Best-effort cleanup of stored cover files; ignore permission errors.
+      try {
+        const { data: files } = await supabase.storage.from('media').list(user.id, { limit: 20 });
+        const coverFiles = (files || [])
+          .filter((f) => f.name.startsWith('cover.'))
+          .map((f) => `${user.id}/${f.name}`);
+        if (coverFiles.length > 0) {
+          await supabase.storage.from('media').remove(coverFiles);
+        }
+      } catch (storageErr) {
+        console.warn('Cover storage cleanup skipped:', storageErr);
       }
 
-      const { error } = await updateProfile({ cover_url: null } as any);
-      if (error) throw error;
+      // Sync local profile state via the context helper so the header/preview
+      // re-render immediately without waiting for the next auth event.
+      await updateProfile({ cover_url: null } as any);
       toast.success('Cover removed');
     } catch (err: any) {
       console.error('Remove cover failed', err);
@@ -121,6 +135,7 @@ export default function AccountPage() {
       setSavingCover(false);
     }
   };
+
 
   const handleSave = async () => {
     setLoading(true);

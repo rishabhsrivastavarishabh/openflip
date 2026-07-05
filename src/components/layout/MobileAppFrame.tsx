@@ -11,7 +11,10 @@ export function MobileAppFrame({ children, className, fullBleed }: MobileAppFram
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30 flex items-center justify-center p-0 md:p-4">
       {/* Desktop: Centered phone frame */}
       <div className={cn(
-        "relative w-full h-screen md:h-auto md:max-h-[90vh] md:max-w-[420px] md:rounded-3xl md:shadow-2xl md:border md:border-border/50",
+        "relative w-full h-screen md:max-w-[420px] md:rounded-3xl md:shadow-2xl md:border md:border-border/50",
+        // Full-bleed pages (Reels) need a concrete height so inner h-full
+        // resolves; otherwise `h-auto` collapses and vertical scroll dies.
+        fullBleed ? "md:h-[90vh]" : "md:h-auto md:max-h-[90vh]",
         "md:overflow-hidden md:bg-background",
         fullBleed ? "bg-black" : "bg-background",
         className
