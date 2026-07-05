@@ -462,16 +462,17 @@ export default function Call() {
 
     };
 
-    // Caller starts negotiating only once the callee has accepted.
-    // Callee lands on this page after accepting, so it starts right away.
-    const isCallerWaiting = isCaller && call.status !== 'accepted';
-    if (!isCallerWaiting) {
-      startPeer();
-    }
+    // Both sides start immediately. The caller pre-warms getUserMedia, the
+    // RTCPeerConnection, ICE gathering, and the signaling channel while the
+    // callee's device is still ringing — so when the callee accepts, the
+    // "ready" handshake fires an offer with candidates already in flight.
+    // This cuts multi-second "Connecting..." delays down to sub-second.
+    startPeer();
 
     return cleanup;
-    // Re-run when the call status flips to 'accepted' (so caller can join in).
-  }, [call?.status, call?.caller_id, call?.call_type, callId, user]);
+    // Re-run when the call type or IDs change; NOT on status, so we don't
+    // tear down the pre-warmed peer when status flips ringing → accepted.
+  }, [call?.caller_id, call?.call_type, callId, user]);
 
   const hangUp = async () => {
     if (!callId) return;
