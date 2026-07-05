@@ -119,13 +119,26 @@ export async function decryptMessage(
 }
 
 /**
- * Get the browser/device name for device registration.
+ * Get the device name for device registration.
+ * Distinguishes native app (Capacitor) vs web browser.
  */
 export function getDeviceName(): string {
-  const ua = navigator.userAgent;
-  if (ua.includes('Chrome')) return 'Chrome Browser';
-  if (ua.includes('Firefox')) return 'Firefox Browser';
-  if (ua.includes('Safari')) return 'Safari Browser';
-  if (ua.includes('Edge')) return 'Edge Browser';
-  return 'Web Browser';
+  const isNative =
+    typeof window !== 'undefined' &&
+    ((window as any).Capacitor?.isNativePlatform?.() === true ||
+      (window as any).Capacitor?.isNative === true);
+
+  const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+
+  if (isNative) {
+    if (/Android/i.test(ua)) return 'App · Android';
+    if (/iPhone|iPad|iPod/i.test(ua)) return 'App · iOS';
+    return 'App';
+  }
+
+  if (/Edg\//.test(ua)) return 'Web · Edge';
+  if (/Chrome\//.test(ua)) return 'Web · Chrome';
+  if (/Firefox\//.test(ua)) return 'Web · Firefox';
+  if (/Safari\//.test(ua)) return 'Web · Safari';
+  return 'Web';
 }
