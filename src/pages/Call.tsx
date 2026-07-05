@@ -659,7 +659,7 @@ export default function Call() {
 
       <div className="relative z-10 mt-6 sm:mt-16 flex flex-col items-center gap-3 sm:gap-4">
         {!videoActive && (
-          <Avatar className="h-24 w-24 sm:h-32 sm:w-32 ring-4 ring-white/20">
+          <Avatar className={`h-24 w-24 sm:h-32 sm:w-32 ring-4 ${isLightTheme ? 'ring-red-500/30' : 'ring-white/20'}`}>
             <AvatarImage src={other?.avatar_url} />
             <AvatarFallback className="bg-primary/20 text-3xl sm:text-4xl">
               {displayName.charAt(0).toUpperCase()}
@@ -667,7 +667,7 @@ export default function Call() {
           </Avatar>
         )}
         <h1 className="text-xl sm:text-2xl font-semibold drop-shadow">{displayName}</h1>
-        <p className="text-sm text-white/80">{statusLabel}</p>
+        <p className={`text-sm ${isLightTheme ? 'text-red-600/90' : 'text-white/80'}`}>{statusLabel}</p>
       </div>
 
       {videoActive && videoOn && (
