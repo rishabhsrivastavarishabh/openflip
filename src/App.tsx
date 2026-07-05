@@ -64,6 +64,7 @@ import Meet from "./pages/Meet";
 import { IncomingCallDialog } from "./components/calls/IncomingCallDialog";
 import { useAuth as useAuthForCall } from "@/contexts/AuthContext";
 import NotFound from "./pages/NotFound";
+import OAuthConsent from "./pages/OAuthConsent";
 
 function GlobalCallOverlay() {
   const { user } = useAuthForCall();
@@ -86,6 +87,7 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<RootRoute />} />
+              <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/explore" element={<Explore />} />
