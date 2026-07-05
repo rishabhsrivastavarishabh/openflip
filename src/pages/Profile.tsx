@@ -704,16 +704,6 @@ export default function ProfilePage() {
                       <Button variant="ghost" size="icon-sm" onClick={() => setShowShareSheet(true)}>
                         <Share2 className="h-5 w-5" />
                       </Button>
-                      <Button asChild variant="ghost" size="icon-sm">
-                        <Link to="/create">
-                          <PlusSquare className="h-5 w-5" />
-                        </Link>
-                      </Button>
-                      <Button asChild variant="ghost" size="icon-sm">
-                        <Link to="/settings">
-                          <Settings className="h-5 w-5" />
-                        </Link>
-                      </Button>
                     </>
                   ) : (
                     <>
