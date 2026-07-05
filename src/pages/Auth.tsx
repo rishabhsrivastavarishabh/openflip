@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMultiAccount } from '@/contexts/MultiAccountContext';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable';
@@ -67,6 +68,7 @@ export default function AuthPage() {
   const [mfaChallenge, setMfaChallenge] = useState<{ factorId: string; userId: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { signIn, signUp } = useAuth();
+  const { saveCurrentSession } = useMultiAccount();
   const navigate = useNavigate();
 
   const signInForm = useForm<SignInForm>({ resolver: zodResolver(signInSchema) });
@@ -132,6 +134,11 @@ export default function AuthPage() {
     } catch (e) {
       console.warn('MFA check failed, proceeding', e);
     }
+
+    // Explicitly save this account into the multi-account switcher list so
+    // the "Switch Account" flow works reliably even when the auth listener
+    // misses the SIGNED_IN event.
+    await saveCurrentSession();
 
     setLoading(false);
     toast.success('Welcome back!');
@@ -218,7 +225,9 @@ export default function AuthPage() {
     setSignupStep(4);
   };
 
-  const handleFinishSignup = () => {
+  const handleFinishSignup = async () => {
+    // Persist the newly-created account into the multi-account switcher.
+    await saveCurrentSession();
     toast.success('Welcome to Openflip! 🎉');
     navigate('/');
   };
