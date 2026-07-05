@@ -340,6 +340,84 @@ export default function Call() {
     localStreamRef.current?.getVideoTracks().forEach((t) => (t.enabled = next));
   };
 
+  // Flip between front (user) and back (environment) cameras without dropping the peer.
+  const switchCamera = async () => {
+    if (!videoActive || !pcRef.current || !localStreamRef.current) return;
+    const next = facingMode === 'user' ? 'environment' : 'user';
+    try {
+      const newStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: next }, width: 640, height: 480 },
+        audio: false,
+      });
+      const newTrack = newStream.getVideoTracks()[0];
+      if (!newTrack) return;
+      const sender = pcRef.current.getSenders().find((s) => s.track?.kind === 'video');
+      if (sender) await sender.replaceTrack(newTrack);
+      const oldTrack = localStreamRef.current.getVideoTracks()[0];
+      if (oldTrack) {
+        localStreamRef.current.removeTrack(oldTrack);
+        oldTrack.stop();
+      }
+      localStreamRef.current.addTrack(newTrack);
+      if (localVideoRef.current) localVideoRef.current.srcObject = localStreamRef.current;
+      setFacingMode(next);
+    } catch (e: any) {
+      toast.error(e?.message || 'Could not switch camera');
+    }
+  };
+
+  // Upgrade an in-progress audio call to video: add a camera track and renegotiate.
+  const upgradeToVideo = async () => {
+    if (upgrading || videoActive) return;
+    if (!pcRef.current || !localStreamRef.current || !signalChanRef.current || !user) return;
+    setUpgrading(true);
+    try {
+      const cam = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: facingMode }, width: 640, height: 480 },
+      });
+      const vTrack = cam.getVideoTracks()[0];
+      localStreamRef.current.addTrack(vTrack);
+      pcRef.current.addTrack(vTrack, localStreamRef.current);
+      if (localVideoRef.current) localVideoRef.current.srcObject = localStreamRef.current;
+      const offer = await pcRef.current.createOffer();
+      await pcRef.current.setLocalDescription(offer);
+      signalChanRef.current.send({
+        type: 'broadcast',
+        event: 'renegotiate-offer',
+        payload: { from: user.id, sdp: offer },
+      });
+      setVideoActive(true);
+      setVideoOn(true);
+    } catch (e: any) {
+      toast.error(e?.message || 'Could not turn on video');
+    } finally {
+      setUpgrading(false);
+    }
+  };
+
+  // Move both parties into a Meet room so more people can be invited.
+  const addPeople = async () => {
+    if (!callId || !user) return;
+    const roomId = callId;
+    signalChanRef.current?.send({
+      type: 'broadcast',
+      event: 'move-to-meet',
+      payload: { from: user.id, roomId },
+    });
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/meet/${roomId}`);
+      toast.success('Meeting link copied — share it to invite others');
+    } catch {
+      toast.message('Opening group meeting…');
+    }
+    // Mark the 1:1 call as ended so it stops ringing / shows up correctly in logs.
+    await supabase
+      .from('calls')
+      .update({ status: 'ended', ended_at: new Date().toISOString() })
+      .eq('id', callId);
+    navigate(`/meet/${roomId}`);
+  };
+
   const format = (s: number) => {
     const m = Math.floor(s / 60);
     const r = s % 60;
