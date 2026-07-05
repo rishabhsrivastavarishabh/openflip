@@ -299,8 +299,12 @@ export default function Call() {
       let stream: MediaStream;
       try {
         stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-          video: isVideo ? { width: 640, height: 480 } : false,
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+          video: isVideo ? VIDEO_CONSTRAINTS_4K : false,
         });
       } catch (err: any) {
         toast.error(err?.message || 'Could not access microphone. Check browser permissions.');
@@ -318,14 +322,18 @@ export default function Call() {
 
       const pc = new RTCPeerConnection({
         iceServers: ICE_SERVERS,
-        iceCandidatePoolSize: 4,
+        iceCandidatePoolSize: 10,
         bundlePolicy: 'max-bundle',
         rtcpMuxPolicy: 'require',
       });
       pcRef.current = pc;
-      stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+      stream.getTracks().forEach((track) => {
+        const sender = pc.addTrack(track, stream);
+        if (track.kind === 'video') tuneVideoSender(sender);
+      });
 
       pc.ontrack = (ev) => {
+        tuneReceiver(ev.receiver);
         const [remote] = ev.streams;
         if (!remote) return;
         // Always attach — even audio-only calls that later get upgraded reuse this ref.
