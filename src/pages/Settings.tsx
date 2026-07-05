@@ -698,7 +698,26 @@ export default function SettingsPage() {
       items: [
         { icon: HelpCircle, label: 'Help & About', description: 'Privacy Policy, Terms of Service', action: () => setShowHelp(true) },
         { icon: Settings2, label: 'Account Centre', description: 'Profile, security, payments', action: () => navigate('/account-center') },
-        { icon: Download, label: 'Download Android App', description: 'Get the Openflip APK', action: () => navigate('/download') },
+      ],
+    },
+  ];
+
+  const ANDROID_APK_URL = 'https://drive.google.com/file/d/1PmZwkpHk8aIYYLJPAI1C-0aK3OETm7cu/view?usp=drive_link';
+  const handleDownloadApk = () => {
+    if (!ANDROID_APK_URL) {
+      toast.error('Android download link is not available right now. Please try again later.');
+      return;
+    }
+    const win = window.open(ANDROID_APK_URL, '_blank', 'noopener,noreferrer');
+    if (!win) {
+      toast.error('Popup blocked. Allow pop-ups for this site to open the download.');
+    }
+  };
+
+  const _settingsSectionsUnused = [
+    {
+      title: '__removed_placeholder__',
+      items: [] as any[],
       ],
     },
   ];
