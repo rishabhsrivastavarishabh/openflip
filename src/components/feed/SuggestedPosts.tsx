@@ -138,7 +138,7 @@ export function SuggestedPosts() {
             >
               <div className="aspect-square bg-muted">
                 <img
-                  src={p.media_url}
+                  src={getFirstPostMediaUrl(p.media_url)}
                   alt={p.caption || `Post by ${p.profiles.username}`}
                   loading="lazy"
                   className="w-full h-full object-cover"
