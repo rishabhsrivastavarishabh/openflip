@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Sparkles, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { cn } from '@/lib/utils';
+import { cn, getFirstPostMediaUrl } from '@/lib/utils';
 
 interface MemoryItem {
   id: string;
