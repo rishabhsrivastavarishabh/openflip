@@ -1127,6 +1127,36 @@ export type Database = {
         }
         Relationships: []
       }
+      moderation_reviews: {
+        Row: {
+          action: Database["public"]["Enums"]["moderation_action"]
+          entity_id: string
+          entity_type: Database["public"]["Enums"]["moderation_entity"]
+          id: string
+          note: string | null
+          reviewed_at: string
+          reviewed_by: string
+        }
+        Insert: {
+          action: Database["public"]["Enums"]["moderation_action"]
+          entity_id: string
+          entity_type: Database["public"]["Enums"]["moderation_entity"]
+          id?: string
+          note?: string | null
+          reviewed_at?: string
+          reviewed_by: string
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["moderation_action"]
+          entity_id?: string
+          entity_type?: Database["public"]["Enums"]["moderation_entity"]
+          id?: string
+          note?: string | null
+          reviewed_at?: string
+          reviewed_by?: string
+        }
+        Relationships: []
+      }
       notification_settings: {
         Row: {
           chat_notifications: boolean | null
@@ -2332,6 +2362,8 @@ export type Database = {
         | "ended"
         | "cancelled"
       call_type: "voice" | "video"
+      moderation_action: "reviewed" | "investigate"
+      moderation_entity: "campaign" | "subscription" | "payout"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2469,6 +2501,8 @@ export const Constants = {
         "cancelled",
       ],
       call_type: ["voice", "video"],
+      moderation_action: ["reviewed", "investigate"],
+      moderation_entity: ["campaign", "subscription", "payout"],
     },
   },
 } as const
