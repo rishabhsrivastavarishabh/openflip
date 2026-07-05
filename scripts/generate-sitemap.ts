@@ -30,16 +30,6 @@ const staticEntries: SitemapEntry[] = [
   { path: "/terms", changefreq: "yearly", priority: "0.3" },
 ];
 
-const staticEntries: SitemapEntry[] = [
-  { path: "/", changefreq: "daily", priority: "1.0" },
-  { path: "/explore", changefreq: "daily", priority: "0.9" },
-  { path: "/reels", changefreq: "daily", priority: "0.9" },
-  { path: "/search", changefreq: "weekly", priority: "0.6" },
-  { path: "/auth", changefreq: "monthly", priority: "0.5" },
-  { path: "/how-it-works", changefreq: "monthly", priority: "0.6" },
-  { path: "/privacy", changefreq: "yearly", priority: "0.3" },
-  { path: "/terms", changefreq: "yearly", priority: "0.3" },
-];
 
 async function fetchRest(path: string): Promise<any[]> {
   try {
@@ -64,6 +54,7 @@ function renderEntry(e: SitemapEntry) {
   return [
     `  <url>`,
     `    <loc>${xmlEscape(BASE_URL + e.path)}</loc>`,
+    e.lastmod ? `    <lastmod>${e.lastmod}</lastmod>` : null,
     e.changefreq ? `    <changefreq>${e.changefreq}</changefreq>` : null,
     e.priority ? `    <priority>${e.priority}</priority>` : null,
     `  </url>`,
