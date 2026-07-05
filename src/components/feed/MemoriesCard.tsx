@@ -194,9 +194,9 @@ export function MemoriesCard() {
           >
             <div className="rounded-3xl overflow-hidden bg-card">
               {active.media_type === 'image' ? (
-                <img src={active.media_url} alt="" className="w-full max-h-[70vh] object-contain bg-black" />
+                <img src={getFirstPostMediaUrl(active.media_url)} alt="" className="w-full max-h-[70vh] object-contain bg-black" />
               ) : (
-                <video src={active.media_url} controls autoPlay className="w-full max-h-[70vh] bg-black" />
+                <video src={getFirstPostMediaUrl(active.media_url)} controls autoPlay className="w-full max-h-[70vh] bg-black" />
               )}
               <div className="p-4">
                 <div className="flex items-center gap-2 mb-2">
