@@ -246,6 +246,47 @@ export default function Call() {
             chan.send({ type: 'broadcast', event: 'ready', payload: { from: user.id } });
           }
         })
+        // ── Renegotiation: peer added video mid-call (audio→video upgrade). ──
+        .on('broadcast', { event: 'renegotiate-offer' }, async ({ payload }) => {
+          if (payload.from === user.id || !pcRef.current || !localStreamRef.current) return;
+          // Ensure we also start sending our camera so it's a two-way video call.
+          if (localStreamRef.current.getVideoTracks().length === 0) {
+            try {
+              const cam = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: { ideal: 'user' }, width: 640, height: 480 },
+              });
+              const v = cam.getVideoTracks()[0];
+              localStreamRef.current.addTrack(v);
+              pcRef.current.addTrack(v, localStreamRef.current);
+              if (localVideoRef.current) localVideoRef.current.srcObject = localStreamRef.current;
+            } catch {
+              // No camera / denied — still accept the incoming video (receive-only).
+            }
+          }
+          await pcRef.current.setRemoteDescription(new RTCSessionDescription(payload.sdp));
+          const ans = await pcRef.current.createAnswer();
+          await pcRef.current.setLocalDescription(ans);
+          chan.send({
+            type: 'broadcast',
+            event: 'renegotiate-answer',
+            payload: { from: user.id, sdp: ans },
+          });
+          setVideoActive(true);
+          toast.message('Call upgraded to video');
+        })
+        .on('broadcast', { event: 'renegotiate-answer' }, async ({ payload }) => {
+          if (payload.from === user.id || !pcRef.current) return;
+          if (pcRef.current.signalingState === 'stable') return;
+          try {
+            await pcRef.current.setRemoteDescription(new RTCSessionDescription(payload.sdp));
+          } catch {}
+        })
+        // ── Convert 1:1 call to a group meeting so more people can join. ──
+        .on('broadcast', { event: 'move-to-meet' }, ({ payload }) => {
+          if (payload.from === user.id) return;
+          toast.message('Call moved to group meeting');
+          navigate(`/meet/${payload.roomId}`);
+        })
         .subscribe(async (status) => {
           if (status !== 'SUBSCRIBED' || disposed) return;
           // Announce arrival, then keep re-announcing until remote description is set.
