@@ -75,11 +75,12 @@ export default function TwoFactorPage() {
           await supabase.auth.mfa.unenroll({ factorId: f.id });
         }
       }
-      const friendlyName = `Authenticator (${new Date().toISOString().slice(0, 10)})`;
+      const friendlyName = `Openflip.in (${new Date().toISOString().slice(0, 10)})`;
       const { data, error } = await supabase.auth.mfa.enroll({
         factorType: 'totp',
         friendlyName,
-      });
+        issuer: 'Openflip.in',
+      } as any);
       if (error) throw error;
       setFactorId(data.id);
       setQr(data.totp?.qr_code ?? null);
