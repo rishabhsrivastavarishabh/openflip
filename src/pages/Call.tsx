@@ -34,6 +34,9 @@ export default function Call() {
   const [videoOn, setVideoOn] = useState(true);
   const [elapsed, setElapsed] = useState(0);
   const [connState, setConnState] = useState<'idle' | 'connecting' | 'connected' | 'failed'>('idle');
+  const [videoActive, setVideoActive] = useState(false);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
+  const [upgrading, setUpgrading] = useState(false);
 
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
