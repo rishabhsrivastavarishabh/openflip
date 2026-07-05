@@ -38,6 +38,7 @@ import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { QRCodeSVG } from 'qrcode.react';
 import { useTheme } from '@/hooks/useTheme';
 
 interface SettingsSection {
