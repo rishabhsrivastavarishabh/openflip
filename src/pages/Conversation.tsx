@@ -580,8 +580,11 @@ export default function ConversationPage() {
   const displayAvatar = isGroupChat ? conversation?.group_avatar_url : participant?.avatar_url;
 
   return (
-    <div className="h-screen flex flex-col bg-background">
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border p-3 flex items-center gap-3">
+    <div className="flex flex-col bg-background" style={{ height: '100dvh' }}>
+      <div
+        className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border px-3 py-3 flex items-center gap-2 sm:gap-3"
+        style={{ paddingTop: 'max(env(safe-area-inset-top), 0.75rem)' }}
+      >
         <button onClick={() => navigate('/messages')}><ArrowLeft className="w-6 h-6" /></button>
         
         {participant || isGroupChat ? (
