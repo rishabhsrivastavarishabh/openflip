@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { getFirstPostMediaUrl } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 import { Heart, MessageCircle, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
