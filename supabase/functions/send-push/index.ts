@@ -41,8 +41,23 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    const isServiceRole = jwt === SERVICE_ROLE;
-    if (!isServiceRole) {
+    // Accept the SERVICE_ROLE env directly, OR any JWT whose payload declares
+    // role: 'service_role' (DB triggers use a vault-stored service key that may
+    // differ from the current env value), OR a valid user JWT.
+    let authorized = jwt === SERVICE_ROLE;
+    if (!authorized) {
+      try {
+        const parts = jwt.split('.');
+        if (parts.length === 3) {
+          const pad = '='.repeat((4 - (parts[1].length % 4)) % 4);
+          const payload = JSON.parse(
+            atob(parts[1].replace(/-/g, '+').replace(/_/g, '/') + pad),
+          );
+          if (payload?.role === 'service_role') authorized = true;
+        }
+      } catch (_) {}
+    }
+    if (!authorized) {
       const { data: userData, error: userErr } = await admin.auth.getUser(jwt);
       if (userErr || !userData.user) {
         return new Response(JSON.stringify({ error: 'Invalid token' }), {
