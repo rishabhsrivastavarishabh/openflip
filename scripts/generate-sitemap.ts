@@ -12,9 +12,23 @@ const SUPABASE_ANON_KEY =
 
 interface SitemapEntry {
   path: string;
+  lastmod?: string;
   changefreq?: "always" | "hourly" | "daily" | "weekly" | "monthly" | "yearly" | "never";
   priority?: string;
 }
+
+const TODAY = new Date().toISOString().slice(0, 10);
+
+const staticEntries: SitemapEntry[] = [
+  { path: "/", lastmod: TODAY, changefreq: "daily", priority: "1.0" },
+  { path: "/explore", lastmod: TODAY, changefreq: "daily", priority: "0.9" },
+  { path: "/reels", lastmod: TODAY, changefreq: "daily", priority: "0.9" },
+  { path: "/search", changefreq: "weekly", priority: "0.6" },
+  { path: "/auth", changefreq: "monthly", priority: "0.5" },
+  { path: "/how-it-works", changefreq: "monthly", priority: "0.6" },
+  { path: "/privacy", changefreq: "yearly", priority: "0.3" },
+  { path: "/terms", changefreq: "yearly", priority: "0.3" },
+];
 
 const staticEntries: SitemapEntry[] = [
   { path: "/", changefreq: "daily", priority: "1.0" },
@@ -60,15 +74,25 @@ function renderEntry(e: SitemapEntry) {
 
 async function main() {
   const [posts, profiles] = await Promise.all([
-    fetchRest("posts?select=id&limit=10000"),
-    fetchRest("profiles?select=id,username,is_private&limit=10000"),
+    fetchRest("posts?select=id,updated_at,created_at&limit=10000&order=created_at.desc"),
+    fetchRest("profiles?select=id,username,is_private,updated_at&limit=10000"),
   ]);
 
   const dynamicEntries: SitemapEntry[] = [
-    ...posts.map((p: any) => ({ path: `/post/${p.id}`, changefreq: "weekly" as const, priority: "0.7" })),
+    ...posts.map((p: any) => ({
+      path: `/post/${p.id}`,
+      lastmod: (p.updated_at || p.created_at || "").slice(0, 10) || undefined,
+      changefreq: "weekly" as const,
+      priority: "0.7",
+    })),
     ...profiles
       .filter((p: any) => !p.is_private)
-      .map((p: any) => ({ path: `/profile/${p.username}`, changefreq: "weekly" as const, priority: "0.6" })),
+      .map((p: any) => ({
+        path: `/profile/${p.username}`,
+        lastmod: (p.updated_at || "").slice(0, 10) || undefined,
+        changefreq: "weekly" as const,
+        priority: "0.6",
+      })),
   ];
 
   const all = [...staticEntries, ...dynamicEntries];
