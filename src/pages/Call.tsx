@@ -546,6 +546,18 @@ export default function Call() {
             size="icon"
             variant="secondary"
             className="h-14 w-14 rounded-full border-0 bg-white/10 hover:bg-white/20"
+            onClick={downgradeToAudio}
+            aria-label="Switch to audio only"
+            title="Switch to audio only"
+          >
+            <VideoOff className="h-5 w-5" />
+          </Button>
+        )}
+        {videoActive && (
+          <Button
+            size="icon"
+            variant="secondary"
+            className="h-14 w-14 rounded-full border-0 bg-white/10 hover:bg-white/20"
             onClick={toggleVideo}
             aria-label={videoOn ? 'Turn off camera' : 'Turn on camera'}
           >
