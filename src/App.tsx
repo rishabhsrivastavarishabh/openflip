@@ -65,6 +65,7 @@ import { IncomingCallDialog } from "./components/calls/IncomingCallDialog";
 import { useAuth as useAuthForCall } from "@/contexts/AuthContext";
 import NotFound from "./pages/NotFound";
 import OAuthConsent from "./pages/OAuthConsent";
+import Creator from "./pages/Creator";
 
 function GlobalCallOverlay() {
   const { user } = useAuthForCall();
@@ -105,6 +106,7 @@ const App = () => (
               <Route path="/messages/:conversationId" element={<Conversation />} />
               <Route path="/call/:callId" element={<Call />} />
               <Route path="/meet/:roomId" element={<Meet />} />
+              <Route path="/creator" element={<Creator />} />
               <Route path="/settings" element={<SettingsLayout />}>
                 <Route index element={<Navigate to="/settings/account" replace />} />
                 <Route path="account" element={<AccountPage />} />

@@ -870,6 +870,48 @@ export type Database = {
           },
         ]
       }
+      message_device_keys: {
+        Row: {
+          aad: string
+          ciphertext: string
+          created_at: string
+          message_id: string
+          nonce: string
+          recipient_device_id: string
+        }
+        Insert: {
+          aad: string
+          ciphertext: string
+          created_at?: string
+          message_id: string
+          nonce: string
+          recipient_device_id: string
+        }
+        Update: {
+          aad?: string
+          ciphertext?: string
+          created_at?: string
+          message_id?: string
+          nonce?: string
+          recipient_device_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_device_keys_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_device_keys_recipient_device_id_fkey"
+            columns: ["recipient_device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       message_reactions: {
         Row: {
           created_at: string | null
@@ -2205,6 +2247,13 @@ export type Database = {
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
+      }
+      get_all_recipient_device_keys: {
+        Args: { _user_id: string }
+        Returns: {
+          device_public_key: string
+          id: string
+        }[]
       }
       get_my_private_profile: {
         Args: never

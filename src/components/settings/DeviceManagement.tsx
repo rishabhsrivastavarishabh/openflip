@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Smartphone, Monitor, Trash2, Shield, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Smartphone, Monitor, Trash2, Shield, RefreshCw, Check, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -19,9 +19,11 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Progress } from '@/components/ui/progress';
 import { useDeviceKeys } from '@/hooks/useDeviceKeys';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface Device {
   id: string;
@@ -35,11 +37,28 @@ interface DeviceManagementProps {
   onBack: () => void;
 }
 
+type ResetStep =
+  | { kind: 'idle' }
+  | { kind: 'removing'; label: string }
+  | { kind: 'generating'; label: string }
+  | { kind: 'registering'; label: string }
+  | { kind: 'done'; label: string }
+  | { kind: 'error'; label: string };
+
+const STEP_ORDER: ResetStep['kind'][] = ['removing', 'generating', 'registering', 'done'];
+
+const STEP_META: Record<Exclude<ResetStep['kind'], 'idle' | 'error'>, { label: string; hint: string }> = {
+  removing: { label: 'Removing old keys', hint: 'Deleting this device from the encryption directory.' },
+  generating: { label: 'Generating new keypair', hint: 'Creating a fresh X25519 keypair locally.' },
+  registering: { label: 'Registering with the server', hint: 'Publishing the new public key so others can send you encrypted messages.' },
+  done: { label: 'Encryption ready', hint: 'This device is set up. Newly received messages will decrypt automatically.' },
+};
+
 export function DeviceManagement({ onBack }: DeviceManagementProps) {
   const { deviceId, listDevices, removeDevice, reinitialize } = useDeviceKeys();
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
-  const [resetting, setResetting] = useState(false);
+  const [step, setStep] = useState<ResetStep>({ kind: 'idle' });
 
   useEffect(() => {
     loadDevices();
@@ -62,24 +81,33 @@ export function DeviceManagement({ onBack }: DeviceManagementProps) {
   };
 
   const handleResetEncryption = async () => {
-    setResetting(true);
     try {
-      // Remove the current device (which also wipes its local keypair) and
-      // then reinitialize — that generates a fresh keypair and registers a
-      // brand-new device with the server.
       if (deviceId) {
+        setStep({ kind: 'removing', label: STEP_META.removing.label });
         await removeDevice(deviceId);
-      } else {
-        await reinitialize();
       }
-      toast.success('Encryption keys regenerated for this device');
+      setStep({ kind: 'generating', label: STEP_META.generating.label });
+      // reinitialize handles both generation AND registration in one shot,
+      // but we split the UI states so users see progress instead of a spinner.
+      const registerPromise = reinitialize();
+      // Give the UI a beat so the "Generating" step is visible even on fast devices.
+      await new Promise((r) => setTimeout(r, 300));
+      setStep({ kind: 'registering', label: STEP_META.registering.label });
+      await registerPromise;
+      setStep({ kind: 'done', label: STEP_META.done.label });
       await loadDevices();
+      toast.success('Encryption keys regenerated for this device');
+      setTimeout(() => setStep({ kind: 'idle' }), 2500);
     } catch (e: any) {
-      toast.error(e?.message || 'Failed to reset encryption');
-    } finally {
-      setResetting(false);
+      const msg = e?.message || 'Failed to reset encryption';
+      setStep({ kind: 'error', label: msg });
+      toast.error(msg);
     }
   };
+
+  const activeIdx = step.kind === 'idle' || step.kind === 'error' ? -1 : STEP_ORDER.indexOf(step.kind);
+  const isRunning = step.kind !== 'idle' && step.kind !== 'done' && step.kind !== 'error';
+  const progressPct = step.kind === 'done' ? 100 : Math.max(0, ((activeIdx + 0.5) / STEP_ORDER.length) * 100);
 
   return (
     <div className="space-y-6">
@@ -150,7 +178,7 @@ export function DeviceManagement({ onBack }: DeviceManagementProps) {
       </div>
 
       <Card>
-        <CardContent className="p-4 space-y-3">
+        <CardContent className="p-4 space-y-4">
           <div className="flex items-start gap-3">
             <RefreshCw className="w-5 h-5 text-primary shrink-0 mt-0.5" />
             <div className="flex-1">
@@ -160,11 +188,71 @@ export function DeviceManagement({ onBack }: DeviceManagementProps) {
               </p>
             </div>
           </div>
+
+          {/* Live progress panel */}
+          {step.kind !== 'idle' && (
+            <div className="rounded-xl border border-border/60 bg-secondary/40 p-3 space-y-3">
+              {step.kind === 'error' ? (
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-destructive">Encryption setup failed</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{step.label}</p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <Progress value={progressPct} className="h-1.5" />
+                  <ul className="space-y-2">
+                    {STEP_ORDER.map((k, i) => {
+                      const isActive = i === activeIdx;
+                      const isDone = i < activeIdx || step.kind === 'done';
+                      return (
+                        <li key={k} className="flex items-start gap-2 text-xs">
+                          <span
+                            className={cn(
+                              'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full',
+                              isDone
+                                ? 'bg-primary text-primary-foreground'
+                                : isActive
+                                  ? 'bg-primary/20 text-primary'
+                                  : 'bg-muted text-muted-foreground',
+                            )}
+                          >
+                            {isDone ? (
+                              <Check className="h-3 w-3" />
+                            ) : isActive ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                            )}
+                          </span>
+                          <div className="flex-1">
+                            <p className={cn('font-medium', isActive ? 'text-foreground' : 'text-muted-foreground')}>
+                              {STEP_META[k].label}
+                            </p>
+                            {isActive && (
+                              <p className="text-[11px] text-muted-foreground">{STEP_META[k].hint}</p>
+                            )}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </>
+              )}
+            </div>
+          )}
+
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="outline" size="sm" disabled={resetting} className="w-full">
-                <RefreshCw className={`w-4 h-4 mr-2 ${resetting ? 'animate-spin' : ''}`} />
-                {resetting ? 'Regenerating…' : 'Re-run encryption setup'}
+              <Button variant="outline" size="sm" disabled={isRunning} className="w-full">
+                {isRunning ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                )}
+                {isRunning ? 'Regenerating…' : step.kind === 'done' ? 'Run again' : 'Re-run encryption setup'}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>

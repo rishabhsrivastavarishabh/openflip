@@ -1,9 +1,15 @@
 /**
  * Hook to decrypt messages locally.
  * Decryption happens client-side only — private keys never leave the device.
+ *
+ * Multi-device fallback: if the primary ciphertext was targeted at a device
+ * other than this one, we look up a per-device copy in `message_device_keys`
+ * and try that instead — so a signed-in device can read every message
+ * sent to (or from) the current account.
  */
 
 import { useCallback, useRef } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { decryptMessage, initCrypto } from '@/lib/crypto';
 import { useDeviceKeys } from './useDeviceKeys';
 
@@ -11,7 +17,7 @@ import { useDeviceKeys } from './useDeviceKeys';
 const decryptionCache = new Map<string, string>();
 
 export function useDecryptMessage() {
-  const { privateKey, loading: keysLoading, error: keysError } = useDeviceKeys();
+  const { deviceId, privateKey, loading: keysLoading, error: keysError } = useDeviceKeys();
   const initRef = useRef(false);
 
   const decrypt = useCallback(async (
@@ -49,16 +55,37 @@ export function useDecryptMessage() {
         initRef.current = true;
       }
 
-      const plaintext = await decryptMessage(
+      // First try: primary ciphertext on the message row itself.
+      let plaintext = await decryptMessage(
         ciphertext,
         nonce,
         aad,
         privateKey,
-        senderDevicePublicKey
+        senderDevicePublicKey,
       );
 
+      // Fallback: this device wasn't the primary target. Look up the
+      // per-device copy created by the sender's fan-out.
+      if (plaintext === null && deviceId) {
+        const { data: fanout } = await (supabase as any)
+          .from('message_device_keys')
+          .select('ciphertext, nonce, aad')
+          .eq('message_id', messageId)
+          .eq('recipient_device_id', deviceId)
+          .maybeSingle();
+        if (fanout?.ciphertext && fanout?.nonce && fanout?.aad) {
+          plaintext = await decryptMessage(
+            fanout.ciphertext,
+            fanout.nonce,
+            fanout.aad,
+            privateKey,
+            senderDevicePublicKey,
+          );
+        }
+      }
+
       if (plaintext === null) {
-        return '🔒 This message was encrypted for a different device — sign in on that device to read it, or ask the sender to resend.';
+        return '🔒 This message was encrypted before this device was added. Ask the sender to resend to see it here.';
       }
 
       // Cache the result
@@ -67,7 +94,7 @@ export function useDecryptMessage() {
     } catch {
       return '🔒 This message can\'t be decrypted on this device.';
     }
-  }, [privateKey, keysLoading, keysError]);
+  }, [deviceId, privateKey, keysLoading, keysError]);
 
   const clearCache = useCallback(() => {
     decryptionCache.clear();

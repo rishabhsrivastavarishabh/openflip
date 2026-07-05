@@ -2,6 +2,12 @@
  * Hook for sending E2E encrypted messages.
  * Encrypts plaintext client-side before inserting ciphertext into the database.
  * NEVER sends plaintext to the server.
+ *
+ * Multi-device fan-out: after inserting the primary encrypted message (which
+ * targets the recipient's most-recent device), we also encrypt a copy for
+ * every OTHER active device belonging to the recipient AND every OTHER active
+ * device belonging to the sender. Those extra copies live in
+ * `message_device_keys` so any signed-in device can decrypt its own copy.
  */
 
 import { useCallback } from 'react';
@@ -13,7 +19,7 @@ import { toast } from 'sonner';
 
 export function useSendEncryptedMessage() {
   const { user } = useAuth();
-  const { deviceId, privateKey, getRecipientPublicKey } = useDeviceKeys();
+  const { deviceId, privateKey, getRecipientPublicKey, getAllRecipientDeviceKeys } = useDeviceKeys();
 
   const sendEncrypted = useCallback(async (
     conversationId: string,
@@ -33,7 +39,7 @@ export function useSendEncryptedMessage() {
     }
 
     try {
-      // Get recipient's public key
+      // Get recipient's primary public key (most recent device)
       const recipientPublicKey = await getRecipientPublicKey(recipientUserId);
       
       if (!recipientPublicKey) {
@@ -58,19 +64,15 @@ export function useSendEncryptedMessage() {
         return true;
       }
 
-      // Encrypt the message
-      const encrypted = await encryptMessage(
-        plaintext,
-        privateKey,
-        recipientPublicKey,
-        {
-          conversation_id: conversationId,
-          sender_id: user.id,
-          timestamp: new Date().toISOString(),
-        }
-      );
+      const aad = {
+        conversation_id: conversationId,
+        sender_id: user.id,
+        timestamp: new Date().toISOString(),
+      };
 
-      // Insert encrypted message — content is a placeholder, ciphertext has the real data
+      // Encrypt the primary copy for the recipient's newest device.
+      const encrypted = await encryptMessage(plaintext, privateKey, recipientPublicKey, aad);
+
       const insertData: any = {
         conversation_id: conversationId,
         sender_id: user.id,
@@ -87,8 +89,49 @@ export function useSendEncryptedMessage() {
       if (options?.isViewOnce) insertData.is_view_once = true;
       if (options?.expiresAt) insertData.expires_at = options.expiresAt;
 
-      const { error } = await supabase.from('messages').insert(insertData);
+      const { data: inserted, error } = await supabase
+        .from('messages')
+        .insert(insertData)
+        .select('id')
+        .single();
       if (error) throw error;
+      const messageId = inserted?.id as string | undefined;
+
+      // Fan-out: also encrypt for every OTHER recipient device and every OTHER
+      // sender device, so a message decrypts on every signed-in device. This
+      // runs after the primary insert so a fan-out failure never blocks the
+      // main send.
+      if (messageId) {
+        (async () => {
+          try {
+            const [recipientDevices, senderDevices] = await Promise.all([
+              getAllRecipientDeviceKeys(recipientUserId),
+              getAllRecipientDeviceKeys(user.id),
+            ]);
+            const extras = [
+              ...recipientDevices.filter((d) => d.device_public_key !== recipientPublicKey),
+              ...senderDevices.filter((d) => d.id !== deviceId),
+            ];
+            if (extras.length === 0) return;
+
+            const rows = await Promise.all(
+              extras.map(async (dev) => {
+                const enc = await encryptMessage(plaintext, privateKey, dev.device_public_key, aad);
+                return {
+                  message_id: messageId,
+                  recipient_device_id: dev.id,
+                  ciphertext: enc.ciphertext,
+                  nonce: enc.nonce,
+                  aad: enc.aad,
+                };
+              }),
+            );
+            await (supabase as any).from('message_device_keys').insert(rows);
+          } catch (e) {
+            console.warn('Multi-device fan-out failed (primary message still delivered):', e);
+          }
+        })();
+      }
 
       // Update conversation timestamp
       await supabase
@@ -129,7 +172,7 @@ export function useSendEncryptedMessage() {
       toast.error('Failed to send message');
       return false;
     }
-  }, [user, deviceId, privateKey, getRecipientPublicKey]);
+  }, [user, deviceId, privateKey, getRecipientPublicKey, getAllRecipientDeviceKeys]);
 
   return {
     sendEncrypted,

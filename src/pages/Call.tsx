@@ -35,6 +35,16 @@ type CallTheme = {
 
 const CALL_THEMES: CallTheme[] = [
   {
+    id: 'ember',
+    label: 'Ember',
+    // White + red mixed: bright canvas softened with red glows so foreground
+    // controls stay readable on light backgrounds.
+    base: '#f8fafc',
+    gradient:
+      'radial-gradient(1200px 600px at 50% -10%, rgba(220,38,38,0.55), rgba(255,255,255,0) 60%), radial-gradient(800px 500px at 80% 100%, rgba(239,68,68,0.35), rgba(255,255,255,0) 60%), linear-gradient(180deg, rgba(255,255,255,0.85), rgba(255,255,255,0.65))',
+    swatch: 'linear-gradient(135deg, #ffffff 0%, #ffffff 45%, #ef4444 100%)',
+  },
+  {
     id: 'midnight',
     label: 'Midnight',
     base: '#000000',
@@ -100,7 +110,7 @@ export default function Call() {
   const [upgrading, setUpgrading] = useState(false);
   const [speakerOn, setSpeakerOn] = useState(true);
   const [themeId, setThemeId] = useState<string>(() => {
-    try { return localStorage.getItem(CALL_THEME_KEY) || 'midnight'; } catch { return 'midnight'; }
+    try { return localStorage.getItem(CALL_THEME_KEY) || 'ember'; } catch { return 'ember'; }
   });
   const theme = CALL_THEMES.find(t => t.id === themeId) ?? CALL_THEMES[0];
   const chooseTheme = (id: string) => {
@@ -621,18 +631,20 @@ export default function Call() {
             : (call?.status ?? '');
 
   const ctlBtn = 'h-12 w-12 sm:h-14 sm:w-14 rounded-full border-0 bg-white/10 hover:bg-white/20';
+  const isLightTheme = theme.id === 'ember';
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-between overflow-hidden text-white px-4 pt-[max(env(safe-area-inset-top),1rem)] pb-[max(env(safe-area-inset-bottom),1rem)] sm:px-8"
+      className={`fixed inset-0 z-50 flex flex-col items-center justify-between overflow-hidden px-4 pt-[max(env(safe-area-inset-top),1rem)] pb-[max(env(safe-area-inset-bottom),1rem)] sm:px-8 ${isLightTheme ? 'text-slate-900' : 'text-white'}`}
       style={{ height: '100dvh', backgroundColor: theme.base }}
     >
       {/* soft radial glow to match glassmorphism language */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-60 transition-[background] duration-500"
+        className="pointer-events-none absolute inset-0 opacity-90 transition-[background] duration-500"
         style={{ background: theme.gradient }}
       />
+
 
 
       {videoActive && (
@@ -647,7 +659,7 @@ export default function Call() {
 
       <div className="relative z-10 mt-6 sm:mt-16 flex flex-col items-center gap-3 sm:gap-4">
         {!videoActive && (
-          <Avatar className="h-24 w-24 sm:h-32 sm:w-32 ring-4 ring-white/20">
+          <Avatar className={`h-24 w-24 sm:h-32 sm:w-32 ring-4 ${isLightTheme ? 'ring-red-500/30' : 'ring-white/20'}`}>
             <AvatarImage src={other?.avatar_url} />
             <AvatarFallback className="bg-primary/20 text-3xl sm:text-4xl">
               {displayName.charAt(0).toUpperCase()}
@@ -655,7 +667,7 @@ export default function Call() {
           </Avatar>
         )}
         <h1 className="text-xl sm:text-2xl font-semibold drop-shadow">{displayName}</h1>
-        <p className="text-sm text-white/80">{statusLabel}</p>
+        <p className={`text-sm ${isLightTheme ? 'text-red-600/90' : 'text-white/80'}`}>{statusLabel}</p>
       </div>
 
       {videoActive && videoOn && (

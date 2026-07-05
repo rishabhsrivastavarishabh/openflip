@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { getFirstPostMediaUrl } from '@/lib/utils';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Grid3X3, Bookmark, Settings, UserPlus, UserMinus, MessageCircle, Plus, Film, Lock, Clock, Share2, MoreHorizontal, Pin, PlusSquare, Heart, Crown, Camera, Trash2 } from 'lucide-react';
+import { Grid3X3, Bookmark, Settings, UserPlus, UserMinus, MessageCircle, Plus, Film, Lock, Clock, Share2, MoreHorizontal, Pin, PlusSquare, Heart, Crown, Camera, Trash2, LayoutDashboard } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Seo } from '@/components/seo/Seo';
 import { Button } from '@/components/ui/button';
@@ -77,6 +77,11 @@ export default function ProfilePage() {
   const [showSubscribeDialog, setShowSubscribeDialog] = useState(false);
   const [isSubscribedToCreator, setIsSubscribedToCreator] = useState(false);
   const [savingCover, setSavingCover] = useState(false);
+  const [postsHasMore, setPostsHasMore] = useState(true);
+  const [postsLoadingMore, setPostsLoadingMore] = useState(false);
+  const [postsInitialLoaded, setPostsInitialLoaded] = useState(false);
+  const postsSentinelRef = useRef<HTMLDivElement | null>(null);
+  const POSTS_PAGE_SIZE = 24;
 
   const isOwnProfile = !!user && !!userId && user.id === userId;
 
@@ -224,53 +229,87 @@ export default function ProfilePage() {
   };
 
 
+  // Paged fetch of a user's posts. Page 0 loads pinned + newest and marks the
+  // initial batch as loaded; subsequent pages append older non-pinned posts.
+  // The IntersectionObserver at the bottom of the grid drives further fetches.
+  const enrichWithCounts = async (rows: any[]): Promise<ProfilePost[]> => {
+    if (!rows.length) return [];
+    const ids = rows.map((r) => r.id);
+    const [{ data: likesData }, { data: commentsData }] = await Promise.all([
+      supabase.from('likes').select('post_id').in('post_id', ids),
+      supabase.from('comments').select('post_id').in('post_id', ids),
+    ]);
+    const likesCounts: Record<string, number> = {};
+    likesData?.forEach((l) => { likesCounts[l.post_id] = (likesCounts[l.post_id] || 0) + 1; });
+    const commentsCounts: Record<string, number> = {};
+    commentsData?.forEach((c) => { commentsCounts[c.post_id] = (commentsCounts[c.post_id] || 0) + 1; });
+    return rows.map((p) => ({
+      ...p,
+      likes_count: likesCounts[p.id] || 0,
+      comments_count: commentsCounts[p.id] || 0,
+    })) as ProfilePost[];
+  };
+
   const fetchPosts = async () => {
-    const { data: postsData } = await supabase
+    if (!userId) return;
+    setPostsInitialLoaded(false);
+    setPostsHasMore(true);
+
+    // Pinned posts always live at the top (unbounded — max 3 by DB trigger).
+    const { data: pinnedData } = await supabase
       .from('posts')
       .select('id, media_url, media_type, is_pinned, pinned_at')
       .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .eq('is_pinned', true)
+      .order('pinned_at', { ascending: false });
 
-    if (postsData) {
-      const postIds = postsData.map(p => p.id);
+    // First page of non-pinned posts.
+    const { data: pageData } = await supabase
+      .from('posts')
+      .select('id, media_url, media_type, is_pinned, pinned_at')
+      .eq('user_id', userId)
+      .eq('is_pinned', false)
+      .order('created_at', { ascending: false })
+      .range(0, POSTS_PAGE_SIZE - 1);
 
-      const { data: likesData } = await supabase
-        .from('likes')
-        .select('post_id')
-        .in('post_id', postIds);
-
-      const { data: commentsData } = await supabase
-        .from('comments')
-        .select('post_id')
-        .in('post_id', postIds);
-
-      const likesCounts: Record<string, number> = {};
-      likesData?.forEach(like => {
-        likesCounts[like.post_id] = (likesCounts[like.post_id] || 0) + 1;
-      });
-
-      const commentsCounts: Record<string, number> = {};
-      commentsData?.forEach(comment => {
-        commentsCounts[comment.post_id] = (commentsCounts[comment.post_id] || 0) + 1;
-      });
-
-      // Sort: pinned posts first, then by created_at
-      const enrichedPosts = postsData.map(post => ({
-        ...post,
-        likes_count: likesCounts[post.id] || 0,
-        comments_count: commentsCounts[post.id] || 0,
-      })) as ProfilePost[];
-
-      // Sort pinned posts to the top
-      enrichedPosts.sort((a, b) => {
-        if (a.is_pinned && !b.is_pinned) return -1;
-        if (!a.is_pinned && b.is_pinned) return 1;
-        return 0;
-      });
-
-      setPosts(enrichedPosts);
-    }
+    const combined = await enrichWithCounts([...(pinnedData ?? []), ...(pageData ?? [])]);
+    setPosts(combined);
+    setPostsHasMore((pageData?.length ?? 0) >= POSTS_PAGE_SIZE);
+    setPostsInitialLoaded(true);
   };
+
+  const loadMorePosts = useCallback(async () => {
+    if (!userId || postsLoadingMore || !postsHasMore) return;
+    setPostsLoadingMore(true);
+    // Count non-pinned rows already loaded so we ask for the next window.
+    const nonPinnedLoaded = posts.filter((p) => !p.is_pinned).length;
+    const { data: pageData } = await supabase
+      .from('posts')
+      .select('id, media_url, media_type, is_pinned, pinned_at')
+      .eq('user_id', userId)
+      .eq('is_pinned', false)
+      .order('created_at', { ascending: false })
+      .range(nonPinnedLoaded, nonPinnedLoaded + POSTS_PAGE_SIZE - 1);
+
+    if (pageData && pageData.length > 0) {
+      const enriched = await enrichWithCounts(pageData);
+      setPosts((prev) => [...prev, ...enriched]);
+    }
+    setPostsHasMore((pageData?.length ?? 0) >= POSTS_PAGE_SIZE);
+    setPostsLoadingMore(false);
+  }, [userId, postsLoadingMore, postsHasMore, posts]);
+
+  // IntersectionObserver: when the sentinel scrolls into view, fetch the next page.
+  useEffect(() => {
+    const el = postsSentinelRef.current;
+    if (!el || !postsInitialLoaded || !postsHasMore) return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) loadMorePosts();
+    }, { rootMargin: '400px' });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [postsInitialLoaded, postsHasMore, loadMorePosts]);
+
 
   const fetchReels = async () => {
     const { data: reelsData } = await supabase
@@ -656,6 +695,12 @@ export default function ProfilePage() {
                       <Button asChild variant="secondary" size="sm">
                         <Link to="/settings">Edit profile</Link>
                       </Button>
+                      <Button asChild variant="gradient" size="sm">
+                        <Link to="/creator">
+                          <LayoutDashboard className="h-4 w-4 mr-1" />
+                          Creator Dashboard
+                        </Link>
+                      </Button>
                       <Button variant="ghost" size="icon-sm" onClick={() => setShowShareSheet(true)}>
                         <Share2 className="h-5 w-5" />
                       </Button>
@@ -845,7 +890,19 @@ export default function ProfilePage() {
                   <p className="text-muted-foreground">No posts yet</p>
                 </div>
               )}
+
+              {/* Infinite scroll sentinel + status */}
+              {posts.length > 0 && (
+                <div ref={postsSentinelRef} className="py-6 text-center text-xs text-muted-foreground">
+                  {postsLoadingMore
+                    ? 'Loading more posts…'
+                    : postsHasMore
+                      ? 'Scroll for more'
+                      : 'You\'ve reached the end'}
+                </div>
+              )}
             </TabsContent>
+
 
           <TabsContent value="reels" className="mt-0">
             {reels.length > 0 ? (

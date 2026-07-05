@@ -133,6 +133,20 @@ export function useDeviceKeys() {
     return row?.device_public_key || null;
   }, []);
 
+  // Get EVERY active device public key for a user so senders can fan-out one
+  // encrypted blob per device — this is how a message decrypts on every
+  // signed-in device instead of only the newest one.
+  const getAllRecipientDeviceKeys = useCallback(
+    async (userId: string): Promise<Array<{ id: string; device_public_key: string }>> => {
+      const { data, error } = await (supabase as any).rpc('get_all_recipient_device_keys', {
+        _user_id: userId,
+      });
+      if (error || !Array.isArray(data)) return [];
+      return data;
+    },
+    [],
+  );
+
   // List user's devices
   const listDevices = useCallback(async () => {
     if (!user) return [];
@@ -157,6 +171,7 @@ export function useDeviceKeys() {
   return {
     ...state,
     getRecipientPublicKey,
+    getAllRecipientDeviceKeys,
     listDevices,
     removeDevice,
     reinitialize: initializeDeviceKeys,
