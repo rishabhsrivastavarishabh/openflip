@@ -68,10 +68,19 @@ export default function AuthPage() {
   const [mfaChallenge, setMfaChallenge] = useState<{ factorId: string; userId: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { signIn, signUp } = useAuth();
-  const { saveCurrentSession } = useMultiAccount();
+  const { saveCurrentSession, accounts } = useMultiAccount();
   const navigate = useNavigate();
 
-  const signInForm = useForm<SignInForm>({ resolver: zodResolver(signInSchema) });
+  // Prefill the identifier with the most recently used stored account so the
+  // Switch Account flow lands on a familiar login.
+  const mostRecentAccount = accounts.length
+    ? [...accounts].sort((a, b) => b.lastUsed - a.lastUsed)[0]
+    : null;
+
+  const signInForm = useForm<SignInForm>({
+    resolver: zodResolver(signInSchema),
+    defaultValues: { identifier: mostRecentAccount?.username ?? '', password: '' },
+  });
   const signUpForm = useForm<SignUpForm>({ resolver: zodResolver(signUpSchema) });
   const forgotPasswordForm = useForm<ForgotPasswordForm>({ resolver: zodResolver(forgotPasswordSchema) });
 
