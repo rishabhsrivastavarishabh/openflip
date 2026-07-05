@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { PhoneOff, Mic, MicOff, Video, VideoOff, SwitchCamera, UserPlus, Volume2, VolumeX, Palette, Check } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
+import { CALLER_TUNES, playPattern, type ToneHandle } from '@/lib/callSounds';
 
 // STUN for direct P2P + multiple free public TURN relays for NAT/firewall
 // traversal. Without TURN, calls between users on symmetric NATs or
