@@ -157,12 +157,10 @@ export default function Call() {
       pc.ontrack = (ev) => {
         const [remote] = ev.streams;
         if (!remote) return;
-        if (isVideo && remoteVideoRef.current) {
-          remoteVideoRef.current.srcObject = remote;
-        }
-        if (remoteAudioRef.current) {
-          remoteAudioRef.current.srcObject = remote;
-        }
+        // Always attach — even audio-only calls that later get upgraded reuse this ref.
+        if (remoteVideoRef.current) remoteVideoRef.current.srcObject = remote;
+        if (remoteAudioRef.current) remoteAudioRef.current.srcObject = remote;
+        if (remote.getVideoTracks().length > 0) setVideoActive(true);
       };
 
       pc.onconnectionstatechange = () => {
