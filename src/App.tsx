@@ -66,6 +66,7 @@ import { useAuth as useAuthForCall } from "@/contexts/AuthContext";
 import NotFound from "./pages/NotFound";
 import OAuthConsent from "./pages/OAuthConsent";
 import Creator from "./pages/Creator";
+import AgentIntegrations from "./pages/AgentIntegrations";
 
 function GlobalCallOverlay() {
   const { user } = useAuthForCall();
