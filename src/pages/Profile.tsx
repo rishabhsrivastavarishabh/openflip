@@ -809,7 +809,7 @@ export default function ProfilePage() {
                     <div key={post.id} className="aspect-square relative group overflow-hidden rounded-xl sm:rounded-2xl">
                       <Link to={`/post/${post.id}`} className="block w-full h-full">
                         <ProtectedMedia
-                          src={post.media_url}
+                          src={getFirstPostMediaUrl(post.media_url)}
                           type={post.media_type}
                           className="w-full h-full object-cover"
                         />
