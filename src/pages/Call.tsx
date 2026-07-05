@@ -688,7 +688,7 @@ export default function Call() {
             ? format(elapsed)
             : (call?.status ?? '');
 
-  const ctlBtn = 'h-12 w-12 sm:h-14 sm:w-14 rounded-full border-0 bg-white/10 hover:bg-white/20';
+  const ctlBtn = 'h-12 w-12 sm:h-14 sm:w-14 rounded-full border border-white/10 bg-neutral-900/80 text-white hover:bg-neutral-800/90 shadow-md';
   const isLightTheme = theme.id === 'ember';
 
   return (
