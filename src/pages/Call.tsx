@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { PhoneOff, Mic, MicOff, Video, VideoOff } from 'lucide-react';
+import { PhoneOff, Mic, MicOff, Video, VideoOff, SwitchCamera, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 
 // STUN for direct P2P + free public TURN relays for NAT/firewall traversal.
@@ -34,6 +34,9 @@ export default function Call() {
   const [videoOn, setVideoOn] = useState(true);
   const [elapsed, setElapsed] = useState(0);
   const [connState, setConnState] = useState<'idle' | 'connecting' | 'connected' | 'failed'>('idle');
+  const [videoActive, setVideoActive] = useState(false);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
+  const [upgrading, setUpgrading] = useState(false);
 
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
@@ -93,6 +96,11 @@ export default function Call() {
     const t = setInterval(() => setElapsed(Math.floor((Date.now() - start) / 1000)), 1000);
     return () => clearInterval(t);
   }, [call]);
+
+  // Initial video state derives from call type; renegotiation may flip it later.
+  useEffect(() => {
+    if (call?.call_type === 'video') setVideoActive(true);
+  }, [call?.call_type]);
 
   // Set up WebRTC once we know our role and the call is either ringing (caller waits)
   // or accepted (callee is here). We tear it all down on unmount / hangup.
@@ -154,12 +162,10 @@ export default function Call() {
       pc.ontrack = (ev) => {
         const [remote] = ev.streams;
         if (!remote) return;
-        if (isVideo && remoteVideoRef.current) {
-          remoteVideoRef.current.srcObject = remote;
-        }
-        if (remoteAudioRef.current) {
-          remoteAudioRef.current.srcObject = remote;
-        }
+        // Always attach — even audio-only calls that later get upgraded reuse this ref.
+        if (remoteVideoRef.current) remoteVideoRef.current.srcObject = remote;
+        if (remoteAudioRef.current) remoteAudioRef.current.srcObject = remote;
+        if (remote.getVideoTracks().length > 0) setVideoActive(true);
       };
 
       pc.onconnectionstatechange = () => {
@@ -243,6 +249,47 @@ export default function Call() {
             chan.send({ type: 'broadcast', event: 'ready', payload: { from: user.id } });
           }
         })
+        // ── Renegotiation: peer added video mid-call (audio→video upgrade). ──
+        .on('broadcast', { event: 'renegotiate-offer' }, async ({ payload }) => {
+          if (payload.from === user.id || !pcRef.current || !localStreamRef.current) return;
+          // Ensure we also start sending our camera so it's a two-way video call.
+          if (localStreamRef.current.getVideoTracks().length === 0) {
+            try {
+              const cam = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: { ideal: 'user' }, width: 640, height: 480 },
+              });
+              const v = cam.getVideoTracks()[0];
+              localStreamRef.current.addTrack(v);
+              pcRef.current.addTrack(v, localStreamRef.current);
+              if (localVideoRef.current) localVideoRef.current.srcObject = localStreamRef.current;
+            } catch {
+              // No camera / denied — still accept the incoming video (receive-only).
+            }
+          }
+          await pcRef.current.setRemoteDescription(new RTCSessionDescription(payload.sdp));
+          const ans = await pcRef.current.createAnswer();
+          await pcRef.current.setLocalDescription(ans);
+          chan.send({
+            type: 'broadcast',
+            event: 'renegotiate-answer',
+            payload: { from: user.id, sdp: ans },
+          });
+          setVideoActive(true);
+          toast.message('Call upgraded to video');
+        })
+        .on('broadcast', { event: 'renegotiate-answer' }, async ({ payload }) => {
+          if (payload.from === user.id || !pcRef.current) return;
+          if (pcRef.current.signalingState === 'stable') return;
+          try {
+            await pcRef.current.setRemoteDescription(new RTCSessionDescription(payload.sdp));
+          } catch {}
+        })
+        // ── Convert 1:1 call to a group meeting so more people can join. ──
+        .on('broadcast', { event: 'move-to-meet' }, ({ payload }) => {
+          if (payload.from === user.id) return;
+          toast.message('Call moved to group meeting');
+          navigate(`/meet/${payload.roomId}`);
+        })
         .subscribe(async (status) => {
           if (status !== 'SUBSCRIBED' || disposed) return;
           // Announce arrival, then keep re-announcing until remote description is set.
@@ -293,6 +340,84 @@ export default function Call() {
     localStreamRef.current?.getVideoTracks().forEach((t) => (t.enabled = next));
   };
 
+  // Flip between front (user) and back (environment) cameras without dropping the peer.
+  const switchCamera = async () => {
+    if (!videoActive || !pcRef.current || !localStreamRef.current) return;
+    const next = facingMode === 'user' ? 'environment' : 'user';
+    try {
+      const newStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: next }, width: 640, height: 480 },
+        audio: false,
+      });
+      const newTrack = newStream.getVideoTracks()[0];
+      if (!newTrack) return;
+      const sender = pcRef.current.getSenders().find((s) => s.track?.kind === 'video');
+      if (sender) await sender.replaceTrack(newTrack);
+      const oldTrack = localStreamRef.current.getVideoTracks()[0];
+      if (oldTrack) {
+        localStreamRef.current.removeTrack(oldTrack);
+        oldTrack.stop();
+      }
+      localStreamRef.current.addTrack(newTrack);
+      if (localVideoRef.current) localVideoRef.current.srcObject = localStreamRef.current;
+      setFacingMode(next);
+    } catch (e: any) {
+      toast.error(e?.message || 'Could not switch camera');
+    }
+  };
+
+  // Upgrade an in-progress audio call to video: add a camera track and renegotiate.
+  const upgradeToVideo = async () => {
+    if (upgrading || videoActive) return;
+    if (!pcRef.current || !localStreamRef.current || !signalChanRef.current || !user) return;
+    setUpgrading(true);
+    try {
+      const cam = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: facingMode }, width: 640, height: 480 },
+      });
+      const vTrack = cam.getVideoTracks()[0];
+      localStreamRef.current.addTrack(vTrack);
+      pcRef.current.addTrack(vTrack, localStreamRef.current);
+      if (localVideoRef.current) localVideoRef.current.srcObject = localStreamRef.current;
+      const offer = await pcRef.current.createOffer();
+      await pcRef.current.setLocalDescription(offer);
+      signalChanRef.current.send({
+        type: 'broadcast',
+        event: 'renegotiate-offer',
+        payload: { from: user.id, sdp: offer },
+      });
+      setVideoActive(true);
+      setVideoOn(true);
+    } catch (e: any) {
+      toast.error(e?.message || 'Could not turn on video');
+    } finally {
+      setUpgrading(false);
+    }
+  };
+
+  // Move both parties into a Meet room so more people can be invited.
+  const addPeople = async () => {
+    if (!callId || !user) return;
+    const roomId = callId;
+    signalChanRef.current?.send({
+      type: 'broadcast',
+      event: 'move-to-meet',
+      payload: { from: user.id, roomId },
+    });
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/meet/${roomId}`);
+      toast.success('Meeting link copied — share it to invite others');
+    } catch {
+      toast.message('Opening group meeting…');
+    }
+    // Mark the 1:1 call as ended so it stops ringing / shows up correctly in logs.
+    await supabase
+      .from('calls')
+      .update({ status: 'ended', ended_at: new Date().toISOString() })
+      .eq('id', callId);
+    navigate(`/meet/${roomId}`);
+  };
+
   const format = (s: number) => {
     const m = Math.floor(s / 60);
     const r = s % 60;
@@ -300,7 +425,6 @@ export default function Call() {
   };
 
   const displayName = other?.full_name || other?.username || 'Unknown';
-  const isVideo = call?.call_type === 'video';
 
   const statusLabel =
     call?.status === 'ringing'
@@ -325,7 +449,7 @@ export default function Call() {
         }}
       />
 
-      {isVideo && (
+      {videoActive && (
         <video
           ref={remoteVideoRef}
           autoPlay
@@ -336,7 +460,7 @@ export default function Call() {
       <audio ref={remoteAudioRef} autoPlay />
 
       <div className="relative z-10 mt-16 flex flex-col items-center gap-4">
-        {!isVideo && (
+        {!videoActive && (
           <Avatar className="h-32 w-32 ring-4 ring-white/20">
             <AvatarImage src={other?.avatar_url} />
             <AvatarFallback className="bg-primary/20 text-4xl">
@@ -348,7 +472,7 @@ export default function Call() {
         <p className="text-sm text-white/80">{statusLabel}</p>
       </div>
 
-      {isVideo && videoOn && (
+      {videoActive && videoOn && (
         <video
           ref={localVideoRef}
           autoPlay
@@ -358,7 +482,7 @@ export default function Call() {
         />
       )}
 
-      <div className="relative z-10 mb-8 flex items-center gap-4 rounded-full border border-white/10 bg-black/40 p-3 backdrop-blur-xl">
+      <div className="relative z-10 mb-8 flex items-center gap-2 rounded-full border border-white/10 bg-black/40 p-3 backdrop-blur-xl">
         <Button
           size="icon"
           variant="secondary"
@@ -368,7 +492,7 @@ export default function Call() {
         >
           {muted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
         </Button>
-        {isVideo && (
+        {videoActive && (
           <Button
             size="icon"
             variant="secondary"
@@ -379,6 +503,38 @@ export default function Call() {
             {videoOn ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
           </Button>
         )}
+        {videoActive && (
+          <Button
+            size="icon"
+            variant="secondary"
+            className="h-14 w-14 rounded-full border-0 bg-white/10 hover:bg-white/20"
+            onClick={switchCamera}
+            aria-label="Switch camera"
+          >
+            <SwitchCamera className="h-5 w-5" />
+          </Button>
+        )}
+        {!videoActive && (
+          <Button
+            size="icon"
+            variant="secondary"
+            className="h-14 w-14 rounded-full border-0 bg-white/10 hover:bg-white/20"
+            onClick={upgradeToVideo}
+            disabled={upgrading || connState !== 'connected'}
+            aria-label="Turn on video"
+          >
+            <Video className="h-5 w-5" />
+          </Button>
+        )}
+        <Button
+          size="icon"
+          variant="secondary"
+          className="h-14 w-14 rounded-full border-0 bg-white/10 hover:bg-white/20"
+          onClick={addPeople}
+          aria-label="Add people to call"
+        >
+          <UserPlus className="h-5 w-5" />
+        </Button>
         <Button
           size="icon"
           variant="destructive"
