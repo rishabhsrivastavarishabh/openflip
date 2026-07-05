@@ -37,6 +37,7 @@ export default function Call() {
   const [videoActive, setVideoActive] = useState(false);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
   const [upgrading, setUpgrading] = useState(false);
+  const [speakerOn, setSpeakerOn] = useState(true);
 
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
