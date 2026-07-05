@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getFirstPostMediaUrl } from '@/lib/utils';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Grid3X3, Bookmark, Settings, UserPlus, UserMinus, MessageCircle, Plus, Film, Lock, Clock, Share2, MoreHorizontal, Pin, PlusSquare, Heart, Crown, Camera, Trash2 } from 'lucide-react';
+import { Grid3X3, Bookmark, Settings, UserPlus, UserMinus, MessageCircle, Plus, Film, Lock, Clock, Share2, MoreHorizontal, Pin, PlusSquare, Heart, Crown, Camera, Trash2, LayoutDashboard } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Seo } from '@/components/seo/Seo';
 import { Button } from '@/components/ui/button';
@@ -655,6 +655,12 @@ export default function ProfilePage() {
                     <>
                       <Button asChild variant="secondary" size="sm">
                         <Link to="/settings">Edit profile</Link>
+                      </Button>
+                      <Button asChild variant="gradient" size="sm">
+                        <Link to="/creator">
+                          <LayoutDashboard className="h-4 w-4 mr-1" />
+                          Creator Dashboard
+                        </Link>
                       </Button>
                       <Button variant="ghost" size="icon-sm" onClick={() => setShowShareSheet(true)}>
                         <Share2 className="h-5 w-5" />
