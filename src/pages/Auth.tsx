@@ -151,7 +151,13 @@ export default function AuthPage() {
 
     setLoading(false);
     toast.success('Welcome back!');
-    navigate('/');
+    // Honor an OAuth consent redirect if present.
+    const nextParam = new URLSearchParams(window.location.search).get('next');
+    if (nextParam && nextParam.startsWith('/')) {
+      navigate(nextParam);
+    } else {
+      navigate('/');
+    }
   };
 
   const handleSignUpStep1 = async (data: SignUpForm) => {
