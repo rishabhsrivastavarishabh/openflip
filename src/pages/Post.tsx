@@ -342,7 +342,7 @@ export default function PostPage() {
         description={postDesc}
         path={`/post/${post.id}`}
         type="article"
-        image={post.media_type === 'image' ? post.media_url : undefined}
+        image={post.media_type === 'image' ? getPostMediaUrls(post.media_url)[0] : undefined}
         jsonLd={{
           '@context': 'https://schema.org',
           '@type': 'SocialMediaPosting',
