@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { pingIndexNow } from '@/lib/indexnow';
 
 interface Draft {
   id: string;
@@ -277,13 +278,14 @@ export default function CreatePage() {
         if (uploadError) throw uploadError;
         const { data: { publicUrl } } = supabase.storage.from('media').getPublicUrl(fileName);
 
-        await supabase.from('reels').insert({
+        const { data: newReel } = await supabase.from('reels').insert({
           user_id: user.id, video_url: publicUrl,
           caption: caption.trim() || null,
           audio_name: audioName.trim() || null,
           audio_artist: audioArtist.trim() || null,
-        });
+        }).select('id').single();
         if (currentDraftId) await supabase.from('drafts').delete().eq('id', currentDraftId);
+        if (newReel?.id) pingIndexNow([`/reels`, `/reel/${newReel.id}`]);
         toast.success('Reel created!');
         navigate('/reels');
         return;
@@ -310,18 +312,20 @@ export default function CreatePage() {
             media_url: mediaUrl, media_type: 'image',
             caption: caption.trim() || null, location: location.trim() || null,
           }).eq('id', editPostId).eq('user_id', user.id);
+          pingIndexNow([`/post/${editPostId}`]);
           toast.success('Post updated!');
         } else {
-          await supabase.from('posts').insert({
+          const { data: newPost } = await supabase.from('posts').insert({
             user_id: user.id, media_url: mediaUrl, media_type: 'image',
             caption: caption.trim() || null, location: location.trim() || null,
-          });
+          }).select('id').single();
           if (alsoPostToStory && uploadedUrls[0]) {
             await supabase.from('stories').insert({
               user_id: user.id, media_url: uploadedUrls[0], media_type: 'image',
             });
           }
           if (currentDraftId) await supabase.from('drafts').delete().eq('id', currentDraftId);
+          if (newPost?.id) pingIndexNow([`/`, `/explore`, `/post/${newPost.id}`]);
           toast.success(alsoPostToStory ? 'Post and story created!' : 'Post created!');
         }
         navigate('/');
@@ -335,6 +339,7 @@ export default function CreatePage() {
             media_url: existingMediaUrl, media_type: existingMediaType,
             caption: caption.trim() || null, location: location.trim() || null,
           }).eq('id', editPostId).eq('user_id', user.id);
+          pingIndexNow([`/post/${editPostId}`]);
           toast.success('Post updated!');
         }
         navigate('/');

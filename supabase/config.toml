@@ -5,3 +5,5 @@ project_id = "rbgwfkmirxgsktwejlig"
     verify_jwt = false
   [functions.process-email-queue]
     verify_jwt = true
+  [functions.indexnow-ping]
+    verify_jwt = false
