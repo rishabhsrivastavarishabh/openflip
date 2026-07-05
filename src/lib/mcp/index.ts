@@ -7,7 +7,7 @@ import searchUsersTool from "./tools/search-users";
 // time). The direct `https://<ref>.supabase.co` host is required — mcp-js
 // validates the token issuer against the discovery document.
 const projectRef =
-  (import.meta as any).env?.VITE_SUPABASE_PROJECT_ID ?? "project-ref-unset";
+  import.meta.env.VITE_SUPABASE_PROJECT_ID ?? "project-ref-unset";
 
 export default defineMcp({
   name: "openflip-mcp",
