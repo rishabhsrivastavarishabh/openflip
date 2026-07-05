@@ -930,6 +930,65 @@ export default function SettingsPage() {
             </div>
           ))}
 
+          {/* Get Openflip: Android APK + Web help */}
+          <div className="space-y-1">
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1 mb-2">
+              Get Openflip
+            </h2>
+            <div className="rounded-2xl border border-border p-4 bg-gradient-to-br from-primary/5 to-transparent">
+              <div className="flex items-start gap-4">
+                <div className="shrink-0 rounded-xl bg-white p-2 border border-border">
+                  {ANDROID_APK_URL ? (
+                    <QRCodeSVG value={ANDROID_APK_URL} size={96} includeMargin={false} />
+                  ) : (
+                    <div className="w-24 h-24 grid place-items-center text-[10px] text-muted-foreground text-center">
+                      QR unavailable
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0 space-y-2">
+                  <div>
+                    <p className="font-semibold text-sm">Download Android App</p>
+                    <p className="text-xs text-muted-foreground">
+                      Scan the QR with your phone camera, or tap the button to open the APK in a new tab.
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    className="w-full"
+                    onClick={handleDownloadApk}
+                    aria-label="Download Openflip Android app in a new tab"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download APK
+                  </Button>
+                </div>
+              </div>
+
+              <Separator className="my-4" />
+
+              <div className="flex items-start gap-3">
+                <div className="shrink-0 w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
+                  <Globe className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm">Use on Web</p>
+                  <p className="text-xs text-muted-foreground">
+                    No install needed — Openflip works right in your browser at{' '}
+                    <a
+                      href="https://www.openflip.in"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary underline underline-offset-2"
+                    >
+                      openflip.in
+                    </a>
+                    . Add it to your home screen for an app-like experience.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <Separator />
 
