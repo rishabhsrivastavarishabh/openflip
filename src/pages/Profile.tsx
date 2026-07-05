@@ -155,6 +155,74 @@ export default function ProfilePage() {
     }
   };
 
+  // Cover picture — upload/replace directly from the profile page (own profile only).
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !user) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      toast.error('Cover image must be under 8MB');
+      return;
+    }
+    setSavingCover(true);
+    try {
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const fileName = `${user.id}/cover.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from('media')
+        .upload(fileName, file, { upsert: true, contentType: file.type });
+      if (uploadError) throw uploadError;
+      const { data: { publicUrl } } = supabase.storage.from('media').getPublicUrl(fileName);
+      const cover_url = `${publicUrl}?t=${Date.now()}`;
+      const { error } = await supabase
+        .from('profiles')
+        .update({ cover_url } as any)
+        .eq('id', user.id);
+      if (error) throw error;
+      setProfile((prev) => (prev ? ({ ...prev, cover_url } as any) : prev));
+      toast.success('Cover updated');
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to update cover');
+    } finally {
+      setSavingCover(false);
+    }
+  };
+
+  const handleCoverRemove = async () => {
+    if (!user) return;
+    setSavingCover(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ cover_url: null } as any)
+        .eq('id', user.id);
+      if (error) throw error;
+      // Best-effort cleanup of stored cover files.
+      try {
+        const { data: files } = await supabase.storage.from('media').list(user.id, { limit: 20 });
+        const coverFiles = (files || [])
+          .filter((f) => f.name.startsWith('cover.'))
+          .map((f) => `${user.id}/${f.name}`);
+        if (coverFiles.length > 0) {
+          await supabase.storage.from('media').remove(coverFiles);
+        }
+      } catch (storageErr) {
+        console.warn('Cover storage cleanup skipped:', storageErr);
+      }
+      setProfile((prev) => (prev ? ({ ...prev, cover_url: null } as any) : prev));
+      toast.success('Cover removed');
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to remove cover');
+    } finally {
+      setSavingCover(false);
+    }
+  };
+
+
   const fetchPosts = async () => {
     const { data: postsData } = await supabase
       .from('posts')
