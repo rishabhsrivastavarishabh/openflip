@@ -892,7 +892,7 @@ export default function ProfilePage() {
                       className="aspect-square relative group overflow-hidden rounded-xl sm:rounded-2xl"
                     >
                       <ProtectedMedia
-                        src={post.media_url}
+                        src={getFirstPostMediaUrl(post.media_url)}
                         type={post.media_type}
                         className="w-full h-full object-cover"
                       />
