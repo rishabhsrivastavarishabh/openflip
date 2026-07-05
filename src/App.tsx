@@ -93,6 +93,7 @@ const App = () => (
               <Route path="/create" element={<Create />} />
               <Route path="/create/reel" element={<CreateReel />} />
               <Route path="/reels" element={<Reels />} />
+              <Route path="/reels/:reelId" element={<Reels />} />
               <Route path="/post/:postId" element={<Post />} />
               <Route path="/profile/:username" element={<Profile />} />
               <Route path="/profile/:username/followers" element={<Followers />} />
