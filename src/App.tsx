@@ -118,6 +118,7 @@ const App = () => (
 
                 <Route path="privacy" element={<PrivacyPage />} />
                 <Route path="notifications" element={<NotificationsPage />} />
+                <Route path="calls" element={<CallsPage />} />
                 <Route path="appearance" element={<AppearancePage />} />
                 <Route path="more" element={<Settings />} />
                 <Route path="agent-integrations" element={<AgentIntegrations />} />
