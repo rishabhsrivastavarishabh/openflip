@@ -99,6 +99,14 @@ export default function Call() {
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
   const [upgrading, setUpgrading] = useState(false);
   const [speakerOn, setSpeakerOn] = useState(true);
+  const [themeId, setThemeId] = useState<string>(() => {
+    try { return localStorage.getItem(CALL_THEME_KEY) || 'midnight'; } catch { return 'midnight'; }
+  });
+  const theme = CALL_THEMES.find(t => t.id === themeId) ?? CALL_THEMES[0];
+  const chooseTheme = (id: string) => {
+    setThemeId(id);
+    try { localStorage.setItem(CALL_THEME_KEY, id); } catch {}
+  };
 
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
