@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getFirstPostMediaUrl } from '@/lib/utils';
 import { Search, TrendingUp, Hash, User, Film, Grid3X3 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
