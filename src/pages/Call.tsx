@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { PhoneOff, Mic, MicOff, Video, VideoOff, SwitchCamera, UserPlus } from 'lucide-react';
+import { PhoneOff, Mic, MicOff, Video, VideoOff, SwitchCamera, UserPlus, Volume2, VolumeX } from 'lucide-react';
 import { toast } from 'sonner';
 
 // STUN for direct P2P + free public TURN relays for NAT/firewall traversal.
