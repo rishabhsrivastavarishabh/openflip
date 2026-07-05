@@ -1,14 +1,20 @@
 import { Home, Clapperboard, MessagesSquare, PlusCircle } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnreadCounts } from '@/hooks/useUnreadCounts';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { AccountSwitcher } from '@/components/account/AccountSwitcher';
 
 export function MobileNav() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, profile } = useAuth();
   const { unreadMessages } = useUnreadCounts();
+  const [showAccountSwitcher, setShowAccountSwitcher] = useState(false);
+  const lastTapRef = useRef<number>(0);
+  const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const profileHref = profile ? `/profile/${profile.username}` : '/auth';
 
@@ -19,6 +25,28 @@ export function MobileNav() {
     { icon: MessagesSquare, href: '/messages', label: 'Messages', badge: unreadMessages, isProfile: false },
     { icon: null, href: profileHref, label: 'Profile', badge: 0, isProfile: true },
   ];
+
+  const handleProfileClick = (e: React.MouseEvent, href: string) => {
+    e.preventDefault();
+    const now = Date.now();
+    const delta = now - lastTapRef.current;
+    if (delta > 0 && delta < 350) {
+      // Double tap detected
+      if (tapTimerRef.current) {
+        clearTimeout(tapTimerRef.current);
+        tapTimerRef.current = null;
+      }
+      lastTapRef.current = 0;
+      setShowAccountSwitcher(true);
+      return;
+    }
+    lastTapRef.current = now;
+    if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
+    tapTimerRef.current = setTimeout(() => {
+      tapTimerRef.current = null;
+      navigate(href);
+    }, 260);
+  };
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 glass-strong border-t md:hidden">
@@ -31,8 +59,9 @@ export function MobileNav() {
             <Link
               key={item.label}
               to={item.href}
-              aria-label={item.label}
+              aria-label={item.isProfile ? `${item.label} (double-tap to switch account)` : item.label}
               aria-current={isActive ? 'page' : undefined}
+              onClick={item.isProfile ? (e) => handleProfileClick(e, item.href) : undefined}
               className={cn(
                 "flex items-center justify-center w-12 h-12 rounded-xl transition-all duration-200 relative",
                 isActive 
@@ -66,6 +95,7 @@ export function MobileNav() {
           );
         })}
       </div>
+      <AccountSwitcher open={showAccountSwitcher} onOpenChange={setShowAccountSwitcher} />
     </nav>
   );
 }
