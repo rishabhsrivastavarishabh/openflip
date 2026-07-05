@@ -425,7 +425,6 @@ export default function Call() {
   };
 
   const displayName = other?.full_name || other?.username || 'Unknown';
-  const isVideo = call?.call_type === 'video';
 
   const statusLabel =
     call?.status === 'ringing'
