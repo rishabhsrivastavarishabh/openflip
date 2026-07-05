@@ -33,6 +33,7 @@ export function MobilePostViewer({ postId, isOpen, onClose }: MobilePostViewerPr
   const [showShareSheet, setShowShareSheet] = useState(false);
   const [comments, setComments] = useState<any[]>([]);
   const [commentText, setCommentText] = useState('');
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   useEffect(() => {
     if (isOpen && postId) {
