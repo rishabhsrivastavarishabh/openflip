@@ -158,19 +158,15 @@ export function usePushNotifications() {
           showNotification(senderName, {
             body: preview,
             tag: `conv-${msg.conversation_id}`,
-            silent: true, // we play our own message tone below so the OS tone doesn't overlap
+            // Let the device's native notification sound play — do not mute
+            // and do not overlay an in-app tone (server also dispatches an OS
+            // push for background delivery).
+            silent: settings?.notification_sound === false,
             icon: sender?.avatar_url || '/favicon.ico',
             data: { url: `/messages/${msg.conversation_id}` },
           });
-          // Play the user's chosen message ringtone (distinct from call ringtone).
-          if ((settings as any)?.notification_sound !== false) {
-            const tone = (settings as any)?.message_ringtone || 'chime';
-            const { MESSAGE_TONES, playPattern } = await import('@/lib/callSounds');
-            const h = playPattern(MESSAGE_TONES[tone], { loop: false, volume: 0.25 });
-            setTimeout(() => h.stop(), 1500);
-          }
           // Background web push for other devices / when tab is closed is
-          // dispatched by the sender in useSendEncryptedMessage.
+          // dispatched server-side by a DB trigger on messages.
         },
       )
       .subscribe();

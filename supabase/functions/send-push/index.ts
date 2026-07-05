@@ -21,6 +21,7 @@ const BodySchema = z.object({
   tag: z.string().max(200).optional(),
   type: z.string().max(50).optional(),
   requireInteraction: z.boolean().optional(),
+  silent: z.boolean().optional(),
   icon: z.string().url().optional(),
 });
 
@@ -74,7 +75,7 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    const { user_id, title, body, data, tag, type, requireInteraction, icon } = parsed.data;
+    const { user_id, title, body, data, tag, type, requireInteraction, silent, icon } = parsed.data;
 
     const { data: subs, error: subsErr } = await admin
       .from('push_subscriptions')
@@ -88,6 +89,11 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Calls play their own in-app ringtone via IncomingCallDialog, so we tell
+    // the OS to stay silent for call pushes. Message and social pushes use the
+    // device's default notification sound (silent: false).
+    const effectiveSilent = silent ?? (type === 'call');
+
     const payload = JSON.stringify({
       title,
       body: body ?? '',
@@ -95,6 +101,7 @@ Deno.serve(async (req) => {
       data: data ?? {},
       type,
       icon,
+      silent: effectiveSilent,
       requireInteraction: requireInteraction ?? type === 'call',
     });
 
