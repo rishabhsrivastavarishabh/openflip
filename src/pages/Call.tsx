@@ -687,11 +687,27 @@ export default function Call() {
     setUpgrading(true);
     try {
       const cam = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: facingMode }, width: 640, height: 480 },
+        video: { facingMode: { ideal: facingMode }, ...VIDEO_CONSTRAINTS_4K },
       });
       const vTrack = cam.getVideoTracks()[0];
       localStreamRef.current.addTrack(vTrack);
-      pcRef.current.addTrack(vTrack, localStreamRef.current);
+
+      // Reuse an existing recv-only video transceiver if one exists; else add one.
+      // Using replaceTrack on an existing transceiver avoids creating a duplicate
+      // m-line, which was breaking the upgrade renegotiation.
+      const existingTx = pcRef.current
+        .getTransceivers()
+        .find((t) => (t.receiver.track?.kind === 'video' || t.sender.track?.kind === 'video') && !t.sender.track);
+      let vSender: RTCRtpSender;
+      if (existingTx) {
+        await existingTx.sender.replaceTrack(vTrack);
+        try { existingTx.direction = 'sendrecv'; } catch {}
+        vSender = existingTx.sender;
+      } else {
+        vSender = pcRef.current.addTrack(vTrack, localStreamRef.current);
+      }
+      tuneVideoSender(vSender);
+
       if (localVideoRef.current) localVideoRef.current.srcObject = localStreamRef.current;
       const offer = await pcRef.current.createOffer();
       await pcRef.current.setLocalDescription(offer);
@@ -703,6 +719,7 @@ export default function Call() {
       setVideoActive(true);
       setVideoOn(true);
     } catch (e: any) {
+      console.error('upgradeToVideo failed', e);
       toast.error(e?.message || 'Could not turn on video');
     } finally {
       setUpgrading(false);
