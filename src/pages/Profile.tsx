@@ -890,7 +890,19 @@ export default function ProfilePage() {
                   <p className="text-muted-foreground">No posts yet</p>
                 </div>
               )}
+
+              {/* Infinite scroll sentinel + status */}
+              {posts.length > 0 && (
+                <div ref={postsSentinelRef} className="py-6 text-center text-xs text-muted-foreground">
+                  {postsLoadingMore
+                    ? 'Loading more posts…'
+                    : postsHasMore
+                      ? 'Scroll for more'
+                      : 'You\'ve reached the end'}
+                </div>
+              )}
             </TabsContent>
+
 
           <TabsContent value="reels" className="mt-0">
             {reels.length > 0 ? (
