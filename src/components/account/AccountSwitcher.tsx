@@ -33,13 +33,16 @@ export function AccountSwitcher({ open, onOpenChange }: AccountSwitcherProps) {
 
     const target = accounts.find(a => a.id === accountId);
     setSwitching(true);
-    // Make sure the CURRENT account is persisted before we sign it out —
-    // otherwise, if the auth listener never got a chance to save it, we'd
-    // lose track of who was signed in.
+    // Persist CURRENT account (with fresh tokens) before switching so we can
+    // silently switch back later.
     await saveCurrentSession();
-    const success = await switchAccount(accountId);
+    const result = await switchAccount(accountId);
 
-    if (success) {
+    if (result === 'switched') {
+      toast.success(target ? `Switched to @${target.username}` : 'Account switched');
+      onOpenChange(false);
+      navigate('/');
+    } else if (result === 'needs_auth') {
       toast.info(target ? `Sign in to continue as @${target.username}` : 'Sign in to continue');
       onOpenChange(false);
       navigate('/auth');
