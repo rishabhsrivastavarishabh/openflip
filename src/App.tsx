@@ -65,6 +65,7 @@ import { IncomingCallDialog } from "./components/calls/IncomingCallDialog";
 import { useAuth as useAuthForCall } from "@/contexts/AuthContext";
 import NotFound from "./pages/NotFound";
 import OAuthConsent from "./pages/OAuthConsent";
+import Creator from "./pages/Creator";
 
 function GlobalCallOverlay() {
   const { user } = useAuthForCall();
