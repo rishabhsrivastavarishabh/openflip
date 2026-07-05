@@ -463,37 +463,59 @@ export default function Call() {
         // ── Renegotiation: peer added video mid-call (audio→video upgrade). ──
         .on('broadcast', { event: 'renegotiate-offer' }, async ({ payload }) => {
           if (payload.from === user.id || !pcRef.current || !localStreamRef.current) return;
-          // Ensure we also start sending our camera so it's a two-way video call.
-          if (localStreamRef.current.getVideoTracks().length === 0) {
-            try {
-              const cam = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: { ideal: 'user' }, width: 640, height: 480 },
-              });
-              const v = cam.getVideoTracks()[0];
-              localStreamRef.current.addTrack(v);
-              pcRef.current.addTrack(v, localStreamRef.current);
-              if (localVideoRef.current) localVideoRef.current.srcObject = localStreamRef.current;
-            } catch {
-              // No camera / denied — still accept the incoming video (receive-only).
+          try {
+            // CRITICAL: apply remote SDP FIRST so the video m-line exists,
+            // then attach our camera onto that transceiver. Doing it in the
+            // opposite order created a stray m-line and the upgrade failed.
+            await pcRef.current.setRemoteDescription(new RTCSessionDescription(payload.sdp));
+
+            // Also start sending our camera so it's a two-way video call.
+            if (localStreamRef.current.getVideoTracks().length === 0) {
+              try {
+                const cam = await navigator.mediaDevices.getUserMedia({
+                  video: { facingMode: { ideal: 'user' }, ...VIDEO_CONSTRAINTS_4K },
+                });
+                const v = cam.getVideoTracks()[0];
+                localStreamRef.current.addTrack(v);
+                // Prefer reusing the transceiver the offer created (avoids new m-line).
+                const videoTx = pcRef.current
+                  .getTransceivers()
+                  .find((t) => t.receiver.track?.kind === 'video' && !t.sender.track);
+                if (videoTx) {
+                  await videoTx.sender.replaceTrack(v);
+                  try { videoTx.direction = 'sendrecv'; } catch {}
+                  tuneVideoSender(videoTx.sender);
+                } else {
+                  const s = pcRef.current.addTrack(v, localStreamRef.current);
+                  tuneVideoSender(s);
+                }
+                if (localVideoRef.current) localVideoRef.current.srcObject = localStreamRef.current;
+              } catch {
+                // No camera / denied — still accept the incoming video (receive-only).
+              }
             }
+
+            const ans = await pcRef.current.createAnswer();
+            await pcRef.current.setLocalDescription(ans);
+            chan.send({
+              type: 'broadcast',
+              event: 'renegotiate-answer',
+              payload: { from: user.id, sdp: ans },
+            });
+            setVideoActive(true);
+            toast.message('Call upgraded to video');
+          } catch (e) {
+            console.error('renegotiate-offer failed', e);
           }
-          await pcRef.current.setRemoteDescription(new RTCSessionDescription(payload.sdp));
-          const ans = await pcRef.current.createAnswer();
-          await pcRef.current.setLocalDescription(ans);
-          chan.send({
-            type: 'broadcast',
-            event: 'renegotiate-answer',
-            payload: { from: user.id, sdp: ans },
-          });
-          setVideoActive(true);
-          toast.message('Call upgraded to video');
         })
         .on('broadcast', { event: 'renegotiate-answer' }, async ({ payload }) => {
           if (payload.from === user.id || !pcRef.current) return;
-          if (pcRef.current.signalingState === 'stable') return;
+          if (pcRef.current.signalingState !== 'have-local-offer') return;
           try {
             await pcRef.current.setRemoteDescription(new RTCSessionDescription(payload.sdp));
-          } catch {}
+          } catch (e) {
+            console.error('renegotiate-answer failed', e);
+          }
         })
         // ── Convert 1:1 call to a group meeting so more people can join. ──
         .on('broadcast', { event: 'move-to-meet' }, ({ payload }) => {
