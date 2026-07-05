@@ -627,7 +627,7 @@ export default function ConversationPage() {
           </button>
         ) : <Skeleton className="w-24 h-4" />}
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           {!isGroupChat && participant && (
             <>
               <Button
