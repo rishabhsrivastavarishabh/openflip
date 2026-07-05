@@ -422,10 +422,13 @@ export type Database = {
           created_by: string | null
           disappearing_messages_timer: number | null
           group_avatar_url: string | null
+          group_description: string | null
           group_name: string | null
           id: string
           is_broadcast: boolean | null
           is_group: boolean | null
+          only_admins_can_edit_info: boolean
+          only_admins_can_message: boolean
           updated_at: string | null
         }
         Insert: {
@@ -434,10 +437,13 @@ export type Database = {
           created_by?: string | null
           disappearing_messages_timer?: number | null
           group_avatar_url?: string | null
+          group_description?: string | null
           group_name?: string | null
           id?: string
           is_broadcast?: boolean | null
           is_group?: boolean | null
+          only_admins_can_edit_info?: boolean
+          only_admins_can_message?: boolean
           updated_at?: string | null
         }
         Update: {
@@ -446,10 +452,13 @@ export type Database = {
           created_by?: string | null
           disappearing_messages_timer?: number | null
           group_avatar_url?: string | null
+          group_description?: string | null
           group_name?: string | null
           id?: string
           is_broadcast?: boolean | null
           is_group?: boolean | null
+          only_admins_can_edit_info?: boolean
+          only_admins_can_message?: boolean
           updated_at?: string | null
         }
         Relationships: []
