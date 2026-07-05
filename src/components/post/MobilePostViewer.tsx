@@ -9,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
-import { cn } from '@/lib/utils';
+import { cn, getPostMediaUrls } from '@/lib/utils';
 import { ProtectedMedia } from '@/components/media/ProtectedMedia';
 import { ShareSheet } from '@/components/share/ShareSheet';
 import { toast } from 'sonner';
