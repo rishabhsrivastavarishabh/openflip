@@ -4,8 +4,19 @@
  */
 
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Smartphone, Monitor, Trash2, Shield } from 'lucide-react';
+import { ArrowLeft, Smartphone, Monitor, Trash2, Shield, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useDeviceKeys } from '@/hooks/useDeviceKeys';
@@ -25,9 +36,10 @@ interface DeviceManagementProps {
 }
 
 export function DeviceManagement({ onBack }: DeviceManagementProps) {
-  const { deviceId, listDevices, removeDevice } = useDeviceKeys();
+  const { deviceId, listDevices, removeDevice, reinitialize } = useDeviceKeys();
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
+  const [resetting, setResetting] = useState(false);
 
   useEffect(() => {
     loadDevices();
@@ -47,6 +59,26 @@ export function DeviceManagement({ onBack }: DeviceManagementProps) {
     await removeDevice(id);
     toast.success('Device removed');
     loadDevices();
+  };
+
+  const handleResetEncryption = async () => {
+    setResetting(true);
+    try {
+      // Remove the current device (which also wipes its local keypair) and
+      // then reinitialize — that generates a fresh keypair and registers a
+      // brand-new device with the server.
+      if (deviceId) {
+        await removeDevice(deviceId);
+      } else {
+        await reinitialize();
+      }
+      toast.success('Encryption keys regenerated for this device');
+      await loadDevices();
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to reset encryption');
+    } finally {
+      setResetting(false);
+    }
   };
 
   return (
@@ -116,6 +148,40 @@ export function DeviceManagement({ onBack }: DeviceManagementProps) {
           ))
         )}
       </div>
+
+      <Card>
+        <CardContent className="p-4 space-y-3">
+          <div className="flex items-start gap-3">
+            <RefreshCw className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">Set up encryption on this device</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Regenerate this device's encryption keys. Existing messages that were encrypted for the old key on this device will no longer be readable here.
+              </p>
+            </div>
+          </div>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="sm" disabled={resetting} className="w-full">
+                <RefreshCw className={`w-4 h-4 mr-2 ${resetting ? 'animate-spin' : ''}`} />
+                {resetting ? 'Regenerating…' : 'Re-run encryption setup'}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Reset encryption keys?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  A fresh keypair will be generated for this device and registered with the server. Older encrypted messages on this device may become unreadable. Continue?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleResetEncryption}>Reset keys</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </CardContent>
+      </Card>
     </div>
   );
 }

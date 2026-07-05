@@ -16,18 +16,19 @@ interface MultiAccountContextType {
   currentAccount: StoredAccount | null;
   addAccount: (account: StoredAccount) => void;
   removeAccount: (accountId: string) => void;
-  switchAccount: (accountId: string) => Promise<boolean>;
-  updateCurrentAccount: (profile: Profile) => void;
   /**
-   * Force a save of the currently-signed-in user into the stored accounts
-   * list. Call this right after a successful sign-in / sign-up so we don't
-   * rely solely on the auth event listener, which can miss saves on the
-   * second step of the Switch Account flow.
+   * Switch to a saved account. Returns:
+   *  - 'switched' — session restored via cached refresh token, user is already signed in.
+   *  - 'needs_auth' — no valid cached session; caller should route to /auth.
+   *  - 'failed'    — unexpected error.
    */
+  switchAccount: (accountId: string) => Promise<'switched' | 'needs_auth' | 'failed'>;
+  updateCurrentAccount: (profile: Profile) => void;
   saveCurrentSession: () => Promise<void>;
 }
 
 const STORAGE_KEY = 'openflip_accounts';
+const SESSION_STORE_KEY = 'openflip_account_sessions';
 
 const MultiAccountContext = createContext<MultiAccountContextType | undefined>(undefined);
 
@@ -42,9 +43,28 @@ function readStored(): StoredAccount[] {
   }
 }
 
+type SessionMap = Record<string, { access_token: string; refresh_token: string }>;
+
+function readSessions(): SessionMap {
+  try {
+    const raw = localStorage.getItem(SESSION_STORE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeSessions(map: SessionMap) {
+  try {
+    localStorage.setItem(SESSION_STORE_KEY, JSON.stringify(map));
+  } catch {
+    // ignore
+  }
+}
+
 export function MultiAccountProvider({ children }: { children: ReactNode }) {
-  // Hydrate synchronously on first render so the AccountSwitcher can render
-  // the previously-saved list immediately (avoids the sheet flashing empty).
   const [accounts, setAccounts] = useState<StoredAccount[]>(() => readStored());
   const [currentAccount, setCurrentAccount] = useState<StoredAccount | null>(() => {
     const list = readStored();
@@ -52,8 +72,6 @@ export function MultiAccountProvider({ children }: { children: ReactNode }) {
     return [...list].sort((a, b) => b.lastUsed - a.lastUsed)[0] ?? null;
   });
 
-  // Keep a ref of the current accounts so we don't rebuild callbacks on
-  // every state change (which would resubscribe the auth listener).
   const accountsRef = useRef(accounts);
   useEffect(() => {
     accountsRef.current = accounts;
@@ -79,13 +97,6 @@ export function MultiAccountProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  /**
-   * Read the current auth session and save it into the stored-accounts list.
-   * Fetches the user's profile for username/avatar; if that fails (e.g. right
-   * after signup before the trigger row is visible), falls back to session
-   * user metadata so we ALWAYS save something for the freshly-authenticated
-   * user.
-   */
   const saveCurrentSession = useCallback(async () => {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
@@ -126,31 +137,36 @@ export function MultiAccountProvider({ children }: { children: ReactNode }) {
 
       persistAccount(account);
       setCurrentAccount(account);
+
+      // Also cache the tokens so we can restore this session later without
+      // asking for the password. Refresh tokens rotate on every use, so we
+      // grab the freshest pair now.
+      if (session.access_token && session.refresh_token) {
+        const sessions = readSessions();
+        sessions[userId] = {
+          access_token: session.access_token,
+          refresh_token: session.refresh_token,
+        };
+        writeSessions(sessions);
+      }
     } catch (e) {
       console.error('MultiAccount: saveCurrentSession failed', e);
     }
   }, [persistAccount]);
 
   useEffect(() => {
-    // Initial sync — captures a session that was already restored from
-    // storage before this provider mounted.
     saveCurrentSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      // CRITICAL: never make async Supabase calls directly inside this
-      // callback — it can deadlock. Defer via setTimeout(..., 0). This was
-      // the root cause of new accounts not being saved on the second step
-      // (the /auth page) of the Switch Account flow.
       if (event === 'SIGNED_IN' && session?.user) {
-        setTimeout(() => {
-          saveCurrentSession();
-        }, 0);
+        setTimeout(() => saveCurrentSession(), 0);
+      } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+        // Keep the cached refresh token fresh so silent switching keeps working.
+        setTimeout(() => saveCurrentSession(), 0);
       } else if (event === 'SIGNED_OUT') {
         setCurrentAccount(null);
       } else if (event === 'USER_UPDATED' && session?.user) {
-        setTimeout(() => {
-          saveCurrentSession();
-        }, 0);
+        setTimeout(() => saveCurrentSession(), 0);
       }
     });
 
@@ -165,16 +181,47 @@ export function MultiAccountProvider({ children }: { children: ReactNode }) {
       } catch {}
       return updated;
     });
+    // Drop the cached session too.
+    const sessions = readSessions();
+    if (sessions[accountId]) {
+      delete sessions[accountId];
+      writeSessions(sessions);
+    }
     setCurrentAccount((cur) => (cur?.id === accountId ? null : cur));
   }, []);
 
-  const switchAccount = useCallback(async (accountId: string): Promise<boolean> => {
+  const switchAccount = useCallback(async (accountId: string): Promise<'switched' | 'needs_auth' | 'failed'> => {
     const account = accountsRef.current.find((a) => a.id === accountId);
-    if (!account) return false;
-    // Bump lastUsed so the target account is highlighted on the auth page.
+    if (!account) return 'failed';
+
     persistAccount({ ...account, lastUsed: Date.now() });
-    await supabase.auth.signOut();
-    return true;
+
+    const sessions = readSessions();
+    const cached = sessions[accountId];
+
+    // Try silent switch via cached refresh token first.
+    if (cached?.refresh_token) {
+      try {
+        // Sign out the current account first so setSession replaces cleanly.
+        await supabase.auth.signOut();
+        const { data, error } = await supabase.auth.setSession({
+          access_token: cached.access_token,
+          refresh_token: cached.refresh_token,
+        });
+        if (!error && data.session?.user?.id === accountId) {
+          return 'switched';
+        }
+        // Refresh token invalid/expired — drop it so we don't keep trying.
+        delete sessions[accountId];
+        writeSessions(sessions);
+      } catch (e) {
+        console.warn('MultiAccount: silent switch failed', e);
+      }
+    } else {
+      await supabase.auth.signOut();
+    }
+
+    return 'needs_auth';
   }, [persistAccount]);
 
   const updateCurrentAccount = useCallback((profile: Profile) => {

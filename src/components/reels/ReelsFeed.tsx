@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Reel } from '@/types/database';
@@ -11,6 +12,7 @@ interface ReelsFeedProps {
 
 export function ReelsFeed({ initialReels }: ReelsFeedProps) {
   const { user } = useAuth();
+  const { reelId: routeReelId } = useParams<{ reelId?: string }>();
   const [reels, setReels] = useState<Reel[]>(initialReels || []);
   const [loading, setLoading] = useState(!initialReels);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -22,6 +24,34 @@ export function ReelsFeed({ initialReels }: ReelsFeedProps) {
       fetchReels();
     }
   }, []);
+
+  // Reflect the currently-viewing reel in the URL bar without triggering
+  // React Router re-renders (which would re-mount the feed).
+  useEffect(() => {
+    const reel = reels[activeIndex];
+    if (!reel) return;
+    const target = `/reels/${reel.id}`;
+    if (window.location.pathname !== target) {
+      window.history.replaceState(null, '', target);
+    }
+  }, [activeIndex, reels]);
+
+  // If the page loads with a :reelId in the URL, jump to that reel after
+  // reels are fetched.
+  useEffect(() => {
+    if (!routeReelId || reels.length === 0) return;
+    const idx = reels.findIndex(r => r.id === routeReelId);
+    if (idx >= 0 && idx !== activeIndex) {
+      setActiveIndex(idx);
+      // Scroll snap will follow once containerRef is ready.
+      requestAnimationFrame(() => {
+        const container = containerRef.current;
+        if (!container) return;
+        container.scrollTo({ top: idx * container.clientHeight });
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routeReelId, reels.length]);
 
   // Keyboard navigation
   useEffect(() => {
