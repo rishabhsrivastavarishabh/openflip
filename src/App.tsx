@@ -67,6 +67,7 @@ import NotFound from "./pages/NotFound";
 import OAuthConsent from "./pages/OAuthConsent";
 import Creator from "./pages/Creator";
 import AgentIntegrations from "./pages/AgentIntegrations";
+import Download from "./pages/Download";
 
 function GlobalCallOverlay() {
   const { user } = useAuthForCall();
