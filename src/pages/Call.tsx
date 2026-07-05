@@ -418,6 +418,39 @@ export default function Call() {
     navigate(`/meet/${roomId}`);
   };
 
+  // Downgrade an in-progress video call back to audio-only: stop sending video,
+  // hide the video UI locally, and tell the peer to do the same.
+  const downgradeToAudio = async () => {
+    if (!videoActive || !pcRef.current || !localStreamRef.current) return;
+    try {
+      // Stop and remove local video tracks.
+      const videoTracks = localStreamRef.current.getVideoTracks();
+      videoTracks.forEach((t) => {
+        localStreamRef.current?.removeTrack(t);
+        t.stop();
+      });
+      // Blank the video sender so the peer stops receiving frames without renegotiating.
+      const sender = pcRef.current.getSenders().find((s) => s.track?.kind === 'video');
+      if (sender) {
+        try { await sender.replaceTrack(null); } catch {}
+      }
+      if (localVideoRef.current) localVideoRef.current.srcObject = null;
+      if (user && signalChanRef.current) {
+        signalChanRef.current.send({
+          type: 'broadcast',
+          event: 'downgrade-to-audio',
+          payload: { from: user.id },
+        });
+      }
+      setVideoActive(false);
+      setVideoOn(true);
+      toast.message('Switched to audio only');
+    } catch (e: any) {
+      toast.error(e?.message || 'Could not switch to audio');
+    }
+  };
+
+
   const format = (s: number) => {
     const m = Math.floor(s / 60);
     const r = s % 60;
