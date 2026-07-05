@@ -67,6 +67,7 @@ import NotFound from "./pages/NotFound";
 import OAuthConsent from "./pages/OAuthConsent";
 import Creator from "./pages/Creator";
 import AgentIntegrations from "./pages/AgentIntegrations";
+import Download from "./pages/Download";
 
 function GlobalCallOverlay() {
   const { user } = useAuthForCall();
@@ -125,6 +126,7 @@ const App = () => (
               <Route path="/privacy" element={<PrivacyPolicy />} />
               <Route path="/terms" element={<TermsOfService />} />
               <Route path="/how-it-works" element={<HowItWorks />} />
+              <Route path="/download" element={<Download />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             <GlobalCallOverlay />
