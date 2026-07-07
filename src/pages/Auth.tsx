@@ -111,6 +111,11 @@ export default function AuthPage() {
 
 
   const handleSignIn = async (data: SignInForm) => {
+    if (!(await verifyRecaptchaToken(captchaToken))) {
+      setCaptchaToken(null);
+      toast.error('Please complete the reCAPTCHA challenge');
+      return;
+    }
     setLoading(true);
     let email = data.identifier.trim();
     if (!email.includes('@')) {
