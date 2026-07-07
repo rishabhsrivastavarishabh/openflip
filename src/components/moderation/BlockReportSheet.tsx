@@ -8,6 +8,8 @@ import { AlertTriangle, Ban, Flag } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { Recaptcha } from '@/components/auth/Recaptcha';
+import { verifyRecaptchaToken } from '@/lib/recaptcha';
 
 interface BlockReportSheetProps {
   open: boolean;
@@ -44,6 +46,7 @@ export function BlockReportSheet({
   const [selectedReason, setSelectedReason] = useState('');
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   const handleBlock = async () => {
     if (!user) return;
@@ -97,6 +100,11 @@ export function BlockReportSheet({
 
   const handleReport = async () => {
     if (!user || !selectedReason) return;
+    if (!(await verifyRecaptchaToken(captchaToken))) {
+      setCaptchaToken(null);
+      toast.error('Please complete the reCAPTCHA challenge');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -114,6 +122,7 @@ export function BlockReportSheet({
       toast.success('Report submitted. We will review this shortly.');
       setSelectedReason('');
       setDescription('');
+      setCaptchaToken(null);
       setMode('menu');
       onOpenChange(false);
     } catch (error) {
