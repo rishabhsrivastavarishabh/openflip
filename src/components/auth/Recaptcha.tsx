@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-export const RECAPTCHA_SITE_KEY = '6LcD3kgtAAAAAO2S_BtPMzE6D7bKagtS8ppiTOAe';
+export const RECAPTCHA_SITE_KEY = '6LcRBUktAAAAAIQkeDOYGcWlc2MKkIYqVnb6SdSM';
 
 declare global {
   interface Window {
