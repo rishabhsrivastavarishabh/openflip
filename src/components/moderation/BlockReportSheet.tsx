@@ -230,6 +230,8 @@ export function BlockReportSheet({
                 />
               )}
 
+              {selectedReason && <Recaptcha onVerify={setCaptchaToken} />}
+
               <div className="flex gap-3">
                 <Button variant="outline" className="flex-1" onClick={() => setMode('menu')}>
                   Back
@@ -238,7 +240,7 @@ export function BlockReportSheet({
                   variant="destructive"
                   className="flex-1"
                   onClick={handleReport}
-                  disabled={loading || !selectedReason}
+                  disabled={loading || !selectedReason || !captchaToken}
                 >
                   {loading ? 'Submitting...' : 'Submit Report'}
                 </Button>
