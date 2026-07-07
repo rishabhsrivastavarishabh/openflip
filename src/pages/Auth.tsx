@@ -18,6 +18,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable';
 import openflipLogo from '@/assets/openflip-logo.png';
 import { LoginMfaChallenge } from '@/components/auth/LoginMfaChallenge';
+import { Recaptcha } from '@/components/auth/Recaptcha';
 import { isDeviceTrusted } from '@/lib/trustedDevice';
 
 const countryCodes = [
@@ -66,6 +67,7 @@ export default function AuthPage() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [signupUserId, setSignupUserId] = useState<string | null>(null);
   const [mfaChallenge, setMfaChallenge] = useState<{ factorId: string; userId: string } | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { signIn, signUp } = useAuth();
   const { saveCurrentSession, accounts } = useMultiAccount();
@@ -161,7 +163,20 @@ export default function AuthPage() {
   };
 
   const handleSignUpStep1 = async (data: SignUpForm) => {
+    if (!captchaToken) {
+      toast.error('Please complete the reCAPTCHA challenge');
+      return;
+    }
     setLoading(true);
+    const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-recaptcha', {
+      body: { token: captchaToken },
+    });
+    if (verifyError || !verifyData?.success) {
+      setLoading(false);
+      setCaptchaToken(null);
+      toast.error('reCAPTCHA verification failed. Please try again.');
+      return;
+    }
     const { error } = await signUp(data.email, data.password, data.username, data.fullName);
     if (!error && data.phoneNumber && data.countryCode) {
       const { data: { user: newUser } } = await supabase.auth.getUser();
@@ -368,7 +383,8 @@ export default function AuthPage() {
                         </label>
                       </div>
                       {signUpForm.formState.errors.agreeTerms && <p className="text-sm text-destructive">{signUpForm.formState.errors.agreeTerms.message}</p>}
-                      <Button type="submit" variant="gradient" size="lg" className="w-full" disabled={loading}>
+                      <Recaptcha onVerify={setCaptchaToken} />
+                      <Button type="submit" variant="gradient" size="lg" className="w-full" disabled={loading || !captchaToken}>
                         {loading ? 'Creating...' : 'Continue'}<ArrowRight className="ml-2 h-5 w-5" />
                       </Button>
                     </form>
