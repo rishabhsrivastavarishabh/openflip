@@ -19,6 +19,7 @@ import { lovable } from '@/integrations/lovable';
 import openflipLogo from '@/assets/openflip-logo.png';
 import { LoginMfaChallenge } from '@/components/auth/LoginMfaChallenge';
 import { Recaptcha } from '@/components/auth/Recaptcha';
+import { verifyRecaptchaToken } from '@/lib/recaptcha';
 import { isDeviceTrusted } from '@/lib/trustedDevice';
 
 const countryCodes = [
@@ -87,11 +88,17 @@ export default function AuthPage() {
   const forgotPasswordForm = useForm<ForgotPasswordForm>({ resolver: zodResolver(forgotPasswordSchema) });
 
   const handleForgotPassword = async (data: ForgotPasswordForm) => {
+    if (!(await verifyRecaptchaToken(captchaToken))) {
+      setCaptchaToken(null);
+      toast.error('Please complete the reCAPTCHA challenge');
+      return;
+    }
     setLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
       redirectTo: `${window.location.origin}/reset-password`,
     });
     setLoading(false);
+    setCaptchaToken(null);
     if (error) {
       toast.error(error.message || 'Failed to send reset email');
     } else {
