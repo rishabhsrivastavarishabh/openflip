@@ -19,6 +19,7 @@ import { lovable } from '@/integrations/lovable';
 import openflipLogo from '@/assets/openflip-logo.png';
 import { LoginMfaChallenge } from '@/components/auth/LoginMfaChallenge';
 import { Recaptcha } from '@/components/auth/Recaptcha';
+import { verifyRecaptchaToken } from '@/lib/recaptcha';
 import { isDeviceTrusted } from '@/lib/trustedDevice';
 
 const countryCodes = [
@@ -87,11 +88,17 @@ export default function AuthPage() {
   const forgotPasswordForm = useForm<ForgotPasswordForm>({ resolver: zodResolver(forgotPasswordSchema) });
 
   const handleForgotPassword = async (data: ForgotPasswordForm) => {
+    if (!(await verifyRecaptchaToken(captchaToken))) {
+      setCaptchaToken(null);
+      toast.error('Please complete the reCAPTCHA challenge');
+      return;
+    }
     setLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
       redirectTo: `${window.location.origin}/reset-password`,
     });
     setLoading(false);
+    setCaptchaToken(null);
     if (error) {
       toast.error(error.message || 'Failed to send reset email');
     } else {
@@ -104,6 +111,11 @@ export default function AuthPage() {
 
 
   const handleSignIn = async (data: SignInForm) => {
+    if (!(await verifyRecaptchaToken(captchaToken))) {
+      setCaptchaToken(null);
+      toast.error('Please complete the reCAPTCHA challenge');
+      return;
+    }
     setLoading(true);
     let email = data.identifier.trim();
     if (!email.includes('@')) {
@@ -309,7 +321,8 @@ export default function AuthPage() {
                     </div>
                     {forgotPasswordForm.formState.errors.email && <p className="text-sm text-destructive">{forgotPasswordForm.formState.errors.email.message}</p>}
                   </div>
-                  <Button type="submit" variant="gradient" size="lg" className="w-full" disabled={loading}>
+                  <Recaptcha onVerify={setCaptchaToken} />
+                  <Button type="submit" variant="gradient" size="lg" className="w-full" disabled={loading || !captchaToken}>
                     {loading ? 'Sending...' : 'Send reset link'}<ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                   <Button type="button" variant="ghost" className="w-full" onClick={() => setMode('signin')}>
@@ -485,7 +498,8 @@ export default function AuthPage() {
                     </div>
                     {signInForm.formState.errors.password && <p className="text-sm text-destructive">{signInForm.formState.errors.password.message}</p>}
                   </div>
-                  <Button type="submit" variant="gradient" size="lg" className="w-full" disabled={loading}>
+                  <Recaptcha onVerify={setCaptchaToken} />
+                  <Button type="submit" variant="gradient" size="lg" className="w-full" disabled={loading || !captchaToken}>
                     {loading ? 'Signing in...' : 'Sign in'}<ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </form>
