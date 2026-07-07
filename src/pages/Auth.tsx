@@ -321,7 +321,8 @@ export default function AuthPage() {
                     </div>
                     {forgotPasswordForm.formState.errors.email && <p className="text-sm text-destructive">{forgotPasswordForm.formState.errors.email.message}</p>}
                   </div>
-                  <Button type="submit" variant="gradient" size="lg" className="w-full" disabled={loading}>
+                  <Recaptcha onVerify={setCaptchaToken} />
+                  <Button type="submit" variant="gradient" size="lg" className="w-full" disabled={loading || !captchaToken}>
                     {loading ? 'Sending...' : 'Send reset link'}<ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                   <Button type="button" variant="ghost" className="w-full" onClick={() => setMode('signin')}>
@@ -497,7 +498,8 @@ export default function AuthPage() {
                     </div>
                     {signInForm.formState.errors.password && <p className="text-sm text-destructive">{signInForm.formState.errors.password.message}</p>}
                   </div>
-                  <Button type="submit" variant="gradient" size="lg" className="w-full" disabled={loading}>
+                  <Recaptcha onVerify={setCaptchaToken} />
+                  <Button type="submit" variant="gradient" size="lg" className="w-full" disabled={loading || !captchaToken}>
                     {loading ? 'Signing in...' : 'Sign in'}<ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </form>
