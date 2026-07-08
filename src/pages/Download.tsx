@@ -4,7 +4,7 @@ import { Download as DownloadIcon, Smartphone, Shield, Zap, ArrowLeft } from 'lu
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 
-const APK_URL = 'https://drive.google.com/file/d/1PmZwkpHk8aIYYLJPAI1C-0aK3OETm7cu/view?usp=drive_link';
+const APK_URL = 'https://rjo7t2wzjhoes6ar.public.blob.vercel-storage.com/Openflip.apk';
 const PAGE_URL = 'https://www.openflip.in/download';
 
 function setMeta(name: string, content: string, attr: 'name' | 'property' = 'name') {
