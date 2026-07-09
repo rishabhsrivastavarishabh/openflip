@@ -983,6 +983,8 @@ export default function SettingsPage() {
             </div>
           </div>
 
+          <FromOpenMedia />
+
           <Separator />
 
           <Button
