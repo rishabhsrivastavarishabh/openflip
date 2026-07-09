@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 
 import { AvatarCropDialog } from '@/components/settings/AvatarCropDialog';
+import { FromOpenMedia } from '@/components/common/FromOpenMedia';
 // MainLayout removed — page renders inside SettingsLayout
 import { BusinessAccountSettings } from '@/components/settings/BusinessAccountSettings';
 import { AccountSwitcher } from '@/components/account/AccountSwitcher';
