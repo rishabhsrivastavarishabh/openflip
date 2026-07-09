@@ -22,7 +22,6 @@ const baseSections = [
   { to: '/settings/notifications', label: 'Notifications', icon: Bell, desc: 'Push and email preferences' },
   { to: '/settings/calls', label: 'Calls', icon: Phone, desc: 'Ringtone, caller tune, call behaviour' },
   { to: '/settings/appearance', label: 'Appearance', icon: Palette, desc: 'Theme and display' },
-  { to: '/settings/more', label: 'More settings', icon: Settings2, desc: 'Creator tools, subscription, business' },
 ];
 
 export default function SettingsLayout() {
