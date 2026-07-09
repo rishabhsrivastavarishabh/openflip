@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Download as DownloadIcon, Smartphone, Shield, Zap, ArrowLeft } from 'lucide-react';
+import { Download as DownloadIcon, Smartphone, Shield, Zap, ArrowLeft, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 
