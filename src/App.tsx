@@ -120,7 +120,7 @@ const App = () => (
                 <Route path="notifications" element={<NotificationsPage />} />
                 <Route path="calls" element={<CallsPage />} />
                 <Route path="appearance" element={<AppearancePage />} />
-                <Route path="more" element={<Settings />} />
+                
                 <Route path="agent-integrations" element={<AgentIntegrations />} />
                 <Route path="admin" element={<AdminPage />} />
               </Route>
