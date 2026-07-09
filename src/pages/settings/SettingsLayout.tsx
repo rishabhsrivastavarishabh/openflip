@@ -55,7 +55,7 @@ export default function SettingsLayout() {
         <header className="sticky top-0 z-30 header-glow px-4 py-4">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-2xl gradient-primary flex items-center justify-center shadow-glow">
-              <Settings2 className="w-4 h-4 text-primary-foreground" />
+              <Settings className="w-4 h-4 text-primary-foreground" />
             </div>
             <div>
               <h1 className="font-display font-bold text-lg leading-tight">Settings</h1>
