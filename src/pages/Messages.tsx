@@ -552,6 +552,8 @@ export default function MessagesPage() {
             </div>
           )}
         </div>
+
+        <FromOpenMedia compact className="px-4 pb-6" />
       </div>
 
       <NewMessageModal open={showNewMessage} onOpenChange={setShowNewMessage} />
