@@ -122,8 +122,9 @@ const App = () => (
                 <Route path="appearance" element={<AppearancePage />} />
                 
                 <Route path="agent-integrations" element={<AgentIntegrations />} />
-                <Route path="admin" element={<AdminPage />} />
-              </Route>
+              <Route path="admin" element={<AdminPage />} />
+            </Route>
+            <Route path="/settings/more" element={<Navigate to="/settings" replace />} />
               <Route path="/account-center" element={<AccountCenter />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
               <Route path="/terms" element={<TermsOfService />} />
