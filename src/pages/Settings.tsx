@@ -719,14 +719,6 @@ export default function SettingsPage() {
   return (
     <>
       <div className="max-w-lg mx-auto">
-        <header className="sticky top-0 z-40 glass-strong border-b px-4 py-3">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <h1 className="font-semibold text-lg">Settings</h1>
-          </div>
-        </header>
 
         <div className="p-4 space-y-6">
           {/* Profile summary card */}
