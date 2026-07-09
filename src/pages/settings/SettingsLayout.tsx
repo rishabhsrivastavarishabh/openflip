@@ -12,7 +12,6 @@ import {
   Phone,
   Palette,
   ChevronRight,
-  Settings2,
   ShieldCheck,
 } from 'lucide-react';
 
