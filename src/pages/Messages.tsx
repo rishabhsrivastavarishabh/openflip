@@ -16,6 +16,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { OnlineIndicator } from '@/components/messages/OnlineIndicator';
 import { NewMessageModal } from '@/components/messages/NewMessageModal';
 import { MessageSearch } from '@/components/messages/MessageSearch';
+import { FromOpenMedia } from '@/components/common/FromOpenMedia';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { toast } from 'sonner';
 
@@ -551,6 +552,8 @@ export default function MessagesPage() {
             </div>
           )}
         </div>
+
+        <FromOpenMedia compact className="px-4 pb-6" />
       </div>
 
       <NewMessageModal open={showNewMessage} onOpenChange={setShowNewMessage} />

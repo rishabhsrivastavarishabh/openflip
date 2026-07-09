@@ -111,8 +111,8 @@ const App = () => (
               <Route path="/meet/:roomId" element={<Meet />} />
               <Route path="/creator" element={<Creator />} />
               <Route path="/settings" element={<SettingsLayout />}>
-                <Route index element={<Navigate to="/settings/account" replace />} />
-                <Route path="account" element={<AccountPage />} />
+              <Route index element={<Settings />} />
+              <Route path="account" element={<AccountPage />} />
                 <Route path="security" element={<SecurityPage />} />
                 <Route path="2fa" element={<TwoFactorPage />} />
 
@@ -120,10 +120,11 @@ const App = () => (
                 <Route path="notifications" element={<NotificationsPage />} />
                 <Route path="calls" element={<CallsPage />} />
                 <Route path="appearance" element={<AppearancePage />} />
-                <Route path="more" element={<Settings />} />
+                
                 <Route path="agent-integrations" element={<AgentIntegrations />} />
-                <Route path="admin" element={<AdminPage />} />
-              </Route>
+              <Route path="admin" element={<AdminPage />} />
+            </Route>
+            <Route path="/settings/more" element={<Navigate to="/settings" replace />} />
               <Route path="/account-center" element={<AccountCenter />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
               <Route path="/terms" element={<TermsOfService />} />

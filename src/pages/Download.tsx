@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Download as DownloadIcon, Smartphone, Shield, Zap, ArrowLeft, Globe } from 'lucide-react';
+import { Download as DownloadIcon, Smartphone, Shield, Zap, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { FromOpenMedia } from '@/components/common/FromOpenMedia';
 
 const APK_URL = 'https://rjo7t2wzjhoes6ar.public.blob.vercel-storage.com/Openflip.apk';
 const PAGE_URL = 'https://www.openflip.in/download';
@@ -115,60 +116,7 @@ export default function Download() {
           </Card>
         </div>
 
-        <section className="space-y-4">
-          <h3 className="text-center font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-            From Open Media — Our Other Apps and Products
-          </h3>
-          <div className="grid grid-cols-1 gap-3">
-            <Card className="p-4 space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center shrink-0">
-                  <Globe className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <p className="font-semibold text-sm">Sarath</p>
-                  <p className="text-xs text-muted-foreground">Quick, lightweight browsing.</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <Button asChild variant="outline" size="sm" className="w-full">
-                  <a href="https://sarath.openflip.in/" target="_blank" rel="noopener noreferrer">
-                    <Globe className="h-4 w-4 mr-1" /> Web
-                  </a>
-                </Button>
-                <Button asChild size="sm" className="w-full">
-                  <a href="https://rjo7t2wzjhoes6ar.public.blob.vercel-storage.com/Sarath.apk" target="_blank" rel="noopener noreferrer" download>
-                    <DownloadIcon className="h-4 w-4 mr-1" /> APK
-                  </a>
-                </Button>
-              </div>
-            </Card>
-
-            <Card className="p-4 space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center shrink-0">
-                  <Smartphone className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <p className="font-semibold text-sm">OpenChat</p>
-                  <p className="text-xs text-muted-foreground">Simple, secure messaging.</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <Button asChild variant="outline" size="sm" className="w-full">
-                  <a href="https://openchat.openflip.in/" target="_blank" rel="noopener noreferrer">
-                    <Globe className="h-4 w-4 mr-1" /> Web
-                  </a>
-                </Button>
-                <Button asChild size="sm" className="w-full">
-                  <a href="https://rjo7t2wzjhoes6ar.public.blob.vercel-storage.com/OpenChat.apk" target="_blank" rel="noopener noreferrer" download>
-                    <DownloadIcon className="h-4 w-4 mr-1" /> APK
-                  </a>
-                </Button>
-              </div>
-            </Card>
-          </div>
-        </section>
+        <FromOpenMedia className="space-y-4" />
 
         <p className="text-xs text-muted-foreground text-center">
           The APK download opens in a new tab. On Android, allow "Install from unknown sources" for this browser to
