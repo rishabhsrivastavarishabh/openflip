@@ -16,6 +16,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { OnlineIndicator } from '@/components/messages/OnlineIndicator';
 import { NewMessageModal } from '@/components/messages/NewMessageModal';
 import { MessageSearch } from '@/components/messages/MessageSearch';
+import { FromOpenMedia } from '@/components/common/FromOpenMedia';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { toast } from 'sonner';
 
