@@ -111,8 +111,8 @@ const App = () => (
               <Route path="/meet/:roomId" element={<Meet />} />
               <Route path="/creator" element={<Creator />} />
               <Route path="/settings" element={<SettingsLayout />}>
-                <Route index element={<Navigate to="/settings/account" replace />} />
-                <Route path="account" element={<AccountPage />} />
+              <Route index element={<Settings />} />
+              <Route path="account" element={<AccountPage />} />
                 <Route path="security" element={<SecurityPage />} />
                 <Route path="2fa" element={<TwoFactorPage />} />
 
