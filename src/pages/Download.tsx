@@ -116,8 +116,7 @@ export default function Download() {
           </Card>
         </div>
 
-        <section className="space-y-4">
-          <FromOpenMedia className="space-y-4" />
+        <FromOpenMedia className="space-y-4" />
 
         <p className="text-xs text-muted-foreground text-center">
           The APK download opens in a new tab. On Android, allow "Install from unknown sources" for this browser to
