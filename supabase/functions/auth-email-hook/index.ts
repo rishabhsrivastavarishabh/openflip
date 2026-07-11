@@ -36,10 +36,10 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 }
 
 // Configuration
-const SITE_NAME = "openflip"
-const SENDER_DOMAIN = "notify.www.openflip.in"
+const SITE_NAME = "Openflip"
+const SENDER_DOMAIN = "notify.openmedia.openflip.in"
 const ROOT_DOMAIN = "www.openflip.in"
-const FROM_DOMAIN = "notify.www.openflip.in" // Domain shown in From address (may be root or sender subdomain)
+const FROM_DOMAIN = "notify.openmedia.openflip.in" // Domain shown in From address (may be root or sender subdomain)
 
 // Sample data for preview mode ONLY (not used in actual email sending).
 // URLs are baked in at scaffold time from the project's real data.
