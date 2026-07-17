@@ -23,14 +23,16 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <meta name="description" content="Openflip is a social network for sharing photos and short videos. Like, comment, follow friends, and explore creators with hashtags and a curated feed." />
 
-    <link rel="canonical" href="/" />
+    <link rel="canonical" href="https://www.openflip.in/" />
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Openflip" />
     <meta property="og:title" content="Openflip — Photo & short‑video social network" />
     <meta property="og:description" content="Share photos and short videos, follow creators, and discover trending content on Openflip." />
-    <meta property="og:url" content="/" />
+    <meta property="og:url" content="https://www.openflip.in/" />
     <meta property="og:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/2lCcdnLj2DhLfOcMPsCSj7g8IUc2/social-images/social-1775311808249-openflip.webp">
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Openflip — Photo & short‑video social network" />
@@ -41,11 +43,17 @@
       {
         "@context": "https://schema.org",
         "@type": "WebSite",
+        "@id": "https://www.openflip.in/#website",
         "name": "Openflip",
-        "url": "https://openflip.lovable.app/",
+        "alternateName": ["Openflip App", "Open Flip"],
+        "url": "https://www.openflip.in/",
+        "publisher": { "@id": "https://www.openflip.in/#organization" },
         "potentialAction": {
           "@type": "SearchAction",
-          "target": "https://openflip.lovable.app/search?q={search_term_string}",
+          "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": "https://www.openflip.in/search?q={search_term_string}"
+          },
           "query-input": "required name=search_term_string"
         }
       }
@@ -54,9 +62,61 @@
       {
         "@context": "https://schema.org",
         "@type": "Organization",
+        "@id": "https://www.openflip.in/#organization",
         "name": "Openflip",
-        "url": "https://openflip.lovable.app/",
-        "logo": "https://openflip.lovable.app/favicon.png"
+        "alternateName": "Openflip by Open Media",
+        "legalName": "Open Media",
+        "url": "https://www.openflip.in/",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://www.openflip.in/favicon.png",
+          "width": 512,
+          "height": 512
+        },
+        "image": "https://storage.googleapis.com/gpt-engineer-file-uploads/2lCcdnLj2DhLfOcMPsCSj7g8IUc2/social-images/social-1775311808249-openflip.webp",
+        "description": "Openflip is a social network for sharing photos and short videos. Like, comment, follow friends, and explore creators with hashtags and a curated feed.",
+        "foundingDate": "2025",
+        "sameAs": [
+          "https://openflip.lovable.app/",
+          "https://sarath.openflip.in/",
+          "https://openchat.openflip.in/"
+        ],
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "contactType": "customer support",
+          "email": "support@openflip.in",
+          "url": "https://www.openflip.in/how-it-works",
+          "availableLanguage": ["English"]
+        }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "MobileApplication",
+        "name": "Openflip",
+        "operatingSystem": "ANDROID",
+        "applicationCategory": "SocialNetworkingApplication",
+        "downloadUrl": "https://rjo7t2wzjhoes6ar.public.blob.vercel-storage.com/Openflip.apk",
+        "installUrl": "https://www.openflip.in/download",
+        "url": "https://www.openflip.in/download",
+        "publisher": { "@id": "https://www.openflip.in/#organization" },
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "INR" }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "name": "Openflip site sections",
+        "itemListElement": [
+          { "@type": "SiteNavigationElement", "position": 1, "name": "Explore", "url": "https://www.openflip.in/explore" },
+          { "@type": "SiteNavigationElement", "position": 2, "name": "Reels", "url": "https://www.openflip.in/reels" },
+          { "@type": "SiteNavigationElement", "position": 3, "name": "Search", "url": "https://www.openflip.in/search" },
+          { "@type": "SiteNavigationElement", "position": 4, "name": "Download", "url": "https://www.openflip.in/download" },
+          { "@type": "SiteNavigationElement", "position": 5, "name": "How it works", "url": "https://www.openflip.in/how-it-works" },
+          { "@type": "SiteNavigationElement", "position": 6, "name": "Sign in", "url": "https://www.openflip.in/auth" }
+        ]
       }
     </script>
     <!-- Clarity tracking code for https://openflip.in/ -->
