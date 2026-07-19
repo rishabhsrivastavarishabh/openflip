@@ -152,11 +152,17 @@ export function RunningCat() {
 
         .paw-trail {
           position: absolute;
-          bottom: 3px;
+          bottom: 55px;
           left: 0;
           display: flex;
           gap: 2.5rem;
           opacity: 0;
+        }
+
+        @media (min-width: 768px) {
+          .paw-trail {
+            bottom: 3px;
+          }
         }
 
         .paw-trail-running {
