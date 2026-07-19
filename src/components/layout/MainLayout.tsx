@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { Sidebar } from './Sidebar';
 import { MobileNav } from './MobileNav';
+import { RunningCat } from '@/components/ui/RunningCat';
 interface MainLayoutProps {
   children: ReactNode;
 }
@@ -13,5 +14,6 @@ export function MainLayout({
         {children}
       </main>
       <MobileNav />
+      <RunningCat />
     </div>;
 }
