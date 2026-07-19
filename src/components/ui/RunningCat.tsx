@@ -32,12 +32,12 @@ export function RunningCat() {
       aria-hidden="true"
     >
       {/* Track / ground line */}
-      <div className="absolute bottom-6 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+      <div className="absolute bottom-20 md:bottom-6 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
 
       {/* Running cat sprite */}
       <div
         className={cn(
-          'absolute bottom-4 left-0 will-change-transform',
+          'absolute bottom-16 md:bottom-4 left-0 will-change-transform',
           running ? 'running-cat' : 'opacity-0'
         )}
         onAnimationEnd={() => setRunning(false)}
