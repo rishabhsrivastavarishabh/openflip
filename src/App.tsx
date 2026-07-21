@@ -106,7 +106,7 @@ const App = () => (
               <Route path="/create/reel" element={<CreateReel />} />
               <Route path="/reels" element={<Reels />} />
               <Route path="/reels/:reelId" element={<Reels />} />
-              <Route path="/reel/:reelId" element={<Navigate to="/reels/:reelId" replace />} />
+              <Route path="/reel/:reelId" element={<ReelSingularRedirect />} />
               <Route path="/post/:postId" element={<Post />} />
               <Route path="/profile/:username" element={<Profile />} />
               <Route path="/profile/:username/followers" element={<Followers />} />
