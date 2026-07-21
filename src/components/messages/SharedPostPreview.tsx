@@ -52,26 +52,42 @@ export function SharedPostPreview({ postId, reelId, profileId, isMine }: SharedP
       setLoading(true);
       try {
         if (postId) {
-          const { data } = await supabase
+          const { data: p, error } = await supabase
             .from('posts')
-            .select('id, media_url, media_type, caption, profiles:user_id(username, avatar_url)')
+            .select('id, media_url, media_type, caption, user_id')
             .eq('id', postId)
-            .single();
-          setPost(data as unknown as PostData);
+            .maybeSingle();
+          if (error) console.error('post fetch error', error);
+          if (p) {
+            const { data: prof } = await supabase
+              .from('profiles')
+              .select('username, avatar_url')
+              .eq('id', (p as any).user_id)
+              .maybeSingle();
+            setPost({ ...(p as any), profiles: prof ?? { username: 'user', avatar_url: null } } as PostData);
+          }
         } else if (reelId) {
-          const { data } = await supabase
+          const { data: r, error } = await supabase
             .from('reels')
-            .select('id, thumbnail_url, video_url, caption, profiles:user_id(username, avatar_url)')
+            .select('id, thumbnail_url, video_url, caption, user_id')
             .eq('id', reelId)
-            .single();
-          setReel(data as unknown as ReelData);
+            .maybeSingle();
+          if (error) console.error('reel fetch error', error);
+          if (r) {
+            const { data: prof } = await supabase
+              .from('profiles')
+              .select('username, avatar_url')
+              .eq('id', (r as any).user_id)
+              .maybeSingle();
+            setReel({ ...(r as any), profiles: prof ?? { username: 'user', avatar_url: null } } as ReelData);
+          }
         } else if (profileId) {
           const { data } = await supabase
             .from('profiles')
             .select('id, username, full_name, avatar_url, bio')
             .eq('id', profileId)
-            .single();
-          setProfile(data as ProfileData);
+            .maybeSingle();
+          if (data) setProfile(data as ProfileData);
         }
       } catch (error) {
         console.error('Error fetching shared content:', error);
