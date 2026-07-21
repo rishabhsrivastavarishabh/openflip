@@ -26,6 +26,11 @@ function RootRoute() {
   if (loading) return null;
   return user ? <Feed /> : <Navigate to="/auth" replace />;
 }
+
+function ReelSingularRedirect() {
+  const { reelId } = useParams();
+  return <Navigate to={`/reels/${reelId}`} replace />;
+}
 import { AuthProvider } from "@/contexts/AuthContext";
 import { MultiAccountProvider } from "@/contexts/MultiAccountContext";
 import { PushNotificationProvider } from "@/components/PushNotificationProvider";
