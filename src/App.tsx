@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 function RootRoute() {
@@ -25,6 +25,11 @@ function RootRoute() {
 
   if (loading) return null;
   return user ? <Feed /> : <Navigate to="/auth" replace />;
+}
+
+function ReelSingularRedirect() {
+  const { reelId } = useParams();
+  return <Navigate to={`/reels/${reelId}`} replace />;
 }
 import { AuthProvider } from "@/contexts/AuthContext";
 import { MultiAccountProvider } from "@/contexts/MultiAccountContext";
@@ -69,6 +74,7 @@ import OAuthConsent from "./pages/OAuthConsent";
 import Creator from "./pages/Creator";
 import AgentIntegrations from "./pages/AgentIntegrations";
 import Download from "./pages/Download";
+import { RunningCat } from "@/components/ui/RunningCat";
 
 function GlobalCallOverlay() {
   const { user } = useAuthForCall();
@@ -100,6 +106,7 @@ const App = () => (
               <Route path="/create/reel" element={<CreateReel />} />
               <Route path="/reels" element={<Reels />} />
               <Route path="/reels/:reelId" element={<Reels />} />
+              <Route path="/reel/:reelId" element={<ReelSingularRedirect />} />
               <Route path="/post/:postId" element={<Post />} />
               <Route path="/profile/:username" element={<Profile />} />
               <Route path="/profile/:username/followers" element={<Followers />} />
@@ -133,6 +140,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
             <GlobalCallOverlay />
+            <RunningCat />
           </BrowserRouter>
         </TooltipProvider>
         </PushNotificationProvider>
