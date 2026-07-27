@@ -74,7 +74,7 @@ import OAuthConsent from "./pages/OAuthConsent";
 import Creator from "./pages/Creator";
 import AgentIntegrations from "./pages/AgentIntegrations";
 import Download from "./pages/Download";
-import { RunningCat } from "@/components/ui/RunningCat";
+
 
 function GlobalCallOverlay() {
   const { user } = useAuthForCall();
