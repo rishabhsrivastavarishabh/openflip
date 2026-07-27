@@ -140,7 +140,6 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
             <GlobalCallOverlay />
-            <RunningCat />
           </BrowserRouter>
         </TooltipProvider>
         </PushNotificationProvider>
