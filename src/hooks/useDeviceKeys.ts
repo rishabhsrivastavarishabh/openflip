@@ -8,7 +8,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { generateKeyPair, initCrypto, getDeviceName } from '@/lib/crypto';
-import { storeKeyPair, getKeyPairByUser, getAllKeyPairs, deleteKeyPair as deleteStoredKeyPair } from '@/lib/keyStore';
+import { storeKeyPair, getKeyPairByUser, deleteKeyPair as deleteStoredKeyPair } from '@/lib/keyStore';
 
 interface DeviceKeyState {
   deviceId: string | null;
