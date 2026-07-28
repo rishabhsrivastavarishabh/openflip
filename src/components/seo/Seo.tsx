@@ -10,11 +10,11 @@ interface SeoProps {
   noindex?: boolean;
 }
 
-const SITE = 'https://openflip.lovable.app';
+const SITE = 'https://www.openflip.in';
 
 export function Seo({ title, description, path, image, type = 'website', jsonLd, noindex }: SeoProps) {
-  const url = path.startsWith('http') ? path : path;
   const absoluteUrl = path.startsWith('http') ? path : `${SITE}${path}`;
+  const url = absoluteUrl;
   const ldArray = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
 
   return (
