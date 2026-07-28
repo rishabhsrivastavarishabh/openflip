@@ -2,23 +2,62 @@
  * Hook to decrypt messages locally.
  * Decryption happens client-side only — private keys never leave the device.
  *
- * Multi-device fallback: if the primary ciphertext was targeted at a device
- * other than this one, we look up a per-device copy in `message_device_keys`
- * and try that instead — so a signed-in device can read every message
- * sent to (or from) the current account.
+ * Robust multi-device decryption:
+ *  1. Try the message's primary ciphertext with every private key this browser
+ *     holds for the signed-in user (current device key plus any older keys that
+ *     are still in IndexedDB from earlier sessions/device rows).
+ *  2. If none work, look up the per-device fan-out copies in
+ *     `message_device_keys` for ALL of this user's known local device ids and
+ *     try each of those with every local private key.
+ *
+ * This means both new and old devices can read messages as long as some key
+ * material for the account exists on the device.
  */
 
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { decryptMessage, initCrypto } from '@/lib/crypto';
+import { useAuth } from '@/contexts/AuthContext';
+import { getAllKeyPairs } from '@/lib/keyStore';
 import { useDeviceKeys } from './useDeviceKeys';
 
 // In-memory cache to avoid re-decrypting the same message
 const decryptionCache = new Map<string, string>();
 
+interface LocalKey {
+  deviceId: string;
+  privateKey: string;
+}
+
 export function useDecryptMessage() {
+  const { user } = useAuth();
   const { deviceId, privateKey, loading: keysLoading, error: keysError } = useDeviceKeys();
   const initRef = useRef(false);
+  const [localKeys, setLocalKeys] = useState<LocalKey[]>([]);
+
+  // Load every keypair this browser has stored for the current user.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!user) {
+        setLocalKeys([]);
+        return;
+      }
+      try {
+        const stored = await getAllKeyPairs(user.id);
+        if (!cancelled) {
+          setLocalKeys(
+            stored.map((k) => ({ deviceId: k.deviceId, privateKey: k.privateKey })),
+          );
+        }
+      } catch {
+        if (!cancelled) setLocalKeys([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, deviceId]);
 
   const decrypt = useCallback(async (
     messageId: string,
@@ -37,16 +76,22 @@ export function useDecryptMessage() {
     const cached = decryptionCache.get(messageId);
     if (cached) return cached;
 
-    if (keysLoading) {
-      return '🔐 Setting up encryption on this device…';
+    // Build the candidate key list: current device key first, then any other
+    // keys this browser still holds for the account.
+    const candidates: LocalKey[] = [];
+    if (deviceId && privateKey) candidates.push({ deviceId, privateKey });
+    for (const k of localKeys) {
+      if (!candidates.some((c) => c.privateKey === k.privateKey)) candidates.push(k);
     }
-    if (!privateKey) {
+
+    if (candidates.length === 0) {
+      if (keysLoading) return '🔐 Setting up encryption on this device…';
       return keysError
         ? `🔒 Encryption setup failed: ${keysError}. Try refreshing the page.`
         : '🔒 Encryption not available on this device.';
     }
     if (!senderDevicePublicKey) {
-      return '🔒 This message was sent to a different device and can\'t be read here.';
+      return '🔒 This message is missing its sender key and can\'t be read.';
     }
 
     try {
@@ -55,32 +100,44 @@ export function useDecryptMessage() {
         initRef.current = true;
       }
 
-      // First try: primary ciphertext on the message row itself.
-      let plaintext = await decryptMessage(
-        ciphertext,
-        nonce,
-        aad,
-        privateKey,
-        senderDevicePublicKey,
-      );
+      let plaintext: string | null = null;
 
-      // Fallback: this device wasn't the primary target. Look up the
-      // per-device copy created by the sender's fan-out.
-      if (plaintext === null && deviceId) {
-        const { data: fanout } = await (supabase as any)
-          .from('message_device_keys')
-          .select('ciphertext, nonce, aad')
-          .eq('message_id', messageId)
-          .eq('recipient_device_id', deviceId)
-          .maybeSingle();
-        if (fanout?.ciphertext && fanout?.nonce && fanout?.aad) {
-          plaintext = await decryptMessage(
-            fanout.ciphertext,
-            fanout.nonce,
-            fanout.aad,
-            privateKey,
-            senderDevicePublicKey,
-          );
+      // 1. Primary ciphertext against every local private key.
+      for (const cand of candidates) {
+        plaintext = await decryptMessage(
+          ciphertext,
+          nonce,
+          aad,
+          cand.privateKey,
+          senderDevicePublicKey,
+        );
+        if (plaintext !== null) break;
+      }
+
+      // 2. Per-device fan-out copies for any of our known device ids.
+      if (plaintext === null) {
+        const deviceIds = candidates.map((c) => c.deviceId).filter(Boolean);
+        if (deviceIds.length > 0) {
+          const { data: fanouts } = await (supabase as any)
+            .from('message_device_keys')
+            .select('recipient_device_id, ciphertext, nonce, aad')
+            .eq('message_id', messageId)
+            .in('recipient_device_id', deviceIds);
+
+          for (const row of fanouts ?? []) {
+            if (!row?.ciphertext || !row?.nonce || !row?.aad) continue;
+            for (const cand of candidates) {
+              plaintext = await decryptMessage(
+                row.ciphertext,
+                row.nonce,
+                row.aad,
+                cand.privateKey,
+                senderDevicePublicKey,
+              );
+              if (plaintext !== null) break;
+            }
+            if (plaintext !== null) break;
+          }
         }
       }
 
@@ -94,7 +151,7 @@ export function useDecryptMessage() {
     } catch {
       return '🔒 This message can\'t be decrypted on this device.';
     }
-  }, [deviceId, privateKey, keysLoading, keysError]);
+  }, [deviceId, privateKey, localKeys, keysLoading, keysError]);
 
   const clearCache = useCallback(() => {
     decryptionCache.clear();
