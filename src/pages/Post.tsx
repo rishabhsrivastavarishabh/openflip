@@ -34,6 +34,7 @@ interface PostData {
     full_name: string | null;
     avatar_url: string | null;
     is_verified: boolean;
+    is_private?: boolean | null;
   };
 }
 
@@ -129,7 +130,7 @@ export default function PostPage() {
     // Fetch profile
     const { data: profileData } = await supabase
       .from('profiles')
-      .select('id, username, full_name, avatar_url, is_verified')
+      .select('id, username, full_name, avatar_url, is_verified, is_private')
       .eq('id', data.user_id)
       .single();
 
@@ -342,6 +343,7 @@ export default function PostPage() {
         title={postTitle}
         description={postDesc}
         path={`/post/${post.id}`}
+        noindex={!!post.profiles.is_private}
         type="article"
         image={post.media_type === 'image' ? getPostMediaUrls(post.media_url)[0] : undefined}
         jsonLd={{
@@ -354,7 +356,7 @@ export default function PostPage() {
           author: {
             '@type': 'Person',
             name: post.profiles.full_name || post.profiles.username,
-            url: `https://openflip.lovable.app/profile/${post.profiles.username}`,
+            url: `https://www.openflip.in/profile/${post.profiles.username}`,
           },
         }}
       />

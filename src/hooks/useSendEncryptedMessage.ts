@@ -108,9 +108,12 @@ export function useSendEncryptedMessage() {
               getAllRecipientDeviceKeys(recipientUserId),
               getAllRecipientDeviceKeys(user.id),
             ]);
+            // Include EVERY sender device (even this one): the primary
+            // ciphertext is keyed to the recipient's public key, so the
+            // sender's own devices need their own copy to read what they sent.
             const extras = [
               ...recipientDevices.filter((d) => d.device_public_key !== recipientPublicKey),
-              ...senderDevices.filter((d) => d.id !== deviceId),
+              ...senderDevices,
             ];
             if (extras.length === 0) return;
 

@@ -79,8 +79,10 @@ export function useDeviceKeys() {
           return;
         }
 
-        // Device was deleted on server, clean up local
-        await deleteStoredKeyPair(stored.deviceId);
+        // Device row was deleted on the server. Keep the local keypair in
+        // IndexedDB anyway — old messages were encrypted to it and
+        // useDecryptMessage tries every stored key, so deleting it would
+        // permanently lose message history on this device.
       }
 
       // Generate new keypair

@@ -66,12 +66,18 @@ function renderEntry(e: SitemapEntry) {
 
 async function main() {
   const [posts, profiles] = await Promise.all([
-    fetchRest("posts?select=id,updated_at,created_at&limit=10000&order=created_at.desc"),
+    fetchRest("posts?select=id,user_id,updated_at,created_at&limit=10000&order=created_at.desc"),
     fetchRest("profiles?select=id,username,is_private,updated_at&limit=10000"),
   ]);
 
+  const publicUserIds = new Set(
+    profiles.filter((p: any) => !p.is_private).map((p: any) => p.id),
+  );
+
   const dynamicEntries: SitemapEntry[] = [
-    ...posts.map((p: any) => ({
+    ...posts
+      .filter((p: any) => publicUserIds.has(p.user_id))
+      .map((p: any) => ({
       path: `/post/${p.id}`,
       lastmod: (p.updated_at || p.created_at || "").slice(0, 10) || undefined,
       changefreq: "weekly" as const,

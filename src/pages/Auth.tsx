@@ -57,7 +57,11 @@ type SignUpForm = z.infer<typeof signUpSchema>;
 type ForgotPasswordForm = z.infer<typeof forgotPasswordSchema>;
 
 export default function AuthPage() {
-  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
+  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot' | 'otp'>('signin');
+  const [otpPurpose, setOtpPurpose] = useState<'signin' | 'reset'>('signin');
+  const [otpEmail, setOtpEmail] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
   const [signupStep, setSignupStep] = useState(1); // 1: basic, 2: DOB, 3: photo, 4: confirm
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -101,6 +105,71 @@ export default function AuthPage() {
 
 
 
+
+  // ---- OTP over email (login + password reset) ----
+  const startOtp = (purpose: 'signin' | 'reset') => {
+    const typed = purpose === 'reset'
+      ? forgotPasswordForm.getValues('email')
+      : signInForm.getValues('identifier');
+    setOtpPurpose(purpose);
+    setOtpEmail(typed && typed.includes('@') ? typed.trim() : '');
+    setOtpCode('');
+    setOtpSent(false);
+    setMode('otp');
+  };
+
+  const handleSendOtp = async () => {
+    const email = otpEmail.trim();
+    if (!email.includes('@')) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+    setLoading(true);
+    const { error } =
+      otpPurpose === 'reset'
+        ? await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: `${window.location.origin}/reset-password`,
+          })
+        : await supabase.auth.signInWithOtp({
+            email,
+            options: { shouldCreateUser: false },
+          });
+    setLoading(false);
+    if (error) {
+      toast.error(error.message || 'Could not send the code');
+      return;
+    }
+    setOtpSent(true);
+    toast.success(`We sent a 6-digit code to ${email}`);
+  };
+
+  const handleVerifyOtp = async () => {
+    const code = otpCode.replace(/\D/g, '');
+    if (code.length < 6) {
+      toast.error('Enter the 6-digit code from your email');
+      return;
+    }
+    setLoading(true);
+    const { error } = await supabase.auth.verifyOtp({
+      email: otpEmail.trim(),
+      token: code,
+      type: otpPurpose === 'reset' ? 'recovery' : 'email',
+    });
+    if (error) {
+      setLoading(false);
+      toast.error(error.message || 'That code is invalid or has expired');
+      return;
+    }
+    await saveCurrentSession();
+    setLoading(false);
+    if (otpPurpose === 'reset') {
+      toast.success('Code verified — choose a new password');
+      navigate('/reset-password');
+    } else {
+      toast.success('Welcome back!');
+      navigate('/');
+    }
+  };
 
   const handleSignIn = async (data: SignInForm) => {
     setLoading(true);
@@ -280,7 +349,77 @@ export default function AuthPage() {
           </div>
 
           <AnimatePresence mode="wait">
-            {mode === 'forgot' ? (
+            {mode === 'otp' ? (
+              <motion.div key="otp" {...stepVariants} className="space-y-6">
+                <div className="text-center lg:text-left">
+                  <h2 className="text-2xl font-display font-bold">
+                    {otpPurpose === 'reset' ? 'Reset with a code' : 'Sign in with a code'}
+                  </h2>
+                  <p className="text-muted-foreground mt-2">
+                    {otpSent
+                      ? `Enter the 6-digit code we emailed to ${otpEmail}`
+                      : 'We\u2019ll email you a one-time code \u2014 no password needed'}
+                  </p>
+                </div>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="otp-email">Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                      <Input
+                        id="otp-email"
+                        type="email"
+                        placeholder="you@example.com"
+                        className="pl-10"
+                        value={otpEmail}
+                        disabled={otpSent}
+                        onChange={(e) => setOtpEmail(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  {otpSent && (
+                    <div className="space-y-2">
+                      <Label htmlFor="otp-code">6-digit code</Label>
+                      <Input
+                        id="otp-code"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        maxLength={6}
+                        placeholder="123456"
+                        className="text-center text-2xl tracking-[0.5em] font-semibold"
+                        value={otpCode}
+                        onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      />
+                    </div>
+                  )}
+
+                  <Button
+                    type="button"
+                    variant="gradient"
+                    size="lg"
+                    className="w-full"
+                    disabled={loading}
+                    onClick={otpSent ? handleVerifyOtp : handleSendOtp}
+                  >
+                    {loading
+                      ? otpSent ? 'Verifying...' : 'Sending...'
+                      : otpSent ? 'Verify code' : 'Send code'}
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+
+                  {otpSent && (
+                    <Button type="button" variant="outline" className="w-full" disabled={loading} onClick={handleSendOtp}>
+                      Resend code
+                    </Button>
+                  )}
+
+                  <Button type="button" variant="ghost" className="w-full" onClick={() => { setMode('signin'); setOtpSent(false); }}>
+                    <ArrowLeft className="mr-2 h-4 w-4" />Back to sign in
+                  </Button>
+                </div>
+              </motion.div>
+            ) : mode === 'forgot' ? (
               <motion.div key="forgot" {...stepVariants} className="space-y-6">
                 <div className="text-center lg:text-left">
                   <h2 className="text-2xl font-display font-bold">Reset password</h2>
@@ -297,6 +436,9 @@ export default function AuthPage() {
                   </div>
                   <Button type="submit" variant="gradient" size="lg" className="w-full" disabled={loading}>
                     {loading ? 'Sending...' : 'Send reset link'}<ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                  <Button type="button" variant="outline" className="w-full" onClick={() => startOtp('reset')}>
+                    Use a one-time code instead
                   </Button>
                   <Button type="button" variant="ghost" className="w-full" onClick={() => setMode('signin')}>
                     <ArrowLeft className="mr-2 h-4 w-4" />Back to sign in
@@ -475,6 +617,15 @@ export default function AuthPage() {
                   </Button>
                 </form>
 
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">or</span>
+                  </div>
+                </div>
+                <Button type="button" variant="outline" size="lg" className="w-full" onClick={() => startOtp('signin')}>
+                  <Mail className="mr-2 h-5 w-5" />Email me a one-time code
+                </Button>
 
                 <div className="text-center text-sm text-muted-foreground">
                   <Link to="/privacy" className="hover:text-primary">Privacy</Link>
@@ -485,7 +636,7 @@ export default function AuthPage() {
             )}
           </AnimatePresence>
 
-          {mode !== 'forgot' && signupStep === 1 && (
+          {(mode === 'signin' || mode === 'signup') && signupStep === 1 && (
             <div className="text-center mt-6">
               <button
                 onClick={() => { setMode(mode === 'signup' ? 'signin' : 'signup'); setSignupStep(1); }}
