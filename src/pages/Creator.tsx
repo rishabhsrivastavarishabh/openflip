@@ -12,7 +12,7 @@ export default function CreatorPage() {
 
   return (
     <MainLayout>
-      <Seo title="Creator Dashboard — Openflip" description="Analytics, earnings, audience insights and growth tools for your Openflip account." path="/creator" />
+      <Seo title="Creator Dashboard — Openflip" description="Track your Openflip growth with the Creator Dashboard: real-time analytics, earnings and payouts, audience insights, and tools to grow your following faster." path="/creator" />
       <div className="max-w-5xl mx-auto p-4">
         <CreatorDashboard onBack={() => navigate(-1)} />
       </div>

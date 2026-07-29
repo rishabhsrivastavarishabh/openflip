@@ -86,7 +86,7 @@ export default function ResetPassword() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-background">
-      <Seo title="Reset password — Openflip" description="Set a new password for your Openflip account." path="/reset-password" />
+      <Seo title="Reset password — Openflip" description="Set a new password for your Openflip account. Choose a strong, unique password to keep your photos, reels, private chats, and profile secure." path="/reset-password" />
       <div className="w-full max-w-md space-y-6">
         <div className="text-center">
           <img src={openflipLogo} alt="Openflip" className="h-12 mx-auto mb-6" />
