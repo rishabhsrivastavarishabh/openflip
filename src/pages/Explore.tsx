@@ -184,7 +184,7 @@ export default function ExplorePage() {
     <MainLayout>
       <Seo
         title="Explore — Openflip"
-        description="Discover trending photos, reels, hashtags, and creators across Openflip."
+        description="Discover trending photos, reels, hashtags, and creators on Openflip. Explore curated categories, search for accounts, and find fresh content to follow daily."
         path="/explore"
       />
       <div className="max-w-4xl mx-auto px-4 py-4">

@@ -268,7 +268,7 @@ export default function NotificationsPage() {
 
   return (
     <MainLayout>
-      <Seo title="Notifications — Openflip" description="Likes, comments, follows and mentions on your Openflip account." path="/notifications" noindex />
+      <Seo title="Notifications — Openflip" description="See every like, comment, follow, mention, and message request on your Openflip account in one place so you never miss a moment from people you follow." path="/notifications" noindex />
       <div className="max-w-2xl mx-auto">
         <header className="sticky top-0 z-40 header-glow px-4 py-4">
           <div className="flex items-center gap-3">

@@ -591,7 +591,13 @@ export default function ProfilePage() {
 
   const displayName = profile.full_name || profile.username;
   const profileTitle = `${displayName} (@${profile.username}) — Openflip`;
-  const profileDesc = profile.bio?.slice(0, 160) || `See photos, reels and stories from @${profile.username} on Openflip.`;
+  const profileDesc = (() => {
+    const base = profile.bio?.trim();
+    const suffix = `See photos, reels, highlights and stories from @${profile.username} on Openflip, follow for updates, and connect with more creators you love.`;
+    if (!base) return suffix.slice(0, 160);
+    const combined = base.length >= 120 ? base : `${base} — ${suffix}`;
+    return combined.slice(0, 160);
+  })();
 
   return (
     <MainLayout>

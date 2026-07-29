@@ -22,9 +22,9 @@ export default function Download() {
   useEffect(() => {
     const prevTitle = document.title;
     document.title = 'Download Openflip for Android — Free APK';
-    setMeta('description', 'Download the Openflip Android app (APK). Chat, share reels, and connect on the go.');
+    setMeta('description', 'Download the Openflip Android app (APK) to share photos and reels, chat with end-to-end encryption, and get calls and notifications right on your phone.');
     setMeta('og:title', 'Download Openflip for Android', 'property');
-    setMeta('og:description', 'Get the Openflip Android APK.', 'property');
+    setMeta('og:description', 'Get the Openflip Android APK to share photos and reels, chat securely with friends, and receive calls and notifications on your phone wherever you go.', 'property');
     setMeta('og:url', PAGE_URL, 'property');
     setMeta('og:type', 'website', 'property');
     setMeta('twitter:card', 'summary_large_image');

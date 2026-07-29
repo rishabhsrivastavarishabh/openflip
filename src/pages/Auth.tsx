@@ -325,7 +325,7 @@ export default function AuthPage() {
 
   return (
     <main className="min-h-screen flex flex-col lg:flex-row">
-      <Seo title="Sign in or create an account — Openflip" description="Join Openflip to share photos, short videos, and connect with creators." path="/auth" />
+      <Seo title="Sign in or create an account — Openflip" description="Sign in or create a free Openflip account to share photos and short videos, follow your favourite creators, chat privately, and explore trending reels." path="/auth" />
       <h1 className="sr-only">Sign in or create your Openflip account</h1>
       {/* Left branding */}
       <div className="hidden lg:flex lg:w-1/2 gradient-primary items-center justify-center p-12 relative overflow-hidden">

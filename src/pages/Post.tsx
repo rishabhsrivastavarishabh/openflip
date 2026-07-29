@@ -335,7 +335,13 @@ export default function PostPage() {
   const captionIsLong = post.caption && post.caption.length > 100;
 
   const postTitle = `${post.profiles.username} on Openflip${post.caption ? `: ${post.caption.slice(0, 60)}` : ''}`;
-  const postDesc = post.caption?.slice(0, 160) || `Post by @${post.profiles.username} on Openflip.`;
+  const postDesc = (() => {
+    const base = post.caption?.trim();
+    const suffix = `See this ${post.media_type === 'video' ? 'video' : 'photo'} by @${post.profiles.username} on Openflip, plus more posts, reels and stories from creators you follow.`;
+    if (!base) return suffix.slice(0, 160);
+    const combined = base.length >= 120 ? base : `${base} — ${suffix}`;
+    return combined.slice(0, 160);
+  })();
 
   return (
     <MainLayout>

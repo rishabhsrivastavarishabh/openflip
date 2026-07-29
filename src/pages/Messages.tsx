@@ -303,7 +303,7 @@ export default function MessagesPage() {
 
   return (
     <MainLayout>
-      <Seo title="Messages — Openflip" description="Private chats and group conversations on Openflip." path="/messages" noindex />
+      <Seo title="Messages — Openflip" description="Private one-to-one and group chats on Openflip with end-to-end encryption, voice notes, view-once media, reactions, and instant voice or video calling." path="/messages" noindex />
       <div className="max-w-2xl mx-auto pb-24">
         {/* Header */}
         <header className="sticky top-0 z-40 glass-strong border-b">

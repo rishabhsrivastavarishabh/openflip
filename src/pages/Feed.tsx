@@ -416,7 +416,7 @@ export default function FeedPage() {
     <MainLayout>
       <Seo
         title="Openflip — Photo & short‑video social network"
-        description="Share photos and short videos, follow creators, and discover trending content on Openflip."
+        description="Share photos and short videos on Openflip, follow your favourite creators, react to stories, and discover trending reels in a feed tailored to your interests."
         path="/"
       />
       <h1 className="sr-only">Openflip — your photo and short‑video feed</h1>
