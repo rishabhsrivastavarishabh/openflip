@@ -8,7 +8,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { generateKeyPair, initCrypto, getDeviceName } from '@/lib/crypto';
-import { storeKeyPair, getKeyPairByUser, deleteKeyPair as deleteStoredKeyPair } from '@/lib/keyStore';
+import { storeKeyPair, getAllKeyPairs, deleteKeyPair as deleteStoredKeyPair } from '@/lib/keyStore';
 
 interface DeviceKeyState {
   deviceId: string | null;
@@ -37,31 +37,36 @@ export function useDeviceKeys() {
     try {
       await initCrypto();
 
-      // Check if we already have a keypair stored locally
-      const stored = await getKeyPairByUser(user.id);
-      
-      if (stored) {
-        // Verify the device still exists on server (maybeSingle avoids throwing on 0 rows)
-        const { data: device, error: verifyErr } = await (supabase as any)
+      // A browser can retain several historical device keys. Select the newest
+      // local key that still has a server-side device row instead of relying on
+      // IndexedDB index.get(), whose result is not guaranteed to be the latest.
+      const storedKeys = (await getAllKeyPairs(user.id))
+        .sort((a, b) => b.createdAt - a.createdAt);
+
+      if (storedKeys.length > 0) {
+        const { data: devices, error: verifyErr } = await (supabase as any)
           .from('devices')
           .select('id, device_public_key')
-          .eq('id', stored.deviceId)
           .eq('user_id', user.id)
-          .maybeSingle();
+          .in('id', storedKeys.map((key) => key.deviceId));
+
+        const activeIds = new Set((devices ?? []).map((device: { id: string }) => device.id));
+        const stored = storedKeys.find((key) => activeIds.has(key.deviceId));
 
         // If the verify query itself failed (network/RLS), trust local keys rather than blocking
         if (verifyErr) {
+          const fallback = storedKeys[0];
           setState({
-            deviceId: stored.deviceId,
-            publicKey: stored.publicKey,
-            privateKey: stored.privateKey,
+            deviceId: fallback.deviceId,
+            publicKey: fallback.publicKey,
+            privateKey: fallback.privateKey,
             loading: false,
             error: null,
           });
           return;
         }
 
-        if (device) {
+        if (stored) {
           setState({
             deviceId: stored.deviceId,
             publicKey: stored.publicKey,
@@ -79,7 +84,7 @@ export function useDeviceKeys() {
           return;
         }
 
-        // Device row was deleted on the server. Keep the local keypair in
+        // Local device rows were deleted on the server. Keep their keypairs in
         // IndexedDB anyway — old messages were encrypted to it and
         // useDecryptMessage tries every stored key, so deleting it would
         // permanently lose message history on this device.

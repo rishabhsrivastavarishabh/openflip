@@ -2312,6 +2312,12 @@ export type Database = {
           id: string
         }[]
       }
+      get_message_sender_device_public_key: {
+        Args: { _message_id: string }
+        Returns: {
+          device_public_key: string
+        }[]
+      }
       get_my_private_profile: {
         Args: never
         Returns: {
