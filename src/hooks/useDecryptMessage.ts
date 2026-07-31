@@ -114,29 +114,38 @@ export function useDecryptMessage() {
         if (plaintext !== null) break;
       }
 
-      // 2. Per-device fan-out copies for any of our known device ids.
+      // 2. Per-device fan-out copies for any of our known device ids. A new
+      // message can arrive over Realtime just before its fan-out rows finish,
+      // so briefly retry the lookup rather than permanently rendering failure.
       if (plaintext === null) {
         const deviceIds = candidates.map((c) => c.deviceId).filter(Boolean);
         if (deviceIds.length > 0) {
-          const { data: fanouts } = await (supabase as any)
-            .from('message_device_keys')
-            .select('recipient_device_id, ciphertext, nonce, aad')
-            .eq('message_id', messageId)
-            .in('recipient_device_id', deviceIds);
+          for (let attempt = 0; attempt < 4 && plaintext === null; attempt += 1) {
+            if (attempt > 0) {
+              await new Promise((resolve) => setTimeout(resolve, attempt * 250));
+            }
+            const { data: fanouts } = await (supabase as any)
+              .from('message_device_keys')
+              .select('recipient_device_id, ciphertext, nonce, aad')
+              .eq('message_id', messageId)
+              .in('recipient_device_id', deviceIds);
 
-          for (const row of fanouts ?? []) {
-            if (!row?.ciphertext || !row?.nonce || !row?.aad) continue;
-            for (const cand of candidates) {
-              plaintext = await decryptMessage(
-                row.ciphertext,
-                row.nonce,
-                row.aad,
-                cand.privateKey,
-                senderDevicePublicKey,
-              );
+            for (const row of fanouts ?? []) {
+              if (!row?.ciphertext || !row?.nonce || !row?.aad) continue;
+              for (const cand of candidates) {
+                // Only use the private key belonging to the fan-out target.
+                if (cand.deviceId !== row.recipient_device_id) continue;
+                plaintext = await decryptMessage(
+                  row.ciphertext,
+                  row.nonce,
+                  row.aad,
+                  cand.privateKey,
+                  senderDevicePublicKey,
+                );
+                if (plaintext !== null) break;
+              }
               if (plaintext !== null) break;
             }
-            if (plaintext !== null) break;
           }
         }
       }

@@ -90,7 +90,6 @@ export default function ConversationPage() {
   const { fetchOnlineStatus, isUserOnline, getLastSeenText } = useOnlineStatus();
   const { sendEncrypted, isReady: encryptionReady } = useSendEncryptedMessage();
   const { decrypt } = useDecryptMessage();
-  const { getRecipientPublicKey } = useDeviceKeys();
   const { startCall, starting: startingCall } = useStartCall();
 
   // Mark this chat as the active conversation so global push logic can suppress
@@ -101,7 +100,8 @@ export default function ConversationPage() {
   }, [conversationId]);
 
 
-  // Device public key cache for decryption
+  // Cache the exact sender device key per message. Caching by sender account
+  // breaks old messages as soon as that sender signs in on another device.
   const senderKeyCache = useRef<Record<string, string>>({});
 
   // Validate conversationId is a valid UUID
@@ -185,14 +185,15 @@ export default function ConversationPage() {
     
     for (const msg of msgs) {
       if ((msg as any).is_encrypted && (msg as any).ciphertext) {
-        const senderId = msg.sender_id;
-        // Get sender's device public key (cached)
-        if (!senderKeyCache.current[senderId]) {
-          const pk = await getRecipientPublicKey(senderId);
-          if (pk) senderKeyCache.current[senderId] = pk;
+        if (!senderKeyCache.current[msg.id]) {
+          const { data } = await (supabase as any).rpc('get_message_sender_device_public_key', {
+            _message_id: msg.id,
+          });
+          const row = Array.isArray(data) ? data[0] : data;
+          if (row?.device_public_key) senderKeyCache.current[msg.id] = row.device_public_key;
         }
         
-        const senderPk = senderKeyCache.current[senderId] || null;
+        const senderPk = senderKeyCache.current[msg.id] || null;
         const plaintext = await decrypt(
           msg.id,
           (msg as any).ciphertext,
@@ -206,7 +207,7 @@ export default function ConversationPage() {
     }
     
     setDecryptedContents(prev => ({ ...prev, ...newDecrypted }));
-  }, [decrypt, getRecipientPublicKey]);
+  }, [decrypt]);
 
   const fetchMessages = async () => {
     if (!conversationId || !user) return;
