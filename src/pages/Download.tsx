@@ -42,12 +42,15 @@ export default function Download() {
     ld.text = JSON.stringify({
       '@context': 'https://schema.org',
       '@type': 'MobileApplication',
+      '@id': `${PAGE_URL}#android-app`,
       name: 'Openflip',
       operatingSystem: 'Android',
       applicationCategory: 'SocialNetworkingApplication',
+      description: 'Openflip is a social networking app for sharing photos and reels, following creators, and chatting with end-to-end encrypted messages.',
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'INR' },
       downloadUrl: APK_URL,
       url: PAGE_URL,
+      image: 'https://www.openflip.in/favicon.png',
     });
     document.head.appendChild(ld);
 
