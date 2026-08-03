@@ -254,6 +254,17 @@ export default function CreatePage() {
     setCurrentPhotoIndex(to);
   };
 
+  const applyEditedPhoto = (index: number, edited: File) => {
+    setPhotos(prev => prev.map((p, i) => {
+      if (i !== index) return p;
+      URL.revokeObjectURL(p.preview);
+      return { ...p, file: edited, preview: URL.createObjectURL(edited) };
+    }));
+    setEditingPhotoIndex(null);
+  };
+
+
+
   const clearFile = () => {
     setFile(null);
     setPreview(null);
