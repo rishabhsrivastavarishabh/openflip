@@ -482,6 +482,14 @@ export default function CreatePage() {
                         <X className="w-4 h-4" />
                       </button>
 
+                      {/* Edit current photo */}
+                      <button onClick={() => setEditingPhotoIndex(currentPhotoIndex)}
+                        className="absolute bottom-3 right-3 h-9 px-3 rounded-full bg-black/60 backdrop-blur flex items-center gap-1.5 text-white text-xs font-medium">
+                        <Wand2 className="w-4 h-4" />Edit
+                      </button>
+
+
+
                       {/* Dots indicator */}
                       {photos.length > 1 && (
                         <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
