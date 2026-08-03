@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Image, Video, X, MapPin, ArrowLeft, Upload, Save, FileText, Trash2, Camera, Film, Hash, Loader2, GripVertical, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Image, Video, X, MapPin, ArrowLeft, Upload, Save, FileText, Trash2, Camera, Film, Hash, Loader2, GripVertical, ChevronLeft, ChevronRight, Wand2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { PhotoEditor } from '@/components/editor/PhotoEditor';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -64,7 +65,8 @@ export default function CreatePage() {
   const [audioArtist, setAudioArtist] = useState('');
   const [alsoPostToStory, setAlsoPostToStory] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  
+  const [editingPhotoIndex, setEditingPhotoIndex] = useState<number | null>(null);
+
   const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isVideo = file?.type.startsWith('video/') || existingMediaType === 'video';
@@ -251,6 +253,17 @@ export default function CreatePage() {
     });
     setCurrentPhotoIndex(to);
   };
+
+  const applyEditedPhoto = (index: number, edited: File) => {
+    setPhotos(prev => prev.map((p, i) => {
+      if (i !== index) return p;
+      URL.revokeObjectURL(p.preview);
+      return { ...p, file: edited, preview: URL.createObjectURL(edited) };
+    }));
+    setEditingPhotoIndex(null);
+  };
+
+
 
   const clearFile = () => {
     setFile(null);
@@ -469,6 +482,14 @@ export default function CreatePage() {
                         <X className="w-4 h-4" />
                       </button>
 
+                      {/* Edit current photo */}
+                      <button onClick={() => setEditingPhotoIndex(currentPhotoIndex)}
+                        className="absolute bottom-3 right-3 h-9 px-3 rounded-full bg-black/60 backdrop-blur flex items-center gap-1.5 text-white text-xs font-medium">
+                        <Wand2 className="w-4 h-4" />Edit
+                      </button>
+
+
+
                       {/* Dots indicator */}
                       {photos.length > 1 && (
                         <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
@@ -618,6 +639,15 @@ export default function CreatePage() {
             )}
           </TabsContent>
         </Tabs>
+
+        {editingPhotoIndex !== null && photos[editingPhotoIndex] && (
+          <PhotoEditor
+            open
+            file={photos[editingPhotoIndex].file}
+            onClose={() => setEditingPhotoIndex(null)}
+            onSave={(edited) => applyEditedPhoto(editingPhotoIndex, edited)}
+          />
+        )}
       </div>
     </MainLayout>
   );
