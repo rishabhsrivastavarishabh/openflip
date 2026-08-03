@@ -65,7 +65,8 @@ export default function CreatePage() {
   const [audioArtist, setAudioArtist] = useState('');
   const [alsoPostToStory, setAlsoPostToStory] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  
+  const [editingPhotoIndex, setEditingPhotoIndex] = useState<number | null>(null);
+
   const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isVideo = file?.type.startsWith('video/') || existingMediaType === 'video';
