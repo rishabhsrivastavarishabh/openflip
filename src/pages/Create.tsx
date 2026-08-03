@@ -639,6 +639,15 @@ export default function CreatePage() {
             )}
           </TabsContent>
         </Tabs>
+
+        {editingPhotoIndex !== null && photos[editingPhotoIndex] && (
+          <PhotoEditor
+            open
+            file={photos[editingPhotoIndex].file}
+            onClose={() => setEditingPhotoIndex(null)}
+            onSave={(edited) => applyEditedPhoto(editingPhotoIndex, edited)}
+          />
+        )}
       </div>
     </MainLayout>
   );
