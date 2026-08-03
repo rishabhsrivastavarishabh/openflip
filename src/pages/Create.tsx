@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Image, Video, X, MapPin, ArrowLeft, Upload, Save, FileText, Trash2, Camera, Film, Hash, Loader2, GripVertical, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Image, Video, X, MapPin, ArrowLeft, Upload, Save, FileText, Trash2, Camera, Film, Hash, Loader2, GripVertical, ChevronLeft, ChevronRight, Wand2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { PhotoEditor } from '@/components/editor/PhotoEditor';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
