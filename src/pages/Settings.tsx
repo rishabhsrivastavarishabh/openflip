@@ -5,6 +5,7 @@ import {
   Shield, Ban, Trash2, Briefcase, Settings2, Crown, BarChart3, Tag, Moon,
   Sun, Monitor, Users, Eye, Heart, MessageCircle, Smartphone, Image,
   Globe, UserCheck, Volume2, Palette, Info, FileText, Phone, Fingerprint, KeyRound, Download
+  LayoutGrid,
 } from 'lucide-react';
 
 import { AvatarCropDialog } from '@/components/settings/AvatarCropDialog';
