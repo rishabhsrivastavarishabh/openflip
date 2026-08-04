@@ -72,6 +72,7 @@ import { useAuth as useAuthForCall } from "@/contexts/AuthContext";
 import NotFound from "./pages/NotFound";
 import OAuthConsent from "./pages/OAuthConsent";
 import Creator from "./pages/Creator";
+import Studio from "./pages/Studio";
 import AgentIntegrations from "./pages/AgentIntegrations";
 import Download from "./pages/Download";
 
@@ -117,6 +118,8 @@ const App = () => (
               <Route path="/call/:callId" element={<Call />} />
               <Route path="/meet/:roomId" element={<Meet />} />
               <Route path="/creator" element={<Creator />} />
+              <Route path="/studio" element={<Studio />} />
+              <Route path="/studio/:section" element={<Studio />} />
               <Route path="/settings" element={<SettingsLayout />}>
               <Route index element={<Settings />} />
               <Route path="account" element={<AccountPage />} />
