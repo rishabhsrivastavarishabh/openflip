@@ -660,7 +660,9 @@ export default function SettingsPage() {
     {
       title: 'For professionals',
       items: [
+        { icon: LayoutGrid, label: 'Openflip Studio', description: 'Content managers, insights & revenue', action: () => navigate('/studio'), highlight: true },
         { icon: BarChart3, label: 'Creator Tools', description: 'Analytics, insights & growth', action: () => setShowCreatorTools(true), highlight: true },
+
         { icon: Crown, label: 'Verification & Subscription', description: profile?.is_verified ? '✓ Verified' : 'Get verified', action: () => setShowSubscriptionSettings(true), highlight: true },
         { icon: Shield, label: 'Business Verification', description: 'Verify with government ID', action: () => setShowVerificationFlow(true) },
         { icon: Briefcase, label: 'Business Account', description: 'Switch to business or creator', action: () => setShowBusinessSettings(true) },
