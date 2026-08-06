@@ -118,6 +118,9 @@ export default function StudioPage() {
       case 'subscriptions': return <FanSubscriptions onBack={back} />;
       case 'collaborations': return <CollaborationManager onBack={back} />;
       case 'verification': return <VerificationStatus onBack={back} />;
+      case 'marketplace': return <BrandMarketplace onBack={back} />;
+      case 'developers': return <DeveloperPlatform onBack={back} />;
+
       default: return <CreatorDashboard onBack={() => navigate(-1)} onOpenSection={(s) => navigate(`/studio/${s}`)} />;
     }
   };
