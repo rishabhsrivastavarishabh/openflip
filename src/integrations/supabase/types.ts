@@ -14,6 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      api_keys: {
+        Row: {
+          app_id: string | null
+          created_at: string
+          environment: string
+          id: string
+          key_hash: string
+          key_prefix: string
+          label: string
+          last_used_at: string | null
+          revoked_at: string | null
+          scopes: string[]
+          user_id: string
+        }
+        Insert: {
+          app_id?: string | null
+          created_at?: string
+          environment?: string
+          id?: string
+          key_hash: string
+          key_prefix: string
+          label?: string
+          last_used_at?: string | null
+          revoked_at?: string | null
+          scopes?: string[]
+          user_id: string
+        }
+        Update: {
+          app_id?: string | null
+          created_at?: string
+          environment?: string
+          id?: string
+          key_hash?: string
+          key_prefix?: string
+          label?: string
+          last_used_at?: string | null
+          revoked_at?: string | null
+          scopes?: string[]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_keys_app_id_fkey"
+            columns: ["app_id"]
+            isOneToOne: false
+            referencedRelation: "developer_apps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audience_insights: {
         Row: {
           age_range: string | null
@@ -125,6 +175,60 @@ export type Database = {
           target_audience?: Json | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      brand_deals: {
+        Row: {
+          brand_id: string
+          budget_max: number
+          budget_min: number
+          category: string
+          created_at: string
+          currency: string
+          deadline: string | null
+          deliverables: string
+          description: string
+          id: string
+          min_followers: number
+          requirements: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          brand_id: string
+          budget_max?: number
+          budget_min?: number
+          category?: string
+          created_at?: string
+          currency?: string
+          deadline?: string | null
+          deliverables?: string
+          description?: string
+          id?: string
+          min_followers?: number
+          requirements?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          brand_id?: string
+          budget_max?: number
+          budget_min?: number
+          category?: string
+          created_at?: string
+          currency?: string
+          deadline?: string | null
+          deliverables?: string
+          description?: string
+          id?: string
+          min_followers?: number
+          requirements?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -583,6 +687,86 @@ export type Database = {
           subscriber_id?: string
           tier?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      deal_applications: {
+        Row: {
+          created_at: string
+          creator_id: string
+          deal_id: string
+          id: string
+          message: string
+          proposed_rate: number | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          deal_id: string
+          id?: string
+          message?: string
+          proposed_rate?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          deal_id?: string
+          id?: string
+          message?: string
+          proposed_rate?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_applications_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "brand_deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      developer_apps: {
+        Row: {
+          created_at: string
+          description: string | null
+          environment: string
+          id: string
+          name: string
+          redirect_uris: string[]
+          status: string
+          updated_at: string
+          user_id: string
+          website_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          environment?: string
+          id?: string
+          name: string
+          redirect_uris?: string[]
+          status?: string
+          updated_at?: string
+          user_id: string
+          website_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          environment?: string
+          id?: string
+          name?: string
+          redirect_uris?: string[]
+          status?: string
+          updated_at?: string
+          user_id?: string
+          website_url?: string | null
         }
         Relationships: []
       }
@@ -2290,6 +2474,85 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      webhook_deliveries: {
+        Row: {
+          created_at: string
+          endpoint_id: string
+          error: string | null
+          event: string
+          id: string
+          status_code: number | null
+        }
+        Insert: {
+          created_at?: string
+          endpoint_id: string
+          error?: string | null
+          event: string
+          id?: string
+          status_code?: number | null
+        }
+        Update: {
+          created_at?: string
+          endpoint_id?: string
+          error?: string | null
+          event?: string
+          id?: string
+          status_code?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_deliveries_endpoint_id_fkey"
+            columns: ["endpoint_id"]
+            isOneToOne: false
+            referencedRelation: "webhook_endpoints"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      webhook_endpoints: {
+        Row: {
+          app_id: string | null
+          created_at: string
+          events: string[]
+          id: string
+          is_active: boolean
+          signing_secret: string
+          updated_at: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          app_id?: string | null
+          created_at?: string
+          events?: string[]
+          id?: string
+          is_active?: boolean
+          signing_secret: string
+          updated_at?: string
+          url: string
+          user_id: string
+        }
+        Update: {
+          app_id?: string | null
+          created_at?: string
+          events?: string[]
+          id?: string
+          is_active?: boolean
+          signing_secret?: string
+          updated_at?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_endpoints_app_id_fkey"
+            columns: ["app_id"]
+            isOneToOne: false
+            referencedRelation: "developer_apps"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
