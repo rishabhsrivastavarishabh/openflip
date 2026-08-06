@@ -3,7 +3,9 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft, LayoutGrid, Film, Images, CircleDot, FileText, BarChart3, Users,
   Wallet, Megaphone, Users2, BadgeCheck, HeartHandshake, Sparkles, CalendarDays, Loader2, Lock,
+  Briefcase, Code2,
 } from 'lucide-react';
+
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Seo } from '@/components/seo/Seo';
 import { Button } from '@/components/ui/button';
@@ -23,11 +25,15 @@ import { StoriesManager } from '@/components/studio/StoriesManager';
 import { DraftManager } from '@/components/studio/DraftManager';
 import { CollaborationManager } from '@/components/studio/CollaborationManager';
 import { VerificationStatus } from '@/components/studio/VerificationStatus';
+import { BrandMarketplace } from '@/components/studio/BrandMarketplace';
+import { DeveloperPlatform } from '@/components/studio/DeveloperPlatform';
 
 type SectionId =
   | 'overview' | 'content' | 'posts' | 'reels' | 'stories' | 'drafts'
   | 'analytics' | 'audience' | 'revenue' | 'promotions' | 'collaborations'
-  | 'subscriptions' | 'verification' | 'calendar' | 'assistant';
+  | 'subscriptions' | 'verification' | 'calendar' | 'assistant'
+  | 'marketplace' | 'developers';
+
 
 const GROUPS: { title: string; items: { id: SectionId; label: string; description: string; icon: typeof LayoutGrid }[] }[] = [
   {
@@ -56,10 +62,18 @@ const GROUPS: { title: string; items: { id: SectionId; label: string; descriptio
       { id: 'promotions', label: 'Promotions Manager', description: 'Boost campaigns and reach', icon: Megaphone },
       { id: 'subscriptions', label: 'Fan Subscriptions', description: 'Pricing, benefits and subscribers', icon: HeartHandshake },
       { id: 'collaborations', label: 'Collaboration Manager', description: 'Co-authored posts and invites', icon: Users2 },
+      { id: 'marketplace', label: 'Brand Marketplace', description: 'Paid brand deals and applications', icon: Briefcase },
       { id: 'verification', label: 'Verification Status', description: 'Badge status and request history', icon: BadgeCheck },
     ],
   },
+  {
+    title: 'Developers',
+    items: [
+      { id: 'developers', label: 'Developer Platform', description: 'API keys, webhooks, apps, docs and sandbox', icon: Code2 },
+    ],
+  },
 ];
+
 
 export default function StudioPage() {
   const { user, profile, loading } = useAuth();
@@ -104,6 +118,9 @@ export default function StudioPage() {
       case 'subscriptions': return <FanSubscriptions onBack={back} />;
       case 'collaborations': return <CollaborationManager onBack={back} />;
       case 'verification': return <VerificationStatus onBack={back} />;
+      case 'marketplace': return <BrandMarketplace onBack={back} />;
+      case 'developers': return <DeveloperPlatform onBack={back} />;
+
       default: return <CreatorDashboard onBack={() => navigate(-1)} onOpenSection={(s) => navigate(`/studio/${s}`)} />;
     }
   };

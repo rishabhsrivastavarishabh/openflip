@@ -37,12 +37,7 @@ export const RecoveryEmail = ({
         <Button style={button} href={confirmationUrl}>
           Reset Password
         </Button>
-        {token ? (
-          <>
-            <Text style={text}>Or enter this one-time code to reset your password:</Text>
-            <Text style={code}>{token}</Text>
-          </>
-        ) : null}
+
         <Text style={footer}>
           Didn't ask for this? You can safely ignore this email — your password
           won't change.
