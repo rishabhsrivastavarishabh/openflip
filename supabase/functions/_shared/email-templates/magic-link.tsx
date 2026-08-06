@@ -35,14 +35,9 @@ export const MagicLinkEmail = ({
           shortly.
         </Text>
         <Button style={button} href={confirmationUrl}>
-          Log In
+          Sign In
         </Button>
-        {token ? (
-          <>
-            <Text style={text}>Or enter this one-time code to sign in:</Text>
-            <Text style={code}>{token}</Text>
-          </>
-        ) : null}
+
         <Text style={footer}>
           Didn't request this? You can safely ignore this email.
         </Text>
