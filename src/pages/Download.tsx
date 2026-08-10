@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { FromOpenMedia } from '@/components/common/FromOpenMedia';
 
-const APK_URL = 'https://rjo7t2wzjhoes6ar.public.blob.vercel-storage.com/Openflip.apk';
+const APK_URL = 'https://openappstore.pages.dev/app/openflip';
 const PAGE_URL = 'https://www.openflip.in/download';
 
 function setMeta(name: string, content: string, attr: 'name' | 'property' = 'name') {

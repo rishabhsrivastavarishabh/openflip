@@ -708,7 +708,7 @@ export default function SettingsPage() {
     },
   ];
 
-  const ANDROID_APK_URL = 'https://rjo7t2wzjhoes6ar.public.blob.vercel-storage.com/Openflip.apk';
+  const ANDROID_APK_URL = 'https://openappstore.pages.dev/app/openflip';
   const handleDownloadApk = () => {
     if (!ANDROID_APK_URL) {
       toast.error('Android download link is not available right now. Please try again later.');
