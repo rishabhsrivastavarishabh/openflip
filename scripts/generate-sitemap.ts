@@ -15,20 +15,24 @@ interface SitemapEntry {
   lastmod?: string;
   changefreq?: "always" | "hourly" | "daily" | "weekly" | "monthly" | "yearly" | "never";
   priority?: string;
+  image?: string;
+  imageTitle?: string;
 }
 
 const TODAY = new Date().toISOString().slice(0, 10);
 
+const ICON = `${BASE_URL}/icon-512.png`;
+
 const staticEntries: SitemapEntry[] = [
-  { path: "/", lastmod: TODAY, changefreq: "daily", priority: "1.0" },
-  { path: "/explore", lastmod: TODAY, changefreq: "daily", priority: "0.9" },
-  { path: "/reels", lastmod: TODAY, changefreq: "daily", priority: "0.9" },
-  { path: "/search", changefreq: "weekly", priority: "0.6" },
-  { path: "/auth", changefreq: "monthly", priority: "0.5" },
-  { path: "/how-it-works", changefreq: "monthly", priority: "0.6" },
-  { path: "/download", lastmod: TODAY, changefreq: "monthly", priority: "0.8" },
-  { path: "/privacy", changefreq: "yearly", priority: "0.3" },
-  { path: "/terms", changefreq: "yearly", priority: "0.3" },
+  { path: "/", lastmod: TODAY, changefreq: "daily", priority: "1.0", image: ICON, imageTitle: "Openflip — Social Network for Photos & Reels" },
+  { path: "/explore", lastmod: TODAY, changefreq: "daily", priority: "0.9", image: ICON, imageTitle: "Explore Trending Posts & Reels on Openflip" },
+  { path: "/reels", lastmod: TODAY, changefreq: "daily", priority: "0.9", image: ICON, imageTitle: "Openflip Reels — Short Vertical Videos" },
+  { path: "/search", changefreq: "weekly", priority: "0.6", image: ICON, imageTitle: "Search People, Posts & Hashtags on Openflip" },
+  { path: "/auth", changefreq: "monthly", priority: "0.5", image: ICON, imageTitle: "Sign In or Create an Openflip Account" },
+  { path: "/how-it-works", changefreq: "monthly", priority: "0.6", image: ICON, imageTitle: "How Openflip Works — Sharing & Messaging" },
+  { path: "/download", lastmod: TODAY, changefreq: "monthly", priority: "0.8", image: ICON, imageTitle: "Download the Openflip Android App" },
+  { path: "/privacy", changefreq: "yearly", priority: "0.3", image: ICON, imageTitle: "Openflip Privacy Policy" },
+  { path: "/terms", changefreq: "yearly", priority: "0.3", image: ICON, imageTitle: "Openflip Terms of Service" },
 ];
 
 
@@ -58,6 +62,14 @@ function renderEntry(e: SitemapEntry) {
     e.lastmod ? `    <lastmod>${e.lastmod}</lastmod>` : null,
     e.changefreq ? `    <changefreq>${e.changefreq}</changefreq>` : null,
     e.priority ? `    <priority>${e.priority}</priority>` : null,
+    e.image
+      ? [
+          `    <image:image>`,
+          `      <image:loc>${xmlEscape(e.image)}</image:loc>`,
+          e.imageTitle ? `      <image:title>${xmlEscape(e.imageTitle)}</image:title>` : null,
+          `    </image:image>`,
+        ].filter(Boolean).join("\n")
+      : null,
     `  </url>`,
   ]
     .filter(Boolean)
@@ -78,11 +90,13 @@ async function main() {
     ...posts
       .filter((p: any) => publicUserIds.has(p.user_id))
       .map((p: any) => ({
-      path: `/post/${p.id}`,
-      lastmod: (p.updated_at || p.created_at || "").slice(0, 10) || undefined,
-      changefreq: "weekly" as const,
-      priority: "0.7",
-    })),
+        path: `/post/${p.id}`,
+        lastmod: (p.updated_at || p.created_at || "").slice(0, 10) || undefined,
+        changefreq: "weekly" as const,
+        priority: "0.7",
+        image: ICON,
+        imageTitle: "Openflip Post",
+      })),
     ...profiles
       .filter((p: any) => !p.is_private)
       .map((p: any) => ({
@@ -90,13 +104,15 @@ async function main() {
         lastmod: (p.updated_at || "").slice(0, 10) || undefined,
         changefreq: "weekly" as const,
         priority: "0.6",
+        image: ICON,
+        imageTitle: `${p.username} on Openflip`,
       })),
   ];
 
   const all = [...staticEntries, ...dynamicEntries];
   const xml = [
     `<?xml version="1.0" encoding="UTF-8"?>`,
-    `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`,
+    `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">`,
     ...all.map(renderEntry),
     `</urlset>`,
   ].join("\n");
