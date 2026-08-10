@@ -82,11 +82,13 @@ async function main() {
     ...posts
       .filter((p: any) => publicUserIds.has(p.user_id))
       .map((p: any) => ({
-      path: `/post/${p.id}`,
-      lastmod: (p.updated_at || p.created_at || "").slice(0, 10) || undefined,
-      changefreq: "weekly" as const,
-      priority: "0.7",
-    })),
+        path: `/post/${p.id}`,
+        lastmod: (p.updated_at || p.created_at || "").slice(0, 10) || undefined,
+        changefreq: "weekly" as const,
+        priority: "0.7",
+        image: ICON,
+        imageTitle: "Openflip Post",
+      })),
     ...profiles
       .filter((p: any) => !p.is_private)
       .map((p: any) => ({
@@ -94,6 +96,8 @@ async function main() {
         lastmod: (p.updated_at || "").slice(0, 10) || undefined,
         changefreq: "weekly" as const,
         priority: "0.6",
+        image: ICON,
+        imageTitle: `${p.username} on Openflip`,
       })),
   ];
 
