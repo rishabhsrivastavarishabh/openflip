@@ -62,6 +62,14 @@ function renderEntry(e: SitemapEntry) {
     e.lastmod ? `    <lastmod>${e.lastmod}</lastmod>` : null,
     e.changefreq ? `    <changefreq>${e.changefreq}</changefreq>` : null,
     e.priority ? `    <priority>${e.priority}</priority>` : null,
+    e.image
+      ? [
+          `    <image:image>`,
+          `      <image:loc>${xmlEscape(e.image)}</image:loc>`,
+          e.imageTitle ? `      <image:title>${xmlEscape(e.imageTitle)}</image:title>` : null,
+          `    </image:image>`,
+        ].filter(Boolean).join("\n")
+      : null,
     `  </url>`,
   ]
     .filter(Boolean)
