@@ -58,7 +58,7 @@ const AUDIO_CONSTRAINTS_HD: MediaTrackConstraints = {
   channelCount: { ideal: 2 },
   sampleRate: { ideal: 48000 },
   sampleSize: { ideal: 16 },
-  latency: { ideal: 0.01 },
+  ...({ latency: { ideal: 0.01 } } as MediaTrackConstraints),
 };
 
 // Ask Opus for stereo, full-band audio at a high average bitrate with in-band FEC
