@@ -371,11 +371,7 @@ export default function Call() {
       let stream: MediaStream;
       try {
         stream = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-          },
+          audio: AUDIO_CONSTRAINTS_HD,
           video: isVideo ? VIDEO_CONSTRAINTS_4K : false,
         });
       } catch (err: any) {
@@ -402,6 +398,7 @@ export default function Call() {
       stream.getTracks().forEach((track) => {
         const sender = pc.addTrack(track, stream);
         if (track.kind === 'video') tuneVideoSender(sender);
+        else if (track.kind === 'audio') tuneAudioSender(sender);
       });
 
       pc.ontrack = (ev) => {
@@ -424,8 +421,7 @@ export default function Call() {
         if (restartAttempts >= 3) { setConnState('failed'); return; }
         restartAttempts++;
         try {
-          const offer = await pcRef.current.createOffer({ iceRestart: true });
-          await pcRef.current.setLocalDescription(offer);
+          const offer = await setLocalHd(pcRef.current, await pcRef.current.createOffer({ iceRestart: true }));
           signalChanRef.current.send({
             type: 'broadcast',
             event: 'offer',
@@ -488,8 +484,7 @@ export default function Call() {
           await pcRef.current.setRemoteDescription(new RTCSessionDescription(payload.sdp));
           remoteSetRef.current = true;
           await applyPendingIce();
-          const answer = await pcRef.current.createAnswer();
-          await pcRef.current.setLocalDescription(answer);
+          const answer = await setLocalHd(pcRef.current, await pcRef.current.createAnswer());
           chan.send({
             type: 'broadcast',
             event: 'answer',
@@ -519,8 +514,7 @@ export default function Call() {
           if (isCaller) {
             if (hasOfferedRef.current) return;
             hasOfferedRef.current = true;
-            const offer = await pcRef.current.createOffer();
-            await pcRef.current.setLocalDescription(offer);
+            const offer = await setLocalHd(pcRef.current, await pcRef.current.createOffer());
             chan.send({
               type: 'broadcast',
               event: 'offer',
@@ -567,8 +561,7 @@ export default function Call() {
               }
             }
 
-            const ans = await pcRef.current.createAnswer();
-            await pcRef.current.setLocalDescription(ans);
+            const ans = await setLocalHd(pcRef.current, await pcRef.current.createAnswer());
             chan.send({
               type: 'broadcast',
               event: 'renegotiate-answer',
@@ -786,8 +779,7 @@ export default function Call() {
       tuneVideoSender(vSender);
 
       if (localVideoRef.current) localVideoRef.current.srcObject = localStreamRef.current;
-      const offer = await pcRef.current.createOffer();
-      await pcRef.current.setLocalDescription(offer);
+      const offer = await setLocalHd(pcRef.current, await pcRef.current.createOffer());
       signalChanRef.current.send({
         type: 'broadcast',
         event: 'renegotiate-offer',
