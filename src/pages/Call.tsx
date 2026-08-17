@@ -50,6 +50,78 @@ const VIDEO_CONSTRAINTS_4K: MediaTrackConstraints = {
   frameRate: { ideal: 30, max: 60 },
 };
 
+// HD audio: full-band stereo capture at 48 kHz with the usual voice cleanup.
+const AUDIO_CONSTRAINTS_HD: MediaTrackConstraints = {
+  echoCancellation: true,
+  noiseSuppression: true,
+  autoGainControl: true,
+  channelCount: { ideal: 2 },
+  sampleRate: { ideal: 48000 },
+  sampleSize: { ideal: 16 },
+  latency: { ideal: 0.01 },
+};
+
+// Ask Opus for stereo, full-band audio at a high average bitrate with in-band FEC
+// (packet-loss resilience) and DTX off so quiet passages stay natural.
+const HD_OPUS_PARAMS =
+  'stereo=1;sprop-stereo=1;maxaveragebitrate=256000;maxplaybackrate=48000;' +
+  'sprop-maxcapturerate=48000;useinbandfec=1;usedtx=0;cbr=0';
+
+const applyHdAudioSdp = (sdp: string): string => {
+  const payloads = [...sdp.matchAll(/^a=rtpmap:(\d+)\s+opus\/48000/gim)].map((m) => m[1]);
+  let out = sdp;
+  for (const pt of payloads) {
+    const fmtp = new RegExp(`^a=fmtp:${pt} (.*)$`, 'im');
+    if (fmtp.test(out)) {
+      out = out.replace(fmtp, (_m, existing: string) => {
+        const kept = existing
+          .split(';')
+          .filter((p) => p && !/^(stereo|sprop-stereo|maxaveragebitrate|maxplaybackrate|sprop-maxcapturerate|useinbandfec|usedtx|cbr)=/i.test(p.trim()))
+          .join(';');
+        return `a=fmtp:${pt} ${kept ? kept + ';' : ''}${HD_OPUS_PARAMS}`;
+      });
+    } else {
+      out = out.replace(
+        new RegExp(`^(a=rtpmap:${pt} opus/48000.*)$`, 'im'),
+        `$1\r\na=fmtp:${pt} ${HD_OPUS_PARAMS}`,
+      );
+    }
+  }
+  return out;
+};
+
+// Set a local offer/answer with the HD-audio tweaks applied to the SDP.
+const setLocalHd = async (
+  pc: RTCPeerConnection,
+  desc: RTCSessionDescriptionInit,
+): Promise<RTCSessionDescriptionInit> => {
+  const tuned: RTCSessionDescriptionInit = {
+    type: desc.type,
+    sdp: desc.sdp ? applyHdAudioSdp(desc.sdp) : desc.sdp,
+  };
+  try {
+    await pc.setLocalDescription(tuned);
+    return tuned;
+  } catch {
+    await pc.setLocalDescription(desc);
+    return desc;
+  }
+};
+
+// Give the audio stream plenty of headroom and network priority.
+const tuneAudioSender = async (sender: RTCRtpSender) => {
+  try {
+    const params = sender.getParameters();
+    if (!params.encodings || params.encodings.length === 0) params.encodings = [{}];
+    params.encodings[0].maxBitrate = 256_000;
+    (params.encodings[0] as any).networkPriority = 'high';
+    (params.encodings[0] as any).priority = 'high';
+    (params as any).degradationPreference = 'maintain-resolution';
+    await sender.setParameters(params);
+  } catch { /* older browsers ignore */ }
+};
+
+
 // Configure a video sender for 4K + low-latency: high bitrate cap and
 // prefer smooth framerate over resolution when bandwidth dips.
 const tuneVideoSender = async (sender: RTCRtpSender) => {
