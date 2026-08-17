@@ -50,6 +50,78 @@ const VIDEO_CONSTRAINTS_4K: MediaTrackConstraints = {
   frameRate: { ideal: 30, max: 60 },
 };
 
+// HD audio: full-band stereo capture at 48 kHz with the usual voice cleanup.
+const AUDIO_CONSTRAINTS_HD: MediaTrackConstraints = {
+  echoCancellation: true,
+  noiseSuppression: true,
+  autoGainControl: true,
+  channelCount: { ideal: 2 },
+  sampleRate: { ideal: 48000 },
+  sampleSize: { ideal: 16 },
+  ...({ latency: { ideal: 0.01 } } as MediaTrackConstraints),
+};
+
+// Ask Opus for stereo, full-band audio at a high average bitrate with in-band FEC
+// (packet-loss resilience) and DTX off so quiet passages stay natural.
+const HD_OPUS_PARAMS =
+  'stereo=1;sprop-stereo=1;maxaveragebitrate=256000;maxplaybackrate=48000;' +
+  'sprop-maxcapturerate=48000;useinbandfec=1;usedtx=0;cbr=0';
+
+const applyHdAudioSdp = (sdp: string): string => {
+  const payloads = [...sdp.matchAll(/^a=rtpmap:(\d+)\s+opus\/48000/gim)].map((m) => m[1]);
+  let out = sdp;
+  for (const pt of payloads) {
+    const fmtp = new RegExp(`^a=fmtp:${pt} (.*)$`, 'im');
+    if (fmtp.test(out)) {
+      out = out.replace(fmtp, (_m, existing: string) => {
+        const kept = existing
+          .split(';')
+          .filter((p) => p && !/^(stereo|sprop-stereo|maxaveragebitrate|maxplaybackrate|sprop-maxcapturerate|useinbandfec|usedtx|cbr)=/i.test(p.trim()))
+          .join(';');
+        return `a=fmtp:${pt} ${kept ? kept + ';' : ''}${HD_OPUS_PARAMS}`;
+      });
+    } else {
+      out = out.replace(
+        new RegExp(`^(a=rtpmap:${pt} opus/48000.*)$`, 'im'),
+        `$1\r\na=fmtp:${pt} ${HD_OPUS_PARAMS}`,
+      );
+    }
+  }
+  return out;
+};
+
+// Set a local offer/answer with the HD-audio tweaks applied to the SDP.
+const setLocalHd = async (
+  pc: RTCPeerConnection,
+  desc: RTCSessionDescriptionInit,
+): Promise<RTCSessionDescriptionInit> => {
+  const tuned: RTCSessionDescriptionInit = {
+    type: desc.type,
+    sdp: desc.sdp ? applyHdAudioSdp(desc.sdp) : desc.sdp,
+  };
+  try {
+    await pc.setLocalDescription(tuned);
+    return tuned;
+  } catch {
+    await pc.setLocalDescription(desc);
+    return desc;
+  }
+};
+
+// Give the audio stream plenty of headroom and network priority.
+const tuneAudioSender = async (sender: RTCRtpSender) => {
+  try {
+    const params = sender.getParameters();
+    if (!params.encodings || params.encodings.length === 0) params.encodings = [{}];
+    params.encodings[0].maxBitrate = 256_000;
+    (params.encodings[0] as any).networkPriority = 'high';
+    (params.encodings[0] as any).priority = 'high';
+    (params as any).degradationPreference = 'maintain-resolution';
+    await sender.setParameters(params);
+  } catch { /* older browsers ignore */ }
+};
+
+
 // Configure a video sender for 4K + low-latency: high bitrate cap and
 // prefer smooth framerate over resolution when bandwidth dips.
 const tuneVideoSender = async (sender: RTCRtpSender) => {
@@ -299,11 +371,7 @@ export default function Call() {
       let stream: MediaStream;
       try {
         stream = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-          },
+          audio: AUDIO_CONSTRAINTS_HD,
           video: isVideo ? VIDEO_CONSTRAINTS_4K : false,
         });
       } catch (err: any) {
@@ -330,6 +398,7 @@ export default function Call() {
       stream.getTracks().forEach((track) => {
         const sender = pc.addTrack(track, stream);
         if (track.kind === 'video') tuneVideoSender(sender);
+        else if (track.kind === 'audio') tuneAudioSender(sender);
       });
 
       pc.ontrack = (ev) => {
@@ -352,8 +421,7 @@ export default function Call() {
         if (restartAttempts >= 3) { setConnState('failed'); return; }
         restartAttempts++;
         try {
-          const offer = await pcRef.current.createOffer({ iceRestart: true });
-          await pcRef.current.setLocalDescription(offer);
+          const offer = await setLocalHd(pcRef.current, await pcRef.current.createOffer({ iceRestart: true }));
           signalChanRef.current.send({
             type: 'broadcast',
             event: 'offer',
@@ -416,8 +484,7 @@ export default function Call() {
           await pcRef.current.setRemoteDescription(new RTCSessionDescription(payload.sdp));
           remoteSetRef.current = true;
           await applyPendingIce();
-          const answer = await pcRef.current.createAnswer();
-          await pcRef.current.setLocalDescription(answer);
+          const answer = await setLocalHd(pcRef.current, await pcRef.current.createAnswer());
           chan.send({
             type: 'broadcast',
             event: 'answer',
@@ -447,8 +514,7 @@ export default function Call() {
           if (isCaller) {
             if (hasOfferedRef.current) return;
             hasOfferedRef.current = true;
-            const offer = await pcRef.current.createOffer();
-            await pcRef.current.setLocalDescription(offer);
+            const offer = await setLocalHd(pcRef.current, await pcRef.current.createOffer());
             chan.send({
               type: 'broadcast',
               event: 'offer',
@@ -495,8 +561,7 @@ export default function Call() {
               }
             }
 
-            const ans = await pcRef.current.createAnswer();
-            await pcRef.current.setLocalDescription(ans);
+            const ans = await setLocalHd(pcRef.current, await pcRef.current.createAnswer());
             chan.send({
               type: 'broadcast',
               event: 'renegotiate-answer',
@@ -714,8 +779,7 @@ export default function Call() {
       tuneVideoSender(vSender);
 
       if (localVideoRef.current) localVideoRef.current.srcObject = localStreamRef.current;
-      const offer = await pcRef.current.createOffer();
-      await pcRef.current.setLocalDescription(offer);
+      const offer = await setLocalHd(pcRef.current, await pcRef.current.createOffer());
       signalChanRef.current.send({
         type: 'broadcast',
         event: 'renegotiate-offer',
