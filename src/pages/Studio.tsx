@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, LayoutGrid, Film, Images, CircleDot, FileText, BarChart3, Users,
   Wallet, Megaphone, Users2, BadgeCheck, HeartHandshake, Sparkles, CalendarDays, Loader2, Lock,
@@ -79,6 +79,7 @@ export default function StudioPage() {
   const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
   const { section } = useParams<{ section?: string }>();
+  const [searchParams] = useSearchParams();
   const [isAdmin, setIsAdmin] = useState(false);
   const [checking, setChecking] = useState(true);
 
@@ -114,7 +115,13 @@ export default function StudioPage() {
       case 'audience': return <AudienceInsights onBack={back} />;
       case 'assistant': return <AIGrowthAssistant onBack={back} />;
       case 'revenue': return <CreatorEarnings onBack={back} />;
-      case 'promotions': return <BoostCampaign onBack={back} />;
+      case 'promotions': return (
+        <BoostCampaign
+          onBack={back}
+          initialContentType={searchParams.get('type') || undefined}
+          initialContentId={searchParams.get('id') || undefined}
+        />
+      );
       case 'subscriptions': return <FanSubscriptions onBack={back} />;
       case 'collaborations': return <CollaborationManager onBack={back} />;
       case 'verification': return <VerificationStatus onBack={back} />;
