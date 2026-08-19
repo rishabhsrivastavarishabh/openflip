@@ -81,7 +81,7 @@ export function DraftManager({ onBack }: { onBack: () => void }) {
                   {d.location ? ` · ${d.location}` : ''}
                 </p>
               </div>
-              <Button variant="ghost" size="icon" onClick={() => navigate('/create')}><Pencil className="w-4 h-4" /></Button>
+              <Button variant="ghost" size="icon" onClick={() => navigate(`/create?draft=${d.id}`)}><Pencil className="w-4 h-4" /></Button>
               <Button variant="ghost" size="icon" onClick={() => remove(d.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
             </div>
           ))}

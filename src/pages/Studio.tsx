@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, LayoutGrid, Film, Images, CircleDot, FileText, BarChart3, Users,
   Wallet, Megaphone, Users2, BadgeCheck, HeartHandshake, Sparkles, CalendarDays, Loader2, Lock,
