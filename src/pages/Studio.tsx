@@ -79,6 +79,7 @@ export default function StudioPage() {
   const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
   const { section } = useParams<{ section?: string }>();
+  const [searchParams] = useSearchParams();
   const [isAdmin, setIsAdmin] = useState(false);
   const [checking, setChecking] = useState(true);
 
