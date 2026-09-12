@@ -78,6 +78,7 @@ export default function CreatePage() {
       if (editPostId) {
         loadPostForEditing(editPostId);
       } else if (draftId) {
+        trackEvent('draft_resume_opened', { draft_id: draftId });
         loadDraft(draftId);
       }
     }
@@ -138,6 +139,10 @@ export default function CreatePage() {
       }
       setCurrentDraftId(draft.id);
       setActiveTab('create');
+      trackEvent('draft_resume_loaded', { draft_id: draft.id, has_media: !!draft.media_url });
+    } else {
+      trackEvent('draft_resume_failed', { draft_id: id });
+      toast.error('Draft not found');
     }
   };
 
