@@ -147,6 +147,15 @@ const App = () => (
               <Route path="/terms" element={<TermsOfService />} />
               <Route path="/how-it-works" element={<HowItWorks />} />
               <Route path="/download" element={<Download />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/features" element={<Features />} />
+              <Route path="/creators" element={<Creators />} />
+              <Route path="/community" element={<Community />} />
+              <Route path="/help" element={<Help />} />
+              <Route path="/faq" element={<Navigate to="/help" replace />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/login" element={<Navigate to="/auth" replace />} />
+              <Route path="/signup" element={<Navigate to="/auth?mode=signup" replace />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             <GlobalCallOverlay />
