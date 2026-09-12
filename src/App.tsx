@@ -24,7 +24,7 @@ function RootRoute() {
   }
 
   if (loading) return null;
-  return user ? <Feed /> : <Navigate to="/auth" replace />;
+  return user ? <Feed /> : <Landing />;
 }
 
 function ReelSingularRedirect() {
@@ -75,6 +75,13 @@ import Creator from "./pages/Creator";
 import Studio from "./pages/Studio";
 import AgentIntegrations from "./pages/AgentIntegrations";
 import Download from "./pages/Download";
+import Landing from "./pages/marketing/Landing";
+import About from "./pages/marketing/About";
+import Features from "./pages/marketing/Features";
+import Creators from "./pages/marketing/Creators";
+import Community from "./pages/marketing/Community";
+import Help from "./pages/marketing/Help";
+import Contact from "./pages/marketing/Contact";
 
 
 function GlobalCallOverlay() {
@@ -140,6 +147,15 @@ const App = () => (
               <Route path="/terms" element={<TermsOfService />} />
               <Route path="/how-it-works" element={<HowItWorks />} />
               <Route path="/download" element={<Download />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/features" element={<Features />} />
+              <Route path="/creators" element={<Creators />} />
+              <Route path="/community" element={<Community />} />
+              <Route path="/help" element={<Help />} />
+              <Route path="/faq" element={<Navigate to="/help" replace />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/login" element={<Navigate to="/auth" replace />} />
+              <Route path="/signup" element={<Navigate to="/auth?mode=signup" replace />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             <GlobalCallOverlay />

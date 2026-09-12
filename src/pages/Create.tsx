@@ -78,6 +78,7 @@ export default function CreatePage() {
       if (editPostId) {
         loadPostForEditing(editPostId);
       } else if (draftId) {
+        trackEvent('draft_resume_opened', { draft_id: draftId });
         loadDraft(draftId);
       }
     }
@@ -115,7 +116,18 @@ export default function CreatePage() {
   };
 
   const loadDraft = async (id: string) => {
-    const draft = drafts.find(d => d.id === id);
+    // The draft list may not have loaded yet (deep link from the Draft Manager),
+    // so fall back to fetching the single row directly.
+    let draft = drafts.find(d => d.id === id) as Draft | undefined;
+    if (!draft) {
+      const { data } = await supabase
+        .from('drafts')
+        .select('*')
+        .eq('id', id)
+        .eq('user_id', user?.id ?? '')
+        .maybeSingle();
+      draft = (data as Draft | null) ?? undefined;
+    }
     if (draft) {
       setCaption(draft.caption || '');
       setLocation(draft.location || '');
@@ -127,6 +139,10 @@ export default function CreatePage() {
       }
       setCurrentDraftId(draft.id);
       setActiveTab('create');
+      trackEvent('draft_resume_loaded', { draft_id: draft.id, has_media: !!draft.media_url });
+    } else {
+      trackEvent('draft_resume_failed', { draft_id: id });
+      toast.error('Draft not found');
     }
   };
 
