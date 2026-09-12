@@ -115,7 +115,18 @@ export default function CreatePage() {
   };
 
   const loadDraft = async (id: string) => {
-    const draft = drafts.find(d => d.id === id);
+    // The draft list may not have loaded yet (deep link from the Draft Manager),
+    // so fall back to fetching the single row directly.
+    let draft = drafts.find(d => d.id === id) as Draft | undefined;
+    if (!draft) {
+      const { data } = await supabase
+        .from('drafts')
+        .select('*')
+        .eq('id', id)
+        .eq('user_id', user?.id ?? '')
+        .maybeSingle();
+      draft = (data as Draft | null) ?? undefined;
+    }
     if (draft) {
       setCaption(draft.caption || '');
       setLocation(draft.location || '');
