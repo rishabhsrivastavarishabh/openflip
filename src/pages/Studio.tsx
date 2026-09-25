@@ -116,13 +116,16 @@ export default function StudioPage() {
       case 'audience': return <AudienceInsights onBack={back} />;
       case 'assistant': return <AIGrowthAssistant onBack={back} />;
       case 'revenue': return <CreatorEarnings onBack={back} />;
-      case 'promotions': return (
-        <BoostCampaign
-          onBack={back}
-          initialContentType={searchParams.get('type') || undefined}
-          initialContentId={searchParams.get('id') || undefined}
-        />
-      );
+      case 'promotions': {
+        const boost = parseBoostParams(searchParams);
+        return (
+          <BoostCampaign
+            onBack={back}
+            initialContentType={boost.contentType}
+            initialContentId={boost.contentId}
+          />
+        );
+      }
       case 'subscriptions': return <FanSubscriptions onBack={back} />;
       case 'collaborations': return <CollaborationManager onBack={back} />;
       case 'verification': return <VerificationStatus onBack={back} />;
