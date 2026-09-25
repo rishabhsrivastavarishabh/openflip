@@ -21,6 +21,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { trackEvent } from '@/lib/analytics';
 import { differenceInDays, addDays } from 'date-fns';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { PaymentCheckout } from '@/components/payment/PaymentCheckout';
@@ -78,6 +79,14 @@ export function BoostCampaign({ onBack, initialContentType, initialContentId }: 
       fetchData();
     }
   }, [user]);
+
+  useEffect(() => {
+    trackEvent('boost_flow_opened', {
+      preselected: !!initialContentId,
+      content_type: initialContentType,
+      content_id: initialContentId,
+    });
+  }, [initialContentId, initialContentType]);
 
   const fetchData = async () => {
     if (!user) return;
