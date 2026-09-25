@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { pingIndexNow } from '@/lib/indexnow';
+import { trackEvent } from '@/lib/analytics';
 
 interface Draft {
   id: string;
