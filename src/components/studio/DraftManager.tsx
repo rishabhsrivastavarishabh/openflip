@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
+import { draftEditPath } from '@/lib/deepLinks';
 
 interface DraftRow {
   id: string;
@@ -81,7 +82,7 @@ export function DraftManager({ onBack }: { onBack: () => void }) {
                   {d.location ? ` · ${d.location}` : ''}
                 </p>
               </div>
-              <Button variant="ghost" size="icon" onClick={() => navigate(`/create?draft=${d.id}`)}><Pencil className="w-4 h-4" /></Button>
+              <Button variant="ghost" size="icon" aria-label="Continue editing draft" onClick={() => navigate(draftEditPath(d.id))}><Pencil className="w-4 h-4" /></Button>
               <Button variant="ghost" size="icon" onClick={() => remove(d.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
             </div>
           ))}

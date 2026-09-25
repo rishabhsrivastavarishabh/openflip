@@ -27,6 +27,7 @@ import { CollaborationManager } from '@/components/studio/CollaborationManager';
 import { VerificationStatus } from '@/components/studio/VerificationStatus';
 import { BrandMarketplace } from '@/components/studio/BrandMarketplace';
 import { DeveloperPlatform } from '@/components/studio/DeveloperPlatform';
+import { boostContentPath, parseBoostParams } from '@/lib/deepLinks';
 
 type SectionId =
   | 'overview' | 'content' | 'posts' | 'reels' | 'stories' | 'drafts'
@@ -105,7 +106,7 @@ export default function StudioPage() {
 
   const renderSection = () => {
     switch (current) {
-      case 'content': return <ContentManager onBack={back} onBoost={(t, id) => navigate(`/studio/promotions?type=${t}&id=${id}`)} />;
+      case 'content': return <ContentManager onBack={back} onBoost={(t, id) => navigate(boostContentPath(t, id))} />;
       case 'posts':
       case 'reels': return <ContentManager onBack={back} />;
       case 'stories': return <StoriesManager onBack={back} />;
@@ -115,13 +116,16 @@ export default function StudioPage() {
       case 'audience': return <AudienceInsights onBack={back} />;
       case 'assistant': return <AIGrowthAssistant onBack={back} />;
       case 'revenue': return <CreatorEarnings onBack={back} />;
-      case 'promotions': return (
-        <BoostCampaign
-          onBack={back}
-          initialContentType={searchParams.get('type') || undefined}
-          initialContentId={searchParams.get('id') || undefined}
-        />
-      );
+      case 'promotions': {
+        const boost = parseBoostParams(searchParams);
+        return (
+          <BoostCampaign
+            onBack={back}
+            initialContentType={boost.contentType}
+            initialContentId={boost.contentId}
+          />
+        );
+      }
       case 'subscriptions': return <FanSubscriptions onBack={back} />;
       case 'collaborations': return <CollaborationManager onBack={back} />;
       case 'verification': return <VerificationStatus onBack={back} />;
