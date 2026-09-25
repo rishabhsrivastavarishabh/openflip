@@ -187,10 +187,19 @@ export function BoostCampaign({ onBack, initialContentType, initialContentId }: 
 
       if (error) throw error;
 
+      trackEvent('boost_campaign_created', {
+        campaign_id: data?.id,
+        content_id: formData.contentId,
+        budget: formData.budget,
+      });
       setPendingCampaign(data);
       setShowPayment(true);
     } catch (error) {
       console.error('Error creating campaign:', error);
+      trackEvent('boost_campaign_failed', {
+        content_id: formData.contentId,
+        reason: error instanceof Error ? error.message : 'unknown',
+      });
       toast.error('Failed to create campaign');
     } finally {
       setCreating(false);
