@@ -157,6 +157,11 @@ export function BoostCampaign({ onBack, initialContentType, initialContentId }: 
     }
 
     setCreating(true);
+    trackEvent('boost_campaign_submitted', {
+      content_id: formData.contentId,
+      budget: formData.budget,
+      duration_days: formData.duration,
+    });
     try {
       const selectedContent = contentOptions.find(c => c.id === formData.contentId);
       
