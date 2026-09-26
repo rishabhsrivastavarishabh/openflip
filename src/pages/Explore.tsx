@@ -4,6 +4,7 @@ import { Search, TrendingUp, Hash, User, Film, Grid3X3 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Seo } from '@/components/seo/Seo';
+import { InterestRecommendations } from '@/components/discover/InterestRecommendations';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
@@ -207,6 +208,8 @@ export default function ExplorePage() {
             </div>
           </div>
         </div>
+
+        {searchQuery.length === 0 && <InterestRecommendations />}
 
         {searchQuery.length > 0 ? (
           <div className="space-y-2">
