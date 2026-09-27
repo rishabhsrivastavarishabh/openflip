@@ -74,77 +74,109 @@ export function AccountSwitcher({ open, onOpenChange }: AccountSwitcherProps) {
   };
 
   const otherAccounts = accounts.filter(a => a.id !== user?.id);
+  const active = user
+    ? {
+        username: currentAccount?.id === user.id ? currentAccount.username : profile?.username || user.email?.split('@')[0] || 'you',
+        email: user.email || '',
+        avatar_url: (currentAccount?.id === user.id ? currentAccount.avatar_url : profile?.avatar_url) || null,
+      }
+    : null;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="rounded-t-2xl">
+      <SheetContent side="bottom" className="rounded-t-2xl max-h-[85vh] overflow-y-auto">
         <SheetHeader className="text-left">
-          <SheetTitle>Switch Account</SheetTitle>
+          <SheetTitle>Accounts</SheetTitle>
           <SheetDescription>
-            Choose an account or add a new one
+            Switch between saved accounts or sign in to another one.
           </SheetDescription>
         </SheetHeader>
 
-        <div className="mt-6 space-y-2">
-          {/* Current Account */}
-          {currentAccount && user && (
-            <div
-              className="flex items-center gap-3 p-3 rounded-xl bg-secondary"
-            >
-              <Avatar className="h-12 w-12">
-                <AvatarImage src={currentAccount.avatar_url || undefined} />
-                <AvatarFallback className="bg-primary/10 text-primary">
-                  {currentAccount.username?.charAt(0).toUpperCase() || 'U'}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold truncate">{currentAccount.username}</p>
-                <p className="text-sm text-muted-foreground truncate">{currentAccount.email}</p>
+        <div className="mt-5 space-y-5">
+          {/* Signed in */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Signed in as</p>
+            {active ? (
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-primary/10 border border-primary/30">
+                <Avatar className="h-12 w-12 ring-2 ring-primary">
+                  <AvatarImage src={active.avatar_url || undefined} />
+                  <AvatarFallback className="bg-primary/10 text-primary">
+                    {active.username.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold truncate">{active.username}</p>
+                  <p className="text-sm text-muted-foreground truncate">{active.email}</p>
+                </div>
+                <span className="flex items-center gap-1 text-xs font-medium text-primary">
+                  <Check className="h-4 w-4" /> Active
+                </span>
               </div>
-              <Check className="h-5 w-5 text-primary" />
-            </div>
-          )}
-
-          {/* Other Accounts */}
-          {otherAccounts.map(account => (
-            <button
-              key={account.id}
-              onClick={() => handleSwitchAccount(account.id)}
-              disabled={switching}
-              className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary transition-colors disabled:opacity-50"
-            >
-              <Avatar className="h-12 w-12">
-                <AvatarImage src={account.avatar_url || undefined} />
-                <AvatarFallback className="bg-primary/10 text-primary">
-                  {account.username?.charAt(0).toUpperCase() || 'U'}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0 text-left">
-                <p className="font-semibold truncate">{account.username}</p>
-                <p className="text-sm text-muted-foreground truncate">{account.email}</p>
+            ) : (
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary">
+                <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                  <User className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <p className="text-sm text-muted-foreground">You're not signed in.</p>
               </div>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={(e) => handleRemoveAccount(account.id, e)}
-                className="opacity-50 hover:opacity-100"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </button>
-          ))}
+            )}
+          </div>
 
-          {/* Add Account */}
-          <button
-            onClick={handleAddAccount}
+          {/* Saved accounts */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+              Saved accounts {otherAccounts.length > 0 && `(${otherAccounts.length})`}
+            </p>
+            {otherAccounts.length === 0 ? (
+              <p className="text-sm text-muted-foreground px-1">No other saved accounts on this device.</p>
+            ) : (
+              <div className="space-y-1">
+                {otherAccounts.map(account => (
+                  <div
+                    key={account.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => !switching && handleSwitchAccount(account.id)}
+                    onKeyDown={(e) => e.key === 'Enter' && !switching && handleSwitchAccount(account.id)}
+                    aria-label={`Switch to ${account.username}`}
+                    className={`w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary transition-colors cursor-pointer ${switching ? 'opacity-50 pointer-events-none' : ''}`}
+                  >
+                    <Avatar className="h-12 w-12">
+                      <AvatarImage src={account.avatar_url || undefined} />
+                      <AvatarFallback className="bg-primary/10 text-primary">
+                        {account.username?.charAt(0).toUpperCase() || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0 text-left">
+                      <p className="font-semibold truncate">{account.username}</p>
+                      <p className="text-sm text-muted-foreground truncate">{account.email}</p>
+                    </div>
+                    <span className="text-xs text-primary font-medium">Switch</span>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={`Remove ${account.username}`}
+                      onClick={(e) => handleRemoveAccount(account.id, e)}
+                      className="opacity-50 hover:opacity-100"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Sign in / Add */}
+          <Button
+            variant="gradient"
+            className="w-full"
+            onClick={user ? handleAddAccount : () => { onOpenChange(false); navigate('/auth'); }}
             disabled={switching}
-            className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary transition-colors text-primary"
           >
-            <div className="h-12 w-12 rounded-full border-2 border-dashed border-primary flex items-center justify-center">
-              <Plus className="h-5 w-5" />
-            </div>
-            <span className="font-medium">Add Account</span>
-          </button>
+            <Plus className="h-4 w-4 mr-1" />
+            {user ? 'Add account' : 'Sign in'}
+          </Button>
         </div>
       </SheetContent>
     </Sheet>

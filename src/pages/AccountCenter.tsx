@@ -594,8 +594,8 @@ Currency: INR
               <Users className="h-5 w-5 text-blue-500" />
             </div>
             <div className="flex-1">
-              <p className="font-medium">Switch / Add Account</p>
-              <p className="text-xs text-muted-foreground">Manage multiple accounts</p>
+              <p className="font-medium">Accounts</p>
+              <p className="text-xs text-muted-foreground">See who's signed in, switch, or add an account</p>
             </div>
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
           </button>
