@@ -32,13 +32,13 @@ export function ProfileQRCode({ open, onOpenChange, username }: Props) {
             <svg width="0" height="0" className="absolute">
               <defs>
                 <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="hsl(var(--primary))" />
-                  <stop offset="50%" stopColor="hsl(280 80% 60%)" />
-                  <stop offset="100%" stopColor="hsl(330 85% 60%)" />
+                  <stop offset="0%" stopColor="hsl(245 80% 60%)" />
+                  <stop offset="50%" stopColor="hsl(200 100% 45%)" />
+                  <stop offset="100%" stopColor="hsl(280 80% 55%)" />
                 </linearGradient>
               </defs>
             </svg>
-            <div className="[&_path:last-child]:fill-[url(#qr-fill)]" style={{ ['--x' as string]: 0 }}>
+            <div>
               <QRCodeSVG
                 value={url}
                 size={208}
@@ -48,7 +48,7 @@ export function ProfileQRCode({ open, onOpenChange, username }: Props) {
                 imageSettings={{ src: '/icon-192.png', height: 40, width: 40, excavate: true }}
               />
             </div>
-            <p className="font-semibold text-gradient">@{username}</p>
+            <p className="font-semibold text-primary">@{username}</p>
           </div>
         </div>
         <p className="text-xs text-muted-foreground text-center break-all">{url}</p>
