@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { getFirstPostMediaUrl } from '@/lib/utils';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Grid3X3, Bookmark, Menu, UserPlus, UserMinus, MessageCircle, Plus, Film, Lock, Clock, Share2, MoreHorizontal, Pin, Heart, Crown, Camera, Trash2, LayoutDashboard } from 'lucide-react';
+import { Grid3X3, Bookmark, Menu, UserPlus, UserMinus, MessageCircle, Plus, Film, Lock, Clock, Share2, MoreHorizontal, Pin, Heart, Crown, Camera, Trash2, LayoutDashboard, QrCode } from 'lucide-react';
+import { ProfileQRCode } from '@/components/share/ProfileQRCode';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Seo } from '@/components/seo/Seo';
 import { Button } from '@/components/ui/button';
@@ -70,6 +71,7 @@ export default function ProfilePage() {
   const [showCreateStory, setShowCreateStory] = useState(false);
   const [canViewContent, setCanViewContent] = useState(true);
   const [showShareSheet, setShowShareSheet] = useState(false);
+  const [showQr, setShowQr] = useState(false);
   const [showBlockReport, setShowBlockReport] = useState(false);
   const [showPhotoViewer, setShowPhotoViewer] = useState(false);
   const [isFollowBack, setIsFollowBack] = useState(false);
@@ -719,6 +721,11 @@ export default function ProfilePage() {
                       <Button variant="ghost" size="icon-sm" onClick={() => setShowShareSheet(true)}>
                         <Share2 className="h-5 w-5" />
                       </Button>
+                      {!profile.is_private && (
+                        <Button variant="ghost" size="icon-sm" aria-label="Profile QR code" onClick={() => setShowQr(true)}>
+                          <QrCode className="h-5 w-5" />
+                        </Button>
+                      )}
                     </>
                   ) : (
                     <>
@@ -755,6 +762,11 @@ export default function ProfilePage() {
                       <Button variant="ghost" size="icon-sm" onClick={() => setShowShareSheet(true)}>
                         <Share2 className="h-4 w-4" />
                       </Button>
+                      {!profile.is_private && (
+                        <Button variant="ghost" size="icon-sm" aria-label="Profile QR code" onClick={() => setShowQr(true)}>
+                          <QrCode className="h-4 w-4" />
+                        </Button>
+                      )}
                       <Button variant="ghost" size="icon-sm" onClick={() => setShowBlockReport(true)}>
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
@@ -1001,6 +1013,10 @@ export default function ProfilePage() {
           itemId={userId!}
           itemUrl={`${window.location.origin}/profile/${username}`}
         />
+
+        {profile && (
+          <ProfileQRCode open={showQr} onOpenChange={setShowQr} username={profile.username} />
+        )}
 
         {/* Block/Report Sheet */}
         {!isOwnProfile && profile && (
