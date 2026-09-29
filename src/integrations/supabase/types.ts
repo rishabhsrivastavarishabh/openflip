@@ -1570,6 +1570,7 @@ export type Database = {
       }
       posts: {
         Row: {
+          audience: string
           caption: string | null
           collaboration_status: string | null
           collaborator_id: string | null
@@ -1587,6 +1588,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          audience?: string
           caption?: string | null
           collaboration_status?: string | null
           collaborator_id?: string | null
@@ -1604,6 +1606,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          audience?: string
           caption?: string | null
           collaboration_status?: string | null
           collaborator_id?: string | null
