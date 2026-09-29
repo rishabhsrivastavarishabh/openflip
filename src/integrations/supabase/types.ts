@@ -1930,6 +1930,7 @@ export type Database = {
       }
       reels: {
         Row: {
+          audience: string
           audio_artist: string | null
           audio_name: string | null
           caption: string | null
@@ -1943,6 +1944,7 @@ export type Database = {
           view_count: number | null
         }
         Insert: {
+          audience?: string
           audio_artist?: string | null
           audio_name?: string | null
           caption?: string | null
@@ -1956,6 +1958,7 @@ export type Database = {
           view_count?: number | null
         }
         Update: {
+          audience?: string
           audio_artist?: string | null
           audio_name?: string | null
           caption?: string | null
