@@ -65,6 +65,7 @@ export default function CreatePage() {
   const [audioName, setAudioName] = useState('');
   const [audioArtist, setAudioArtist] = useState('');
   const [alsoPostToStory, setAlsoPostToStory] = useState(false);
+  const [audience, setAudience] = useState<'everyone' | 'followers'>('everyone');
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [editingPhotoIndex, setEditingPhotoIndex] = useState<number | null>(null);
 
@@ -105,6 +106,7 @@ export default function CreatePage() {
     if (post) {
       setCaption(post.caption || '');
       setLocation(post.location || '');
+      setAudience((post as any).audience === 'followers' ? 'followers' : 'everyone');
       setExistingMediaUrl(post.media_url);
       setExistingMediaType(post.media_type);
       setPreview(post.media_url);
@@ -313,7 +315,8 @@ export default function CreatePage() {
           caption: caption.trim() || null,
           audio_name: audioName.trim() || null,
           audio_artist: audioArtist.trim() || null,
-        }).select('id').single();
+          audience,
+        } as any).select('id').single();
         if (currentDraftId) await supabase.from('drafts').delete().eq('id', currentDraftId);
         if (newReel?.id) pingIndexNow([`/reels`, `/reel/${newReel.id}`]);
         toast.success('Reel created!');
@@ -340,15 +343,15 @@ export default function CreatePage() {
         if (isEditing && editPostId) {
           await supabase.from('posts').update({
             media_url: mediaUrl, media_type: 'image',
-            caption: caption.trim() || null, location: location.trim() || null,
-          }).eq('id', editPostId).eq('user_id', user.id);
+            caption: caption.trim() || null, location: location.trim() || null, audience,
+          } as any).eq('id', editPostId).eq('user_id', user.id);
           pingIndexNow([`/post/${editPostId}`]);
           toast.success('Post updated!');
         } else {
           const { data: newPost } = await supabase.from('posts').insert({
             user_id: user.id, media_url: mediaUrl, media_type: 'image',
-            caption: caption.trim() || null, location: location.trim() || null,
-          }).select('id').single();
+            caption: caption.trim() || null, location: location.trim() || null, audience,
+          } as any).select('id').single();
           if (alsoPostToStory && uploadedUrls[0]) {
             await supabase.from('stories').insert({
               user_id: user.id, media_url: uploadedUrls[0], media_type: 'image',
@@ -367,8 +370,8 @@ export default function CreatePage() {
         if (isEditing && editPostId) {
           await supabase.from('posts').update({
             media_url: existingMediaUrl, media_type: existingMediaType,
-            caption: caption.trim() || null, location: location.trim() || null,
-          }).eq('id', editPostId).eq('user_id', user.id);
+            caption: caption.trim() || null, location: location.trim() || null, audience,
+          } as any).eq('id', editPostId).eq('user_id', user.id);
           pingIndexNow([`/post/${editPostId}`]);
           toast.success('Post updated!');
         }
@@ -579,6 +582,24 @@ export default function CreatePage() {
                   <Textarea placeholder="Write a caption..." value={caption}
                     onChange={(e) => setCaption(e.target.value)} className="min-h-[100px] resize-none" />
                   <p className="text-xs text-muted-foreground text-right">{caption.length}/2200</p>
+                </div>
+
+                {/* Audience */}
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Who can see this?</p>
+                  <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Audience">
+                    {([
+                      { v: 'everyone', t: 'Everyone', d: 'Anyone who can see your profile' },
+                      { v: 'followers', t: 'Followers only', d: 'Only your approved followers' },
+                    ] as const).map((o) => (
+                      <button key={o.v} type="button" role="radio" aria-checked={audience === o.v}
+                        onClick={() => setAudience(o.v)}
+                        className={`text-left p-3 rounded-xl border-2 transition-colors ${audience === o.v ? 'border-primary bg-primary/10' : 'border-border bg-secondary/40'}`}>
+                        <p className="font-medium text-sm">{o.t}</p>
+                        <p className="text-xs text-muted-foreground">{o.d}</p>
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Location & Story option (photos only) */}

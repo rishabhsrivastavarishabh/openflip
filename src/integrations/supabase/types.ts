@@ -1570,6 +1570,7 @@ export type Database = {
       }
       posts: {
         Row: {
+          audience: string
           caption: string | null
           collaboration_status: string | null
           collaborator_id: string | null
@@ -1587,6 +1588,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          audience?: string
           caption?: string | null
           collaboration_status?: string | null
           collaborator_id?: string | null
@@ -1604,6 +1606,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          audience?: string
           caption?: string | null
           collaboration_status?: string | null
           collaborator_id?: string | null
@@ -1927,6 +1930,7 @@ export type Database = {
       }
       reels: {
         Row: {
+          audience: string
           audio_artist: string | null
           audio_name: string | null
           caption: string | null
@@ -1940,6 +1944,7 @@ export type Database = {
           view_count: number | null
         }
         Insert: {
+          audience?: string
           audio_artist?: string | null
           audio_name?: string | null
           caption?: string | null
@@ -1953,6 +1958,7 @@ export type Database = {
           view_count?: number | null
         }
         Update: {
+          audience?: string
           audio_artist?: string | null
           audio_name?: string | null
           caption?: string | null

@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
+import { AiPostReview } from './AiPostReview';
 
 type Report = {
   id: string;
@@ -177,6 +178,7 @@ export function AdminReportsPanel() {
 
                   {tab === 'pending' && (
                     <div className="flex flex-wrap gap-2">
+                      {r.reported_post_id && <AiPostReview postId={r.reported_post_id} reason={r.reason} />}
                       {(r.reported_post_id || r.reported_reel_id || r.reported_story_id || r.reported_comment_id || r.reported_reel_comment_id) && (
                         <Button size="sm" variant="destructive" onClick={() => removeContent(r)} disabled={!!actioning}>
                           <Trash2 className="w-3.5 h-3.5 mr-1" /> Remove content
